@@ -104,16 +104,17 @@ export default function HomePage() {
       
       {/* 1. Header & Navigation */}
       <Navbar
-        onOpenAI={() => setAiModalOpen(true)}
-        activeTransaction={selectedTransaction}
+        activeTransaction={selectedTransaction === 'LEASE' ? 'RENT' : selectedTransaction}
         onSelectTransaction={handleTransactionChange}
+        activeCategory={selectedCategory}
+        onSelectCategory={handleCategoryChange}
       />
 
       <main className="flex-1">
         
-        {/* 2. Hero Section & Powerful Search (BUY | RENT | LEASE + Category Pills + AI NLP Search) */}
+        {/* 2. Hero Section & Powerful Search (BUY | RENT + Category Pills + AI NLP Search) */}
         <SearchHero
-          selectedTransaction={selectedTransaction}
+          selectedTransaction={selectedTransaction === 'LEASE' ? 'RENT' : selectedTransaction}
           onSelectTransaction={handleTransactionChange}
           selectedCategory={selectedCategory}
           onSelectCategory={handleCategoryChange}
@@ -302,14 +303,14 @@ export default function HomePage() {
 
       </main>
 
-      {/* Floating AI Assistant Trigger Pill */}
+      {/* Floating Chat AI Trigger Pill */}
       <div className="fixed bottom-6 right-6 z-40">
         <button
           onClick={() => setAiModalOpen(true)}
           className="flex items-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white text-xs font-bold shadow-2xl shadow-brand-500/40 border border-emerald-400/30 transition-all hover:scale-105"
         >
           <Sparkles className="w-4 h-4 text-white animate-pulse" />
-          <span>Ask AI Concierge</span>
+          <span>Chat AI</span>
         </button>
       </div>
 

@@ -89,6 +89,7 @@ async def list_listings(
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
     is_featured: Optional[bool] = None,
+    user_id: Optional[int] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db)
@@ -112,6 +113,8 @@ async def list_listings(
         query = query.where(Listing.price <= max_price)
     if is_featured is not None:
         query = query.where(Listing.is_featured == is_featured)
+    if user_id is not None:
+        query = query.where(Listing.user_id == user_id)
 
     query = query.order_by(desc(Listing.is_featured), desc(Listing.created_at))
 

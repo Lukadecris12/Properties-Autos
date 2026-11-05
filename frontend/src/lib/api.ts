@@ -26,6 +26,7 @@ class ApiClient {
     min_price?: number;
     max_price?: number;
     is_featured?: boolean;
+    user_id?: number;
     page?: number;
     page_size?: number;
   } = {}) {
@@ -37,6 +38,7 @@ class ApiClient {
     if (params.min_price) query.append('min_price', params.min_price.toString());
     if (params.max_price) query.append('max_price', params.max_price.toString());
     if (params.is_featured !== undefined) query.append('is_featured', String(params.is_featured));
+    if (params.user_id !== undefined) query.append('user_id', params.user_id.toString());
     if (params.page) query.append('page', params.page.toString());
     if (params.page_size) query.append('page_size', params.page_size.toString());
 
@@ -124,6 +126,19 @@ class ApiClient {
     return res.json();
   }
 
+  async register(data: any) {
+    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Registration failed');
+    }
+    return res.json();
+  }
+
   async getMe() {
     const res = await fetch(`${API_BASE_URL}/auth/me`, {
       headers: this.getAuthHeaders(),
@@ -139,6 +154,13 @@ class ApiClient {
       body: JSON.stringify({ mode }),
     });
     if (!res.ok) throw new Error('Failed to switch mode');
+    return res.json();
+  }
+
+  async getAgentsAndDevelopers(role?: string) {
+    const query = role ? `?role=${role}` : '';
+    const res = await fetch(`${API_BASE_URL}/auth/agents-developers${query}`);
+    if (!res.ok) throw new Error('Failed to fetch agents and developers');
     return res.json();
   }
 }

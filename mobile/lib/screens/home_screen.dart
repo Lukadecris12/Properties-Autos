@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/listing_model.dart';
 import 'listing_detail_screen.dart';
+import 'ai_chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -12,9 +13,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ApiService _apiService = ApiService();
-  String _selectedTransaction = 'SALE'; // SALE, RENT, LEASE
-  String _selectedCategory = 'RESIDENTIAL'; // LAND, RESIDENTIAL, COMMERCIAL, VEHICLE
-
+  String _selectedTransaction = 'SALE'; // SALE (BUY) or RENT
+  String _selectedCategory = 'RESIDENTIAL'; // RESIDENTIAL (Houses), LAND, VEHICLE (Autos)
+  
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
   late Future<List<ListingModel>> _listingsFuture;
 
   @override
@@ -62,48 +65,113 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.auto_awesome, color: Color(0xFF10B981)),
-            tooltip: 'AI Concierge',
-            onPressed: () => _showAIDialog(context),
+          // Chat AI button (renamed from AI Concierge and navigates to interactive Chat AI screen)
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              backgroundColor: const Color(0xFF064E3B),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            icon: const Icon(Icons.auto_awesome, color: Color(0xFF10B981), size: 16),
+            label: const Text(
+              'Chat AI',
+              style: TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AIChatScreen()),
+              );
+            },
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
         children: [
-          // 1. Transaction Type Selector (BUY | RENT | LEASE)
+          // 1. In-App Mobile Search Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            color: const Color(0xFF111827),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0B0F19),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF374151)),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search, color: Colors.grey, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                            decoration: const InputDecoration(
+                              hintText: 'Search city, location, or keyword...',
+                              hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
+                              border: InputBorder.none,
+                              isDense: true,
+                            ),
+                            onChanged: (val) {
+                              setState(() {
+                                _searchQuery = val.trim().toLowerCase();
+                              });
+                            },
+                          ),
+                        ),
+                        if (_searchQuery.isNotEmpty)
+                          GestureDetector(
+                            onTap: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                            },
+                            child: const Icon(Icons.close, color: Colors.grey, size: 16),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 2. Transaction Type Selector (BUY | RENT) - Lease removed
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             color: const Color(0xFF111827),
             child: Row(
               children: [
                 _buildTxTab('SALE', 'BUY'),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 _buildTxTab('RENT', 'RENT'),
-                const SizedBox(width: 8),
-                _buildTxTab('LEASE', 'LEASE'),
               ],
             ),
           ),
 
-          // 2. Category Selector (LAND | RESIDENTIAL | COMMERCIAL | VEHICLE)
+          // 3. Category Selector (Houses | Land | Autos) - Commercial removed
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                _buildCategoryChip('RESIDENTIAL', 'Houses & Flats', Icons.home),
+                _buildCategoryChip('RESIDENTIAL', 'Houses & Apartments', Icons.home),
                 const SizedBox(width: 8),
                 _buildCategoryChip('LAND', 'Land', Icons.landscape),
                 const SizedBox(width: 8),
-                _buildCategoryChip('COMMERCIAL', 'Commercial', Icons.business),
-                const SizedBox(width: 8),
-                _buildCategoryChip('VEHICLE', 'Cars & Autos', Icons.directions_car),
+                _buildCategoryChip('VEHICLE', 'Autos & Vehicles', Icons.directions_car),
               ],
             ),
           ),
 
-          // 3. Listings Feed
+          // 4. Listings Feed with live search filter
           Expanded(
             child: FutureBuilder<List<ListingModel>>(
               future: _listingsFuture,
@@ -124,13 +192,37 @@ class _HomeScreenState extends State<HomeScreen> {
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return Center(
                     child: Text(
-                      'No $_selectedTransaction listings found in $_selectedCategory.',
+                      'No ${_selectedTransaction == 'SALE' ? 'BUY' : 'RENT'} listings found in this category.',
                       style: const TextStyle(color: Colors.grey),
                     ),
                   );
                 }
 
-                final listings = snapshot.data!;
+                var listings = snapshot.data!;
+                if (_searchQuery.isNotEmpty) {
+                  listings = listings.where((item) {
+                    final title = item.title.toLowerCase();
+                    final desc = item.description.toLowerCase();
+                    final city = item.city.toLowerCase();
+                    final state = item.state.toLowerCase();
+                    final neighbourhood = (item.neighbourhood ?? '').toLowerCase();
+                    return title.contains(_searchQuery) ||
+                        desc.contains(_searchQuery) ||
+                        city.contains(_searchQuery) ||
+                        state.contains(_searchQuery) ||
+                        neighbourhood.contains(_searchQuery);
+                  }).toList();
+                }
+
+                if (listings.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No listings match "$_searchQuery".',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  );
+                }
+
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: listings.length,
@@ -147,10 +239,10 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: const Color(0xFF059669),
         icon: const Icon(Icons.post_add, color: Colors.white),
-        label: const Text('Post Requirement', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        label: const Text('Post a Request', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         onPressed: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Requirement publishing connects to /api/v1/requirements')),
+            const SnackBar(content: Text('Request publishing connects to /api/v1/requirements')),
           );
         },
       ),
@@ -168,16 +260,17 @@ class _HomeScreenState extends State<HomeScreen> {
           _loadListings();
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF059669) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            color: isSelected ? const Color(0xFF059669) : const Color(0xFF1E293B),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: isSelected ? const Color(0xFF10B981) : Colors.transparent),
           ),
           alignment: Alignment.center,
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               color: isSelected ? Colors.white : Colors.grey,
             ),
@@ -262,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      item.transactionType,
+                      item.transactionType == 'SALE' ? 'BUY' : 'RENT',
                       style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -332,79 +425,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showAIDialog(BuildContext context) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF111827),
-        title: const Row(
-          children: [
-            Icon(Icons.auto_awesome, color: Color(0xFF10B981)),
-            SizedBox(width: 8),
-            Text('PropertyHub AI Concierge', style: TextStyle(color: Colors.white, fontSize: 16)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Ask real-time questions about Nigerian property titles, vehicle rentals, short-let bookings, or formulation advice:',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              decoration: const InputDecoration(
-                hintText: 'e.g. What is Governor\'s Consent?',
-                hintStyle: TextStyle(color: Colors.grey),
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
-            onPressed: () async {
-              final query = controller.text;
-              if (query.isNotEmpty) {
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Consulting PropertyHub AI layer...')),
-                );
-                try {
-                  final reply = await _apiService.queryAIConcierge(query);
-                  showDialog(
-                    context: context,
-                    builder: (c) => AlertDialog(
-                      backgroundColor: const Color(0xFF111827),
-                      title: const Text('AI Concierge Response', style: TextStyle(color: Colors.white, fontSize: 15)),
-                      content: Text(reply, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(c), child: const Text('OK')),
-                      ],
-                    ),
-                  );
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
-                }
-              }
-            },
-            child: const Text('Ask AI', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }

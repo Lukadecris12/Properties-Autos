@@ -47,6 +47,8 @@ mobile/*.lock
 .env.*.local
 *.pem
 *.key
+*.apk
+
 
 # IDE and OS files
 .vscode/

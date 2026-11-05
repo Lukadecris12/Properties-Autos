@@ -5,12 +5,9 @@ import {
   Search, 
   MapPin, 
   Sparkles, 
-  SlidersHorizontal, 
-  Building, 
   Home, 
   Car, 
-  LandPlot, 
-  Briefcase
+  LandPlot
 } from 'lucide-react';
 import { TransactionType, AssetCategory } from '@/lib/types';
 
@@ -51,15 +48,15 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
     }
   };
 
+  // Simplified to Houses, Land, and Autos (Commercial is integrated cleanly into these or filtered inside)
   const categories = [
-    { id: 'LAND' as AssetCategory, label: 'Land', icon: LandPlot },
     { id: 'RESIDENTIAL' as AssetCategory, label: 'Houses & Apartments', icon: Home },
-    { id: 'COMMERCIAL' as AssetCategory, label: 'Commercial', icon: Briefcase },
-    { id: 'VEHICLE' as AssetCategory, label: 'Cars & Vehicles', icon: Car },
+    { id: 'LAND' as AssetCategory, label: 'Land', icon: LandPlot },
+    { id: 'VEHICLE' as AssetCategory, label: 'Autos & Vehicles', icon: Car },
   ];
 
   return (
-    <div className="relative pt-12 pb-20 overflow-hidden">
+    <div className="relative pt-10 pb-16 overflow-hidden">
       {/* Background Glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-brand-600/15 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute top-1/3 left-1/4 w-[350px] h-[250px] bg-gold-500/10 blur-[100px] rounded-full pointer-events-none" />
@@ -74,31 +71,31 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
 
         {/* Hero Title */}
         <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white mb-6 leading-tight">
-          Find, Rent & Lease <br className="hidden sm:inline" />
-          <span className="emerald-gradient">Properties</span> & <span className="gold-gradient">Automobiles</span> with AI
+          Find, Buy & Rent <br className="hidden sm:inline" />
+          <span className="emerald-gradient">Properties</span> & <span className="gold-gradient">Autos</span> with AI
         </h1>
 
         <p className="text-gray-400 text-base sm:text-lg max-w-2xl mx-auto mb-10">
-          Nigeria's most advanced digital marketplace. Proactively connects buyers, tenants, and renters with owners, verified agents, and dealers.
+          Nigeria's premier digital marketplace connecting verified property buyers, tenants, agents, developers, and auto dealers.
         </p>
 
         {/* Central Search Card */}
         <div className="glass-panel rounded-3xl p-4 sm:p-6 shadow-2xl border border-gray-800 text-left">
           
-          {/* Header Row: BUY | RENT | LEASE & AI Mode Switch */}
+          {/* Header Row: BUY | RENT (Lease removed) & AI Mode Switch */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 border-b border-gray-800">
             
-            {/* 1. Transaction Type Selector */}
+            {/* 1. Transaction Type Selector: BUY | RENT */}
             <div className="flex items-center bg-gray-950/80 p-1.5 rounded-2xl border border-gray-800">
-              {(['SALE', 'RENT', 'LEASE'] as const).map((tx) => {
-                const label = tx === 'SALE' ? 'BUY' : tx;
+              {(['SALE', 'RENT'] as const).map((tx) => {
+                const label = tx === 'SALE' ? 'BUY' : 'RENT';
                 const isActive = selectedTransaction === tx;
                 return (
                   <button
                     key={tx}
                     type="button"
                     onClick={() => onSelectTransaction(tx)}
-                    className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 tracking-wider ${
+                    className={`px-8 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 tracking-wider ${
                       isActive
                         ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/30'
                         : 'text-gray-400 hover:text-white'
@@ -121,14 +118,14 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
               }`}
             >
               <Sparkles className={`w-4 h-4 ${isAIMode ? 'text-brand-400' : 'text-gray-500'}`} />
-              <span>{isAIMode ? 'AI Natural Search: Active' : 'Switch to AI Sentence Search'}</span>
+              <span>{isAIMode ? 'AI Search: Active' : 'Switch to AI Sentence Search'}</span>
             </button>
 
           </div>
 
-          {/* 2. Asset Category Selector (Only shown in standard mode) */}
+          {/* 2. Asset Category Selector: Houses | Land | Autos (Commercial removed) */}
           {!isAIMode && (
-            <div className="flex items-center gap-2 py-4 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-3 py-4 overflow-x-auto no-scrollbar">
               {categories.map((cat) => {
                 const Icon = cat.icon;
                 const isActive = selectedCategory === cat.id;
@@ -137,7 +134,7 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
                     key={cat.id}
                     type="button"
                     onClick={() => onSelectCategory(cat.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium shrink-0 transition-all ${
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${
                       isActive
                         ? 'bg-gray-800 text-brand-400 border border-brand-500/40 shadow-sm'
                         : 'bg-gray-950/40 text-gray-400 hover:text-white border border-gray-800/80 hover:bg-gray-900'

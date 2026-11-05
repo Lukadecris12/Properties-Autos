@@ -1,5 +1,6 @@
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional, List
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -164,3 +165,23 @@ async def update_profile(
     await db.commit()
     await db.refresh(current_user)
     return ResponseModel(message="Profile updated successfully", data=current_user)
+
+@router.get("/agents-developers", response_model=ResponseModel[List[UserResponse]])
+async def list_agents_and_developers(
+    role: Optional[str] = Query(None, description="Filter by agent or developer"),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(User).where(User.is_active == True)
+    result = await db.execute(stmt)
+    users = result.scalars().all()
+    
+    # Filter users who have 'agent', 'developer', 'seller', or 'dealer' in roles or active_mode
+    matching_users = []
+    target_roles = [role.lower()] if role else ["agent", "developer", "seller", "dealer"]
+    
+    for u in users:
+        user_roles = [r.lower() for r in (u.roles or [])]
+        if any(tr in user_roles or tr == u.active_mode.lower() for tr in target_roles) or u.is_business_verified:
+            matching_users.append(u)
+            
+    return ResponseModel(data=matching_users)
