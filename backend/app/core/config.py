@@ -1,0 +1,51 @@
+import os
+from typing import List, Union
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AnyHttpUrl, field_validator
+
+class Settings(BaseSettings):
+    PROJECT_NAME: str = "PropertyHub"
+    VERSION: str = "1.0.0"
+    API_V1_STR: str = "/api/v1"
+    ENVIRONMENT: str = "development"
+    DEBUG: bool = True
+
+    # Database URLs
+    DATABASE_URL: str = "sqlite+aiosqlite:///./propertyhub.db"
+    SYNC_DATABASE_URL: str = "sqlite:///./propertyhub.db"
+
+    # Security
+    SECRET_KEY: str = "propertyhub_development_jwt_secret_key_needs_64_bytes_secure_2026_xxyyzz"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+
+    # CORS
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000"
+
+    # Storage
+    STORAGE_TYPE: str = "local"
+    UPLOAD_DIR: str = "./uploads"
+
+    # AI Config
+    OPENAI_API_KEY: str = ""
+    AI_MODEL: str = "gpt-4o-mini"
+
+    # Google Maps
+    GOOGLE_MAPS_API_KEY: str = ""
+
+    # External Payments
+    PAYSTACK_SECRET_KEY: str = ""
+    FLUTTERWAVE_SECRET_KEY: str = ""
+
+    @property
+    def cors_origins(self) -> List[str]:
+        return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
+
+    model_config = SettingsConfigDict(
+        env_file=(".env", "../.env"),
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
+
+settings = Settings()

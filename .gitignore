@@ -1,0 +1,57 @@
+# Environments and Python virtual environments
+.venv/
+venv/
+test_venv/
+env/
+ENV/
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local database
+*.db
+*.sqlite
+*.sqlite3
+propertyhub.db
+
+# Node & Next.js
+node_modules/
+frontend/node_modules/
+frontend/.next/
+.next/
+out/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+
+# Flutter & Dart
+mobile/.dart_tool/
+mobile/build/
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+mobile/*.lock
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# IDE and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
