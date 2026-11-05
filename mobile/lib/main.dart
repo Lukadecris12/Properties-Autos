@@ -21,7 +21,6 @@ class PropertyHubApp extends StatelessWidget {
           primary: Color(0xFF10B981),
           secondary: Color(0xFFF59E0B),
           surface: Color(0xFF111827),
-          background: Color(0xFF0B0F19),
         ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF111827),

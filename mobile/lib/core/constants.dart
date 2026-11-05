@@ -1,14 +1,14 @@
 class ApiConstants {
-  // Use 10.0.2.2 for Android emulator, localhost for iOS simulator, or live domain
-  static const String baseUrl = 'http://10.0.2.2:8000/api/v1';
+  // Connects to local LAN server by default, or live cloud API URL
+  static String baseUrl = 'http://192.168.1.125:3000/api/v1';
 
-  static const String listingsEndpoint = '$baseUrl/listings';
-  static const String requirementsEndpoint = '$baseUrl/requirements';
-  static const String matchesEndpoint = '$baseUrl/matching';
-  static const String searchEndpoint = '$baseUrl/search';
-  static const String bookingsEndpoint = '$baseUrl/bookings';
-  static const String aiEndpoint = '$baseUrl/ai';
-  static const String authEndpoint = '$baseUrl/auth';
+  static String get listingsEndpoint => '$baseUrl/listings';
+  static String get requirementsEndpoint => '$baseUrl/requirements';
+  static String get matchesEndpoint => '$baseUrl/matching';
+  static String get searchEndpoint => '$baseUrl/search';
+  static String get bookingsEndpoint => '$baseUrl/bookings';
+  static String get aiEndpoint => '$baseUrl/ai';
+  static String get authEndpoint => '$baseUrl/auth';
 }
 
 enum TransactionType { sale, rent, lease }

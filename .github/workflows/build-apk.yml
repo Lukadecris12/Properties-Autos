@@ -1,0 +1,66 @@
+name: Build Android APK (PropertyHub Mobile)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android-apk:
+    name: Compile Release APK for Android
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: 'stable'
+          cache: true
+
+      - name: Generate Android Platform Wrapper & Inject Permissions
+        run: |
+          cp -r mobile/lib /tmp/lib_backup
+          cp mobile/pubspec.yaml /tmp/pubspec_backup.yaml
+          cd mobile
+          flutter create --org com.propertyhub.marketplace --project-name propertyhub_mobile --platforms=android .
+          rm -rf lib test
+          cp -r /tmp/lib_backup lib
+          cp /tmp/pubspec_backup.yaml pubspec.yaml
+          python3 -c 'p="android/app/src/main/AndroidManifest.xml"; t=open(p).read(); t=t.replace("<application", "<uses-permission android:name=\"android.permission.INTERNET\"/>\n    <application android:usesCleartextTraffic=\"true\"", 1) if "android.permission.INTERNET" not in t else t; open(p,"w").write(t)'
+
+      - name: Install Flutter Dependencies & Build Release APK
+        working-directory: ./mobile
+        run: |
+          flutter pub get
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk ../PropertyHub-Android.apk
+
+      - name: Upload APK as Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PropertyHub-Android-APK
+          path: PropertyHub-Android.apk
+
+      - name: Publish Direct Download APK to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: "PropertyHub Android Mobile App (v1.0.0)"
+          body: "Direct Android APK installer for PropertyHub — Global AI-Powered Property & Automobile Marketplace."
+          files: PropertyHub-Android.apk
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
