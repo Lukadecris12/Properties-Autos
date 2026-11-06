@@ -42,7 +42,7 @@ class WelcomeScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   RichText(
                     text: const TextSpan(
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.extrabold, color: Colors.white, letterSpacing: -0.5),
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.5),
                       children: [
                         TextSpan(text: 'Property'),
                         TextSpan(text: 'Hub', style: TextStyle(color: Color(0xFF10B981))),
