@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/listing_model.dart';
 import '../services/api_service.dart';
+import 'agent_storefront_screen.dart';
 
 class ListingDetailScreen extends StatefulWidget {
   final ListingModel listing;
@@ -465,6 +466,45 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 10),
+
+                        // View Storefront & Portfolio Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 38,
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(color: Color(0xFF10B981)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.storefront, color: Color(0xFF10B981), size: 16),
+                            label: Text(
+                              'View ${item.ownerName ?? "Partner"}\'s Storefront',
+                              style: const TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => AgentStorefrontScreen(
+                                    agent: {
+                                      'id': item.ownerId,
+                                      'company_name': item.ownerName,
+                                      'phone_number': item.ownerPhone,
+                                      'verification_badge': item.ownerBadge,
+                                      'avatar_url': item.ownerAvatar,
+                                      'city': item.city,
+                                      'state': item.state,
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),

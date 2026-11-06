@@ -133,6 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const PostListingScreen(),
           const AIChatScreen(showAppBar: false),
           AgentsScreen(
+            showAppBar: false,
             onSelectAgentPortfolio: (agentName) {
               setState(() {
                 _searchQuery = agentName.toLowerCase();

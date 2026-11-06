@@ -4,6 +4,7 @@ import 'admin_screen.dart';
 import 'onboarding_screen.dart';
 import 'welcome_screen.dart';
 import 'messages_screen.dart';
+import 'agents_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Function(int targetTab)? onNavigateTab;
@@ -242,6 +243,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const MessagesScreen()),
+                      );
+                    },
+                  ),
+                  _buildDivider(),
+                  _buildMenuItem(
+                    icon: Icons.storefront,
+                    iconColor: const Color(0xFF10B981),
+                    title: 'Agents & Developers Directory',
+                    subtitle: 'Browse certified developers & verified real estate partners',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AgentsScreen()),
                       );
                     },
                   ),

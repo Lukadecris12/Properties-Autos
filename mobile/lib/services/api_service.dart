@@ -557,4 +557,97 @@ class ApiService {
       }
     ];
   }
+
+  // --- Agents & Developers Directory ---
+  static final List<Map<String, dynamic>> _seedAgents = [
+    {
+      'id': 1,
+      'first_name': 'Olumide',
+      'last_name': 'Adeleke',
+      'company_name': 'Cadwell Luxury Developments',
+      'email': 'adeleke@cadwellluxury.com',
+      'phone_number': '+2348035551234',
+      'roles': ['developer'],
+      'active_mode': 'developer',
+      'city': 'Ikoyi',
+      'state': 'Lagos',
+      'verification_badge': 'Certified Developer',
+      'is_identity_verified': true,
+      'is_business_verified': true,
+      'bio': 'Pioneers of ultra-luxury residences, waterfront villas, and bespoke architectural landmarks across Ikoyi & Victoria Island.',
+    },
+    {
+      'id': 2,
+      'first_name': 'Emeka',
+      'last_name': 'Nwosu',
+      'company_name': 'Prime Lekki Realtors',
+      'email': 'inquiries@primelekkirealtors.ng',
+      'phone_number': '+2348039998877',
+      'roles': ['agent'],
+      'active_mode': 'agent',
+      'city': 'Lekki',
+      'state': 'Lagos',
+      'verification_badge': 'Gold Agent',
+      'is_identity_verified': true,
+      'is_business_verified': true,
+      'bio': 'Accredited luxury real estate advisor specializing in prime Lekki Phase 1 duplexes, penthouses, and waterfront investments.',
+    },
+    {
+      'id': 3,
+      'first_name': 'Fatima',
+      'last_name': 'Bello',
+      'company_name': 'Maitama Prime Estates & Autos',
+      'email': 'vip@maitamaprime.ng',
+      'phone_number': '+2348091112233',
+      'roles': ['agent', 'dealer'],
+      'active_mode': 'agent',
+      'city': 'Maitama',
+      'state': 'Abuja',
+      'verification_badge': 'Verified Partner',
+      'is_identity_verified': true,
+      'is_business_verified': true,
+      'bio': 'Exclusive diplomatic residences, embassy zone short-lets, and armored luxury supercars in Abuja.',
+    },
+  ];
+
+  Future<List<Map<String, dynamic>>> fetchAgentsAndDevelopers({String? role}) async {
+    try {
+      final uri = Uri.parse(
+        role != null && role != 'all'
+            ? '${ApiConstants.agentsEndpoint}?role=$role'
+            : ApiConstants.agentsEndpoint,
+      );
+      final response = await client.get(uri).timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        final List items = decoded['data'] ?? [];
+        if (items.isNotEmpty) {
+          return items.cast<Map<String, dynamic>>();
+        }
+      }
+    } catch (_) {}
+    if (role != null && role != 'all') {
+      return _seedAgents.where((a) {
+        final r = (a['active_mode'] ?? '').toString().toLowerCase();
+        final roles = (a['roles'] as List? ?? []).map((e) => e.toString().toLowerCase()).toList();
+        return r == role.toLowerCase() || roles.contains(role.toLowerCase());
+      }).toList();
+    }
+    return _seedAgents;
+  }
+
+  Future<List<ListingModel>> fetchAgentListings(int userId) async {
+    try {
+      final uri = Uri.parse('${ApiConstants.listingsEndpoint}/?user_id=$userId');
+      final response = await client.get(uri).timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        final List items = decoded['items'] ?? [];
+        if (items.isNotEmpty) {
+          return items.map((item) => ListingModel.fromJson(item)).toList();
+        }
+      }
+    } catch (_) {}
+    return _seedFallbackListings;
+  }
 }

@@ -59,9 +59,9 @@ jobs:
       - name: Publish Direct Download APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.5
-          name: "PropertyHub Android App v1.0.5 (Direct WhatsApp & In-App Messaging Suite)"
-          body: "Direct Android APK installer featuring Direct WhatsApp 1-Click Connect, Phone Dialer, and Real-time In-App Messaging Suite connecting buyers directly with verified agents & property developers without in-app billing restrictions."
+          tag_name: v1.0.6
+          name: "PropertyHub Android App v1.0.6 (Dedicated Agent & Developer Storefronts)"
+          body: "Direct Android APK installer featuring Dedicated Agent & Developer Storefront Pages, verified company badges, agency portfolio grids, and 1-Click WhatsApp & In-App messaging."
           files: PropertyHub.apk
           prerelease: false
         env:
