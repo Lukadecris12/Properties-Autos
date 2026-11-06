@@ -14,6 +14,8 @@ class ListingModel {
   final String? neighbourhood;
   final bool isVerified;
   final bool isFeatured;
+  final List<String> imageUrls;
+  final Map<String, dynamic> attributes;
   final String? ownerName;
   final String? ownerPhone;
   final String? ownerBadge;
