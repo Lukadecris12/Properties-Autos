@@ -13,13 +13,18 @@ export const Footer: React.FC = () => {
           
           {/* Brand Info */}
           <div className="lg:col-span-2 space-y-4">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-brand-500/20">
+            <Link href="/" className="flex items-center gap-2.5 shrink-0 select-none">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-brand-500/20 shrink-0">
                 <Building2 className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold tracking-tight text-white">
-                Properties <span className="text-brand-500">& Autos</span>
-              </span>
+              <div className="flex items-center whitespace-nowrap leading-none">
+                <span className="text-xl font-extrabold tracking-tight text-white">
+                  Properties
+                </span>
+                <span className="text-xl font-extrabold tracking-tight text-brand-400 ml-1.5">
+                  &amp;&nbsp;Autos
+                </span>
+              </div>
             </Link>
             
             <p className="text-gray-400 leading-relaxed max-w-sm">

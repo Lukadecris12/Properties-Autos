@@ -59,9 +59,9 @@ jobs:
       - name: Publish Direct Download APK to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.7
-          name: "Properties & Autos Android App v1.0.7 (Wishlist & Rebranding)"
-          body: "Direct Android APK installer featuring App Rebranding to Properties & Autos, Unified 'Post Request' nomenclature, and the Saved Wishlist & Favorites System across luxury real estate and exotic automobiles."
+          tag_name: v1.0.8
+          name: "Properties & Autos Android App v1.0.8 (Branding Refinements & Post Request)"
+          body: "Direct Android APK installer featuring perfect brand typography alignment, unified 'Post Request' nomenclature, and the Saved Wishlist & Favorites System."
           files: PropertyHub.apk
           prerelease: false
         env:

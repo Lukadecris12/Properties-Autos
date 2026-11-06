@@ -93,16 +93,21 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between h-20">
           
           {/* Logo & Brand Identity */}
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-brand-500/20">
+          <Link href="/" className="flex items-center gap-3 shrink-0 select-none">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-brand-500/20 shrink-0">
               <Building2 className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <span className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-1">
-                Properties <span className="text-brand-500">& Autos</span>
-              </span>
-              <span className="text-[9px] sm:text-[10px] tracking-widest uppercase text-gray-400 block -mt-1 font-semibold">
-                Luxury Real Estate & Vehicles
+            <div className="flex flex-col justify-center">
+              <div className="flex items-center whitespace-nowrap leading-none">
+                <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                  Properties
+                </span>
+                <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-brand-400 ml-1.5">
+                  &amp;&nbsp;Autos
+                </span>
+              </div>
+              <span className="text-[9px] sm:text-[10px] tracking-widest uppercase text-gray-400 font-semibold whitespace-nowrap mt-1 leading-none">
+                Luxury Real Estate &amp; Vehicles
               </span>
             </div>
           </Link>

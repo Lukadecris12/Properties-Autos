@@ -54,7 +54,7 @@ export const AIMatchingBanner: React.FC = () => {
               href="/requirements/new"
               className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm shadow-xl shadow-brand-600/30 transition-all text-center"
             >
-              <span>Publish Your Requirement</span>
+              <span>Post Request</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
 

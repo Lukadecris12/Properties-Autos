@@ -62,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 5:
         return 'My Account';
       default:
-        return 'PropertyHub';
+        return 'Properties & Autos';
     }
   }
 
