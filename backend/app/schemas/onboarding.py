@@ -10,6 +10,7 @@ class SignupInitiateResponse(BaseModel):
     message: str
     email: str
     otp_debug: Optional[str] = None  # Included in development / simulation mode
+    verification_token: Optional[str] = None
 
 class VerifyOtpRequest(BaseModel):
     email: EmailStr
@@ -26,7 +27,7 @@ class ResendOtpRequest(BaseModel):
 
 class OnboardingCompleteRequest(BaseModel):
     email: EmailStr
-    verification_token: str
+    verification_token: Optional[str] = "direct_onboarding"
     
     # 1. Buyer vs Seller
     user_type: str = Field(..., description="'buyer' or 'seller'")

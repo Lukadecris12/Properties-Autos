@@ -92,8 +92,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final res = await _apiService.signupInitiate(email, pass);
     setState(() {
       _loading = false;
-      _otpDebug = res['otp_debug'];
-      _step = 2;
+      _verificationToken = res['verification_token'] ?? 'direct_onboarding';
+      _step = 3; // Direct transition to detailed onboarding profile
     });
   }
 
@@ -196,11 +196,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         backgroundColor: const Color(0xFF111827),
         elevation: 0,
         title: Text(
-          _step == 1
-              ? 'Create Account'
-              : _step == 2
-                  ? 'Verify 6-Digit Code'
-                  : 'Complete Onboarding',
+          _step == 1 ? 'Create Account' : 'Complete Onboarding',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
@@ -230,7 +226,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Enter your email and password. We will send a 6-digit verification code via Resend.',
+                'Enter your email and password to begin creating your account profile.',
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const SizedBox(height: 20),
@@ -253,7 +249,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   onPressed: _loading ? null : _initiateSignup,
                   child: _loading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Sign Up & Send Code', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                      : const Text('Continue to Onboarding Profile', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
               ),
             ],

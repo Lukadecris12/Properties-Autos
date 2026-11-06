@@ -145,11 +145,11 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const res = await api.signupInitiate(email, password);
-      if (res.otp_debug) {
-        setOtpDebug(res.otp_debug);
+      if (res.verification_token) {
+        setVerificationToken(res.verification_token);
       }
-      setSuccessMsg(`A 6-digit verification code has been dispatched to ${email}.`);
-      setStep(2); // Open OTP verification modal
+      setSuccessMsg('Credentials confirmed! Please complete your onboarding details below.');
+      setStep(3); // Direct transition to Onboarding profile, bypassing OTP
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to initiate signup. Please check your connection.');
     } finally {
@@ -299,29 +299,20 @@ export default function RegisterPage() {
           <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-800">
             <div className="flex items-center gap-3">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                step >= 1 ? 'bg-brand-600 text-white' : 'bg-gray-800 text-gray-400'
+                step === 1 ? 'bg-brand-600 text-white' : 'bg-emerald-600 text-white'
               }`}>
                 1
               </div>
-              <span className={`text-xs font-semibold ${step === 1 ? 'text-white' : 'text-gray-400'}`}>Account</span>
+              <span className={`text-xs font-semibold ${step === 1 ? 'text-white' : 'text-gray-400'}`}>1. Credentials</span>
             </div>
-            <div className={`h-0.5 flex-1 mx-4 ${step >= 2 ? 'bg-brand-600' : 'bg-gray-800'}`} />
+            <div className={`h-0.5 flex-1 mx-4 ${step === 3 ? 'bg-brand-600' : 'bg-gray-800'}`} />
             <div className="flex items-center gap-3">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                step >= 2 ? 'bg-brand-600 text-white' : 'bg-gray-800 text-gray-400'
+                step === 3 ? 'bg-brand-600 text-white' : 'bg-gray-800 text-gray-400'
               }`}>
                 2
               </div>
-              <span className={`text-xs font-semibold ${step === 2 ? 'text-white' : 'text-gray-400'}`}>Verify Email</span>
-            </div>
-            <div className={`h-0.5 flex-1 mx-4 ${step >= 3 ? 'bg-brand-600' : 'bg-gray-800'}`} />
-            <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                step >= 3 ? 'bg-brand-600 text-white' : 'bg-gray-800 text-gray-400'
-              }`}>
-                3
-              </div>
-              <span className={`text-xs font-semibold ${step === 3 ? 'text-white' : 'text-gray-400'}`}>Onboarding</span>
+              <span className={`text-xs font-semibold ${step === 3 ? 'text-white' : 'text-gray-400'}`}>2. Onboarding Profile</span>
             </div>
           </div>
 
@@ -346,7 +337,7 @@ export default function RegisterPage() {
               <div className="mb-6">
                 <h1 className="text-2xl font-extrabold text-white tracking-tight">Create Your PropertyHub Account</h1>
                 <p className="text-xs text-gray-400 mt-1">
-                  Start by entering your email and password. We will send a 6-digit verification code to verify your human identity.
+                  Enter your email and password to begin creating your PropertyHub account.
                 </p>
               </div>
 
@@ -405,7 +396,7 @@ export default function RegisterPage() {
                     <RefreshCw className="w-4 h-4 animate-spin text-white" />
                   ) : (
                     <>
-                      <span>Sign Up & Send Verification Code</span>
+                      <span>Continue to Onboarding Profile</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}

@@ -56,30 +56,28 @@ async def signup_initiate(req: SignupInitiateRequest, db: AsyncSession = Depends
             detail="A user with this email address is already registered. Please sign in."
         )
 
-    # Generate 6-digit OTP code
-    otp_code = generate_otp_code()
+    # Direct Onboarding Mode (OTP temporarily disabled pending custom domain setup)
+    token = secrets.token_urlsafe(32)
     temp_hash = get_password_hash(req.password)
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=2)
 
-    # Store OTP record
+    # Store pre-verified onboarding record
     otp_record = OTPVerification(
         email=req.email,
         temp_hashed_password=temp_hash,
-        otp_code=otp_code,
-        is_verified=False,
+        otp_code="DIRECT",
+        is_verified=True,
+        verification_token=token,
         expires_at=expires_at
     )
     db.add(otp_record)
     await db.commit()
 
-    # Send email via Resend
-    email_result = await send_verification_otp_email(req.email, otp_code)
-
     return SignupInitiateResponse(
         status="success",
-        message=f"Verification code sent to {req.email}. Please enter the 6-digit code.",
+        message="Credentials accepted. Proceed directly to complete your profile.",
         email=req.email,
-        otp_debug=email_result.get("otp_debug")
+        verification_token=token
     )
 
 @router.post("/signup-verify-otp", response_model=VerifyOtpResponse)
