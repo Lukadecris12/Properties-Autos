@@ -18,7 +18,7 @@ export const Footer: React.FC = () => {
                 <Building2 className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-bold tracking-tight text-white">
-                Property<span className="text-brand-500">Hub</span>
+                Properties <span className="text-brand-500">& Autos</span>
               </span>
             </Link>
             

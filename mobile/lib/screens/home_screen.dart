@@ -8,6 +8,7 @@ import 'post_listing_screen.dart';
 import 'agents_screen.dart';
 import 'profile_screen.dart';
 import 'investments_screen.dart';
+import 'saved_listings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -89,8 +90,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 text: const TextSpan(
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                   children: [
-                    TextSpan(text: 'Property'),
-                    TextSpan(text: 'Hub', style: TextStyle(color: Color(0xFF10B981))),
+                    TextSpan(text: 'Properties '),
+                    TextSpan(text: '& Autos', style: TextStyle(color: Color(0xFF10B981))),
                   ],
                 ),
               )
@@ -102,6 +103,16 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.favorite, color: Color(0xFFF43F5E), size: 21),
+            tooltip: 'Saved Wishlist',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SavedListingsScreen()),
+              ).then((_) => setState(() {}));
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.trending_up, color: Color(0xFFF59E0B), size: 22),
             tooltip: 'Property Investments',
@@ -549,27 +560,66 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                if (item.isVerified)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: const Color(0xFF10B981)),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (item.isVerified)
+                        Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFF10B981)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.verified, color: Color(0xFF10B981), size: 12),
+                              SizedBox(width: 3),
+                              Text('Verified', style: TextStyle(color: Colors.white, fontSize: 10)),
+                            ],
+                          ),
+                        ),
+                      GestureDetector(
+                        onTap: () {
+                          final nowSaved = _apiService.toggleSaveListing(item.id);
+                          setState(() {});
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                nowSaved
+                                    ? 'Saved "${item.title}" to your Wishlist!'
+                                    : 'Removed from saved listings.',
+                              ),
+                              backgroundColor: nowSaved ? const Color(0xFF064E3B) : const Color(0xFF1F2937),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.65),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white.withOpacity(0.2)),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              _apiService.isListingSaved(item.id) ? Icons.favorite : Icons.favorite_border,
+                              color: _apiService.isListingSaved(item.id) ? const Color(0xFFF43F5E) : Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
                       ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.verified, color: Color(0xFF10B981), size: 12),
-                          SizedBox(width: 4),
-                          Text('Verified', style: TextStyle(color: Colors.white, fontSize: 10)),
-                        ],
-                      ),
-                    ),
+                    ],
                   ),
+                ),
               ],
             ),
 

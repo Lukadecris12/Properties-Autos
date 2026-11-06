@@ -11,7 +11,7 @@ class PropertyHubApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'PropertyHub',
+      title: 'Properties & Autos',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,

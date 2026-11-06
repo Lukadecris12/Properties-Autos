@@ -5,6 +5,7 @@ import 'onboarding_screen.dart';
 import 'welcome_screen.dart';
 import 'messages_screen.dart';
 import 'agents_screen.dart';
+import 'saved_listings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Function(int targetTab)? onNavigateTab;
@@ -261,13 +262,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   _buildDivider(),
                   _buildMenuItem(
-                    icon: Icons.bookmark_border,
-                    iconColor: const Color(0xFFF59E0B),
-                    title: 'Saved Listings & Favorites',
-                    subtitle: '4 properties & 2 autos saved',
+                    icon: Icons.favorite_border,
+                    iconColor: const Color(0xFFF43F5E),
+                    title: 'Saved Listings & Wishlist',
+                    subtitle: 'Quick access to your saved properties & exotic autos',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Viewing 6 saved properties and vehicles')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SavedListingsScreen()),
                       );
                     },
                   ),

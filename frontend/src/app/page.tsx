@@ -180,7 +180,7 @@ export default function HomePage() {
                   href="/requirements/new"
                   className="px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-medium text-gray-200 transition-all"
                 >
-                  Publish Requirement
+                  Post Request
                 </Link>
               </div>
             </div>

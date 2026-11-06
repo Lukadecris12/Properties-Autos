@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   MapPin, 
@@ -12,9 +12,11 @@ import {
   Car, 
   Gauge, 
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Heart
 } from 'lucide-react';
 import { Listing } from '@/lib/types';
+import { isWishlistSaved, toggleWishlistId } from '@/lib/wishlist';
 
 interface ListingCardProps {
   listing: Listing;
@@ -56,6 +58,22 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   const isShortLet = listing.rental_period === 'per_night' || listing.rental_period === 'per_day';
   const isVehicle = listing.asset_category === 'VEHICLE';
 
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    setIsSaved(isWishlistSaved(listing.id));
+    const handleUpdate = () => setIsSaved(isWishlistSaved(listing.id));
+    window.addEventListener('wishlist-updated', handleUpdate);
+    return () => window.removeEventListener('wishlist-updated', handleUpdate);
+  }, [listing.id]);
+
+  const handleToggleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const newState = toggleWishlistId(listing.id);
+    setIsSaved(newState);
+  };
+
   return (
     <div className="group rounded-2xl bg-gray-900/90 border border-gray-800 hover:border-brand-500/50 transition-all duration-300 overflow-hidden flex flex-col justify-between hover:shadow-2xl hover:shadow-brand-500/10">
       
@@ -72,24 +90,36 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         {/* Top Tag Bar */}
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
           
-          {/* Transaction Type Tag */}
-          <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase backdrop-blur-md shadow-md ${
-            listing.transaction_type === 'SALE'
-              ? 'bg-amber-500/90 text-white'
-              : listing.transaction_type === 'LEASE'
-              ? 'bg-purple-600/90 text-white'
-              : 'bg-brand-600/90 text-white'
-          }`}>
-            {listing.transaction_type}
-          </span>
-
-          {/* Verification Badge */}
-          {listing.is_verified_asset && (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 backdrop-blur-md">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              Verified Asset
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Transaction Type Tag */}
+            <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase backdrop-blur-md shadow-md ${
+              listing.transaction_type === 'SALE'
+                ? 'bg-amber-500/90 text-white'
+                : listing.transaction_type === 'LEASE'
+                ? 'bg-purple-600/90 text-white'
+                : 'bg-brand-600/90 text-white'
+            }`}>
+              {listing.transaction_type}
             </span>
-          )}
+
+            {/* Verification Badge */}
+            {listing.is_verified_asset && (
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 backdrop-blur-md">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                Verified
+              </span>
+            )}
+          </div>
+
+          {/* Heart / Wishlist Toggle */}
+          <button
+            type="button"
+            onClick={handleToggleWishlist}
+            className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/90 backdrop-blur-md border border-white/10 flex items-center justify-center transition-all hover:scale-110 shrink-0 shadow-lg"
+            title={isSaved ? 'Remove from Saved' : 'Save to Wishlist'}
+          >
+            <Heart className={`w-4 h-4 transition-colors ${isSaved ? 'fill-rose-500 text-rose-500' : 'text-white/80 hover:text-white'}`} />
+          </button>
         </div>
 
         {/* Category Indicator */}

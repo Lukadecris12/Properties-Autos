@@ -20,6 +20,7 @@ import {
   TrendingUp,
   ShieldCheck,
   MessageSquare,
+  Heart,
   User as UserIcon
 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -98,10 +99,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div>
               <span className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-1">
-                Property<span className="text-brand-500">Hub</span>
+                Properties <span className="text-brand-500">& Autos</span>
               </span>
               <span className="text-[9px] sm:text-[10px] tracking-widest uppercase text-gray-400 block -mt-1 font-semibold">
-                Properties & Autos
+                Luxury Real Estate & Vehicles
               </span>
             </div>
           </Link>
@@ -246,6 +247,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               <MessageSquare className="w-4 h-4 text-brand-400" />
               <span>Messages</span>
             </Link>
+            <Link 
+              href="/saved" 
+              className="flex items-center gap-1.5 hover:text-rose-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50 text-gray-300"
+            >
+              <Heart className="w-4 h-4 text-rose-500" />
+              <span>Saved</span>
+            </Link>
             {currentUser?.is_superuser && (
               <Link 
                 href="/admin" 
@@ -260,13 +268,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Quick Actions & Auth */}
           <div className="hidden lg:flex items-center gap-3">
             
-            {/* Post a Request (Renamed from Post Requirement) */}
+            {/* Post Request */}
             <Link
               href="/requirements/new"
               className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-300 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 transition-all"
             >
               <FileText className="w-4 h-4 text-gold-500" />
-              <span>Post a Request</span>
+              <span>Post Request</span>
             </Link>
 
             {/* Post Listing CTA */}
@@ -401,6 +409,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               <MessageSquare className="w-4 h-4 text-brand-400" />
               <span>Direct Messages Inbox</span>
             </Link>
+            <Link
+              href="/saved"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 p-2.5 rounded-xl bg-gray-900 text-xs font-medium text-gray-200 border border-gray-800"
+            >
+              <Heart className="w-4 h-4 text-rose-500" />
+              <span>Saved Listings & Wishlist</span>
+            </Link>
           </div>
 
           {/* Actions & Auth on Mobile */}
@@ -411,7 +427,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="flex items-center justify-center gap-2 p-3 rounded-xl bg-gray-800 text-xs font-medium text-white border border-gray-700"
             >
               <FileText className="w-4 h-4 text-gold-500" />
-              Post a Request
+              Post Request
             </Link>
             <Link
               href="/listings/new"

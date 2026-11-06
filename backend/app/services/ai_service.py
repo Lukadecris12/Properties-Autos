@@ -102,14 +102,14 @@ class AIService:
                 "Vehicle rentals on PropertyHub support hourly, daily, weekly, and monthly rates. You can choose between "
                 "self-drive or chauffeur-driven options, with transparent pricing and deposit details clearly displayed."
             )
-            suggested_actions = ["Browse Vehicles for Rent", "Publish Car Rental Requirement"]
+            suggested_actions = ["Browse Vehicles for Rent", "Post Vehicle Request"]
 
         elif "requirement" in query_lower or "matching" in query_lower:
             response_text = (
-                "Instead of spending hours searching, you can publish a Property or Vehicle Requirement! Our AI Matching Engine "
+                "Instead of spending hours searching, you can post a Property or Vehicle Request! Our AI Matching Engine "
                 "will proactively scan the marketplace and notify you as soon as an asset matching your budget, location, and criteria is listed."
             )
-            suggested_actions = ["Publish Requirement", "View My AI Matches"]
+            suggested_actions = ["Post Request", "View My AI Matches"]
 
         else:
             response_text = (

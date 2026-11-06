@@ -38,6 +38,7 @@ import { AIAssistantModal } from '@/components/AIAssistantModal';
 import { BookingModal } from '@/components/BookingModal';
 import { Listing } from '@/lib/types';
 import { api } from '@/lib/api';
+import { isWishlistSaved, toggleWishlistId } from '@/lib/wishlist';
 
 export default function ListingDetailPage() {
   const params = useParams();
@@ -49,6 +50,7 @@ export default function ListingDetailPage() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   // Inspection booking state
   const [inspectionType, setInspectionType] = useState<'PHYSICAL' | 'VIRTUAL'>('PHYSICAL');
@@ -67,6 +69,10 @@ export default function ListingDetailPage() {
   useEffect(() => {
     if (listingId) {
       fetchListingDetail(listingId);
+      setIsSaved(isWishlistSaved(listingId));
+      const handleUpdate = () => setIsSaved(isWishlistSaved(listingId));
+      window.addEventListener('wishlist-updated', handleUpdate);
+      return () => window.removeEventListener('wishlist-updated', handleUpdate);
     }
   }, [listingId]);
 
@@ -239,8 +245,19 @@ export default function ListingDetailPage() {
             >
               <Share2 className="w-4 h-4" />
             </button>
-            <button className="p-2 rounded-xl bg-gray-900 border border-gray-800 text-gray-400 hover:text-rose-500 transition-colors" title="Save">
-              <Heart className="w-4 h-4" />
+            <button 
+              onClick={() => {
+                if (listing) {
+                  const nowSaved = toggleWishlistId(listing.id);
+                  setIsSaved(nowSaved);
+                }
+              }}
+              className={`p-2 rounded-xl bg-gray-900 border transition-all ${
+                isSaved ? 'border-rose-500/50 text-rose-500 bg-rose-950/20' : 'border-gray-800 text-gray-400 hover:text-rose-500'
+              }`} 
+              title={isSaved ? 'Remove from Wishlist' : 'Save to Wishlist'}
+            >
+              <Heart className={`w-4 h-4 ${isSaved ? 'fill-rose-500 text-rose-500' : ''}`} />
             </button>
           </div>
         </div>

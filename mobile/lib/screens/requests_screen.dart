@@ -109,7 +109,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Post a Request',
+                          'Post Request',
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                         IconButton(
@@ -245,7 +245,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         icon: const Icon(Icons.send, color: Colors.white, size: 18),
-                        label: const Text('Publish Request', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                        label: const Text('Post Request', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                         onPressed: () async {
                           if (titleController.text.trim().isEmpty) return;
                           final budget = double.tryParse(budgetController.text.trim()) ?? 10000000;
@@ -338,7 +338,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   onPressed: _showPostRequestDialog,
-                  child: const Text('Post', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
+                  child: const Text('Post Request', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
                 ),
               ],
             ),

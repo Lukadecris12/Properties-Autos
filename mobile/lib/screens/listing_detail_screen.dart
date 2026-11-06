@@ -17,6 +17,13 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   final ApiService _apiService = ApiService();
   int _activeImageIndex = 0;
   bool _isBooking = false;
+  bool _isSaved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isSaved = _apiService.isListingSaved(widget.listing.id);
+  }
 
   void _launchUrl(String url) async {
     final uri = Uri.parse(url);
@@ -145,10 +152,22 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
               CircleAvatar(
                 backgroundColor: Colors.black.withOpacity(0.6),
                 child: IconButton(
-                  icon: const Icon(Icons.favorite_border, color: Colors.white),
+                  icon: Icon(
+                    _isSaved ? Icons.favorite : Icons.favorite_border,
+                    color: _isSaved ? const Color(0xFFF43F5E) : Colors.white,
+                  ),
                   onPressed: () {
+                    final nowSaved = _apiService.toggleSaveListing(item.id);
+                    setState(() => _isSaved = nowSaved);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Saved to your saved listings.')),
+                      SnackBar(
+                        content: Text(
+                          nowSaved
+                              ? 'Saved "${item.title}" to your Wishlist!'
+                              : 'Removed from saved listings.',
+                        ),
+                        backgroundColor: nowSaved ? const Color(0xFF064E3B) : const Color(0xFF1F2937),
+                      ),
                     );
                   },
                 ),

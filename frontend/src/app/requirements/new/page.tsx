@@ -159,7 +159,7 @@ export default function NewRequirementPage() {
             <Zap className="w-3.5 h-3.5 text-gold-400" />
             <span>Proactive AI Matching Engine</span>
           </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-white">Post Your Asset Requirement</h1>
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-white">Post Request</h1>
           <p className="text-xs text-gray-400 max-w-lg mx-auto">
             Instead of manually browsing hundreds of listings, specify what you need. Our AI scans the entire market and notifies you as soon as a match is listed.
           </p>
@@ -409,7 +409,7 @@ export default function NewRequirementPage() {
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 disabled:opacity-50 text-white font-bold text-xs shadow-xl shadow-brand-600/30 transition-all flex items-center justify-center gap-2"
             >
               <Zap className="w-4 h-4 text-gold-400" />
-              <span>{submitting ? 'Triggering AI Matching Algorithm...' : 'Publish Requirement & Find Matches'}</span>
+              <span>{submitting ? 'Triggering AI Matching Algorithm...' : 'Post Request & Find Matches'}</span>
             </button>
             <p className="text-[11px] text-gray-500 text-center mt-2">
               Our matching engine will instantly scan published inventory and continuously alert you of new matches.

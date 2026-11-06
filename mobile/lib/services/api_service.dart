@@ -650,4 +650,41 @@ class ApiService {
     } catch (_) {}
     return _seedFallbackListings;
   }
+
+  // --- Wishlist / Saved Listings ---
+  static final Set<int> _savedListingIds = {1, 2};
+
+  bool isListingSaved(int id) {
+    return _savedListingIds.contains(id);
+  }
+
+  bool toggleSaveListing(int id) {
+    if (_savedListingIds.contains(id)) {
+      _savedListingIds.remove(id);
+      return false;
+    } else {
+      _savedListingIds.add(id);
+      return true;
+    }
+  }
+
+  Set<int> getSavedListingIds() {
+    return Set.from(_savedListingIds);
+  }
+
+  Future<List<ListingModel>> fetchSavedListings() async {
+    try {
+      final uri = Uri.parse(ApiConstants.listingsEndpoint);
+      final response = await client.get(uri).timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        final List items = decoded['items'] ?? [];
+        if (items.isNotEmpty) {
+          final all = items.map((item) => ListingModel.fromJson(item)).toList();
+          return all.where((item) => _savedListingIds.contains(item.id)).toList();
+        }
+      }
+    } catch (_) {}
+    return _seedFallbackListings.where((item) => _savedListingIds.contains(item.id)).toList();
+  }
 }

@@ -44,8 +44,8 @@ class WelcomeScreen extends StatelessWidget {
                     text: const TextSpan(
                       style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.5),
                       children: [
-                        TextSpan(text: 'Property'),
-                        TextSpan(text: 'Hub', style: TextStyle(color: Color(0xFF10B981))),
+                        TextSpan(text: 'Properties '),
+                        TextSpan(text: '& Autos', style: TextStyle(color: Color(0xFF10B981))),
                       ],
                     ),
                   ),
