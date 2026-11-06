@@ -14,8 +14,20 @@ from app.core.security import (
     create_refresh_token,
     decode_token
 )
+import secrets
+from datetime import datetime, timezone, timedelta
 from app.core.dependencies import get_current_user
 from app.models.user import User
+from app.models.otp import OTPVerification
+from app.services.email_service import generate_otp_code, send_verification_otp_email
+from app.schemas.onboarding import (
+    SignupInitiateRequest,
+    SignupInitiateResponse,
+    VerifyOtpRequest,
+    VerifyOtpResponse,
+    ResendOtpRequest,
+    OnboardingCompleteRequest
+)
 from app.schemas.user import (
     UserRegister,
     UserLogin,
@@ -27,6 +39,217 @@ from app.schemas.user import (
 from app.schemas.common import ResponseModel
 
 router = APIRouter()
+
+# -------------------------------------------------------------
+# Robust Multi-Step Onboarding with 6-Digit Resend OTP
+# -------------------------------------------------------------
+
+@router.post("/signup-initiate", response_model=SignupInitiateResponse)
+async def signup_initiate(req: SignupInitiateRequest, db: AsyncSession = Depends(get_db)):
+    """Step 1: User enters email & password. System generates 6-digit OTP and sends via Resend."""
+    # Check if user already exists
+    stmt = select(User).where(User.email == req.email)
+    existing_user = (await db.execute(stmt)).scalars().first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A user with this email address is already registered. Please sign in."
+        )
+
+    # Generate 6-digit OTP code
+    otp_code = generate_otp_code()
+    temp_hash = get_password_hash(req.password)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+
+    # Store OTP record
+    otp_record = OTPVerification(
+        email=req.email,
+        temp_hashed_password=temp_hash,
+        otp_code=otp_code,
+        is_verified=False,
+        expires_at=expires_at
+    )
+    db.add(otp_record)
+    await db.commit()
+
+    # Send email via Resend
+    email_result = await send_verification_otp_email(req.email, otp_code)
+
+    return SignupInitiateResponse(
+        status="success",
+        message=f"Verification code sent to {req.email}. Please enter the 6-digit code.",
+        email=req.email,
+        otp_debug=email_result.get("otp_debug")
+    )
+
+@router.post("/signup-verify-otp", response_model=VerifyOtpResponse)
+async def signup_verify_otp(req: VerifyOtpRequest, db: AsyncSession = Depends(get_db)):
+    """Step 2: User enters 6-digit code. Validates OTP and issues an onboarding verification token."""
+    stmt = (
+        select(OTPVerification)
+        .where(
+            OTPVerification.email == req.email,
+            OTPVerification.otp_code == req.otp_code,
+            OTPVerification.is_verified == False
+        )
+        .order_by(OTPVerification.created_at.desc())
+    )
+    result = await db.execute(stmt)
+    record = result.scalars().first()
+
+    if not record or record.is_expired:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired 6-digit verification code. Please request a new code."
+        )
+
+    # Generate unique verification token valid for onboarding completion
+    token = secrets.token_urlsafe(32)
+    record.is_verified = True
+    record.verification_token = token
+    await db.commit()
+
+    return VerifyOtpResponse(
+        status="success",
+        message="Email verified successfully. Please complete your onboarding profile.",
+        email=req.email,
+        verification_token=token
+    )
+
+@router.post("/resend-otp", response_model=SignupInitiateResponse)
+async def resend_otp(req: ResendOtpRequest, db: AsyncSession = Depends(get_db)):
+    """Resend a fresh 6-digit OTP code to the user's email."""
+    stmt = select(User).where(User.email == req.email)
+    if (await db.execute(stmt)).scalars().first():
+        raise HTTPException(status_code=400, detail="User already registered.")
+
+    otp_code = generate_otp_code()
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+
+    otp_record = OTPVerification(
+        email=req.email,
+        otp_code=otp_code,
+        is_verified=False,
+        expires_at=expires_at
+    )
+    db.add(otp_record)
+    await db.commit()
+
+    email_result = await send_verification_otp_email(req.email, otp_code)
+
+    return SignupInitiateResponse(
+        status="success",
+        message=f"A fresh verification code has been sent to {req.email}.",
+        email=req.email,
+        otp_debug=email_result.get("otp_debug")
+    )
+
+@router.post("/onboarding-complete", response_model=Token)
+async def onboarding_complete(req: OnboardingCompleteRequest, db: AsyncSession = Depends(get_db)):
+    """Step 3: Completes comprehensive onboarding with role, identity, phone, geography, and returns JWT."""
+    # Validate verification token
+    stmt = (
+        select(OTPVerification)
+        .where(
+            OTPVerification.email == req.email,
+            OTPVerification.verification_token == req.verification_token,
+            OTPVerification.is_verified == True
+        )
+    )
+    otp_record = (await db.execute(stmt)).scalars().first()
+    if not otp_record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired onboarding session. Please start sign up again."
+        )
+
+    # Strict Validation of required fields
+    if req.entity_type in ["agent", "individual"]:
+        if not req.first_name or not req.first_name.strip() or not req.last_name or not req.last_name.strip():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="First name and Last name are strictly required for individuals and agents."
+            )
+    elif req.entity_type in ["company", "developer"]:
+        if not req.company_name or not req.company_name.strip():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Company name is strictly required for corporate entities and property developers."
+            )
+
+    if not req.phone_number or not req.phone_number.strip():
+        raise HTTPException(status_code=422, detail="Authenticated phone number is required.")
+    if not req.country or not req.state or not req.city:
+        raise HTTPException(status_code=422, detail="Country, State/Province, and City are all required.")
+
+    # Determine account roles and active mode
+    roles = []
+    if req.user_type == "seller":
+        if req.entity_type == "developer":
+            roles = ["seller", "developer"]
+            active_mode = "developer"
+        elif req.entity_type == "agent":
+            roles = ["seller", "agent"]
+            active_mode = "agent"
+        else:
+            roles = ["seller", "company"]
+            active_mode = "seller"
+    else:
+        roles = ["buyer", "tenant", "renter"]
+        active_mode = "buyer"
+
+    first_name = req.first_name.strip() if req.first_name else ""
+    last_name = req.last_name.strip() if req.last_name else ""
+    if not first_name and req.company_name:
+        first_name = req.company_name.split(" ")[0]
+        last_name = " ".join(req.company_name.split(" ")[1:]) or "Corp"
+
+    # Create new verified User
+    new_user = User(
+        email=req.email,
+        hashed_password=otp_record.temp_hashed_password or get_password_hash("PropertyHub@2026"),
+        first_name=first_name,
+        last_name=last_name,
+        company_name=req.company_name.strip() if req.company_name else None,
+        phone_number=f"{req.country_code} {req.phone_number.strip()}",
+        country_code=req.country_code,
+        country=req.country,
+        state=req.state,
+        city=req.city,
+        user_type=req.user_type,
+        entity_type=req.entity_type,
+        asset_interests=req.asset_interests,
+        avatar_url=req.avatar_url,
+        logo_url=req.logo_url,
+        roles=roles,
+        active_mode=active_mode,
+        is_active=True,
+        is_email_verified=True,
+        verification_badge="Verified" if req.entity_type in ["developer", "agent"] else "Basic",
+    )
+    db.add(new_user)
+    await db.delete(otp_record)
+    await db.commit()
+    await db.refresh(new_user)
+
+    # Issue JWT tokens
+    access_token = create_access_token(
+        subject=new_user.id,
+        extra_claims={
+            "email": new_user.email,
+            "mode": new_user.active_mode,
+            "roles": new_user.roles,
+            "is_superuser": new_user.is_superuser
+        }
+    )
+    refresh_token = create_refresh_token(subject=new_user.id)
+
+    return Token(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        user=new_user
+    )
 
 @router.post("/register", response_model=ResponseModel[UserResponse], status_code=status.HTTP_201_CREATED)
 async def register(user_in: UserRegister, db: AsyncSession = Depends(get_db)):

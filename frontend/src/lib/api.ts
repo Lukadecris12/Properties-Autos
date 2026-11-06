@@ -163,6 +163,144 @@ class ApiClient {
     if (!res.ok) throw new Error('Failed to fetch agents and developers');
     return res.json();
   }
+
+  // --- Onboarding & OTP ---
+  async signupInitiate(email: string, password: string) {
+    const res = await fetch(`${API_BASE_URL}/auth/signup-initiate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Failed to initiate signup');
+    }
+    return res.json();
+  }
+
+  async signupVerifyOtp(email: string, otp_code: string) {
+    const res = await fetch(`${API_BASE_URL}/auth/signup-verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp_code }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Invalid verification code');
+    }
+    return res.json();
+  }
+
+  async resendOtp(email: string) {
+    const res = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Failed to resend code');
+    }
+    return res.json();
+  }
+
+  async onboardingComplete(data: any) {
+    const res = await fetch(`${API_BASE_URL}/auth/onboarding-complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Failed to complete onboarding');
+    }
+    return res.json();
+  }
+
+  // --- Property Investments ---
+  async getInvestments(category?: string, search?: string) {
+    const params = new URLSearchParams();
+    if (category && category !== 'ALL') params.append('category', category);
+    if (search) params.append('search', search);
+
+    const res = await fetch(`${API_BASE_URL}/investments/?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch investments');
+    return res.json();
+  }
+
+  async getInvestmentDetail(id: number) {
+    const res = await fetch(`${API_BASE_URL}/investments/${id}`);
+    if (!res.ok) throw new Error('Failed to fetch investment details');
+    return res.json();
+  }
+
+  async investInProperty(id: number, amount: number) {
+    const res = await fetch(`${API_BASE_URL}/investments/${id}/invest`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ amount }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Investment processing failed');
+    }
+    return res.json();
+  }
+
+  async getMyInvestments() {
+    const res = await fetch(`${API_BASE_URL}/investments/user/my-investments`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch active investments');
+    return res.json();
+  }
+
+  // --- Admin Console ---
+  async getAdminStats() {
+    const res = await fetch(`${API_BASE_URL}/admin/stats`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch admin stats. Ensure admin privileges.');
+    return res.json();
+  }
+
+  async getAdminUsers(role?: string, search?: string) {
+    const params = new URLSearchParams();
+    if (role && role !== 'ALL') params.append('role', role);
+    if (search) params.append('search', search);
+
+    const res = await fetch(`${API_BASE_URL}/admin/users?${params.toString()}`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch users');
+    return res.json();
+  }
+
+  async toggleUserVerify(userId: number) {
+    const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/toggle-verify`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to toggle user verification');
+    return res.json();
+  }
+
+  async toggleUserActive(userId: number) {
+    const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/toggle-active`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to toggle user active status');
+    return res.json();
+  }
+
+  async getAdminActivityLogs() {
+    const res = await fetch(`${API_BASE_URL}/admin/activity-logs`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch activity logs');
+    return res.json();
+  }
 }
 
 export const api = new ApiClient();

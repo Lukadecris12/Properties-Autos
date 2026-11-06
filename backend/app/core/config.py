@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     PAYSTACK_SECRET_KEY: str = ""
     FLUTTERWAVE_SECRET_KEY: str = ""
 
+    # Resend Email Service
+    RESEND_API_KEY: str = ""
+    RESEND_FROM_EMAIL: str = "PropertyHub <onboarding@resend.dev>"
+
     @property
     def cors_origins(self) -> List[str]:
         return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]

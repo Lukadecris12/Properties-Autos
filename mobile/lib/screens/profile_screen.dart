@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'investments_screen.dart';
+import 'admin_screen.dart';
+import 'onboarding_screen.dart';
+import 'welcome_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Function(int targetTab)? onNavigateTab;
@@ -203,6 +207,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 children: [
                   _buildMenuItem(
+                    icon: Icons.trending_up,
+                    iconColor: const Color(0xFFF59E0B),
+                    title: 'Property Co-Investments',
+                    subtitle: 'Earn 24% - 34% annual ROI with master developers',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const InvestmentsScreen()),
+                      );
+                    },
+                  ),
+                  _buildDivider(),
+                  _buildMenuItem(
+                    icon: Icons.admin_panel_settings,
+                    iconColor: Colors.redAccent,
+                    title: 'Admin Console & Moderation',
+                    subtitle: 'User approvals, platform metrics & audit stream',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AdminScreen()),
+                      );
+                    },
+                  ),
+                  _buildDivider(),
+                  _buildMenuItem(
                     icon: Icons.bookmark_border,
                     iconColor: const Color(0xFFF59E0B),
                     title: 'Saved Listings & Favorites',
@@ -284,11 +314,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Column(
                 children: [
+                  _buildMenuItem(
+                    icon: Icons.person_add_alt_1,
+                    iconColor: const Color(0xFF10B981),
+                    title: 'New Account Onboarding (OTP)',
+                    subtitle: 'Multi-role onboarding with 6-digit Resend OTP',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+                      );
+                    },
+                  ),
+                  _buildDivider(),
+                  _buildMenuItem(
+                    icon: Icons.explore,
+                    iconColor: const Color(0xFF60A5FA),
+                    title: 'Welcome Screen & Tour',
+                    subtitle: 'View luxury intro & onboarding walkthrough',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+                      );
+                    },
+                  ),
+                  _buildDivider(),
                   if (!_isLoggedIn)
                     _buildMenuItem(
                       icon: Icons.login,
                       iconColor: const Color(0xFF10B981),
-                      title: 'Sign In / Register',
+                      title: 'Sign In',
                       subtitle: 'Access full marketplace features',
                       onTap: _showSignInDialog,
                     )

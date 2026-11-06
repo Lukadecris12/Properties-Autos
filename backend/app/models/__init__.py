@@ -16,6 +16,8 @@ from app.models.user import User, VerificationDocument
 from app.models.listing import Listing, ListingAvailability
 from app.models.requirement import Requirement, AIMatch
 from app.models.booking import Booking, Inspection, Conversation, Message
+from app.models.otp import OTPVerification
+from app.models.investment import InvestmentProperty, UserInvestment
 
 __all__ = [
     "Base",
@@ -40,4 +42,7 @@ __all__ = [
     "Inspection",
     "Conversation",
     "Message",
+    "OTPVerification",
+    "InvestmentProperty",
+    "UserInvestment",
 ]

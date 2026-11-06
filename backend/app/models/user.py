@@ -16,14 +16,22 @@ class User(Base):
     
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
+    company_name = Column(String(200), nullable=True)
     avatar_url = Column(String(500), nullable=True)
+    logo_url = Column(String(500), nullable=True)
     bio = Column(Text, nullable=True)
     
     # Geography
+    country_code = Column(String(10), default="+234")
     country = Column(String(100), default="Nigeria")
     state = Column(String(100), nullable=True)
     city = Column(String(100), nullable=True)
     address = Column(String(255), nullable=True)
+    
+    # Onboarding Classifications
+    user_type = Column(String(50), default="buyer")  # "buyer" or "seller"
+    entity_type = Column(String(50), nullable=True)  # "agent", "company", "developer", "individual"
+    asset_interests = Column(JSON, default=lambda: ["residential", "land", "vehicle"])
     
     # Unified role support: list of allowed roles e.g. ["buyer", "landlord", "seller"]
     roles = Column(JSON, default=lambda: ["buyer", "tenant", "renter"])
@@ -32,6 +40,7 @@ class User(Base):
     # Status flags
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)
+    is_email_verified = Column(Boolean, default=False)
     is_identity_verified = Column(Boolean, default=False)
     is_business_verified = Column(Boolean, default=False)
     

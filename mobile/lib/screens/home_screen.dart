@@ -7,6 +7,7 @@ import 'requests_screen.dart';
 import 'post_listing_screen.dart';
 import 'agents_screen.dart';
 import 'profile_screen.dart';
+import 'investments_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -101,6 +102,16 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.trending_up, color: Color(0xFFF59E0B), size: 22),
+            tooltip: 'Property Investments',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const InvestmentsScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_none, color: Colors.grey, size: 22),
             onPressed: () {

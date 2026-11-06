@@ -17,6 +17,8 @@ import {
   Briefcase,
   LogIn,
   LogOut,
+  TrendingUp,
+  ShieldCheck,
   User as UserIcon
 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -220,8 +222,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           </nav>
 
-          {/* Directory Links: Property Agents & Developers */}
-          <div className="hidden xl:flex items-center gap-4 text-xs font-medium text-gray-300">
+          {/* Directory Links: Property Investments, Agents & Developers, Admin */}
+          <div className="hidden xl:flex items-center gap-2 text-xs font-medium text-gray-300">
+            <Link 
+              href="/investments" 
+              className="flex items-center gap-1.5 text-gold-400 hover:text-gold-300 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
+            >
+              <TrendingUp className="w-4 h-4 text-gold-400" />
+              <span>Investments</span>
+            </Link>
             <Link 
               href="/agents" 
               className="flex items-center gap-1.5 hover:text-brand-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
@@ -229,6 +238,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               <UserCheck className="w-4 h-4 text-emerald-400" />
               <span>Agents & Developers</span>
             </Link>
+            {currentUser?.is_superuser && (
+              <Link 
+                href="/admin" 
+                className="flex items-center gap-1.5 text-red-400 hover:text-red-300 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
+              >
+                <ShieldCheck className="w-4 h-4 text-red-400" />
+                <span>Admin</span>
+              </Link>
+            )}
           </div>
 
           {/* Quick Actions & Auth */}
@@ -351,6 +369,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Directory Links on Mobile */}
           <div className="border-t border-gray-800 pt-3 space-y-2">
+            <Link
+              href="/investments"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 p-2.5 rounded-xl bg-gray-900 text-xs font-medium text-gold-400 border border-gray-800"
+            >
+              <TrendingUp className="w-4 h-4 text-gold-400" />
+              <span>Property Investments (Co-Investment)</span>
+            </Link>
             <Link
               href="/agents"
               onClick={() => setMobileMenuOpen(false)}
