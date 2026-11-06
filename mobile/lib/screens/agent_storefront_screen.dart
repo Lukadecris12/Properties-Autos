@@ -547,7 +547,7 @@ class _AgentStorefrontScreenState extends State<AgentStorefrontScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => ListingDetailScreen(item: item)),
+          MaterialPageRoute(builder: (_) => ListingDetailScreen(listing: item)),
         );
       },
       child: Container(
