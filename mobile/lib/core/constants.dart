@@ -11,6 +11,7 @@ class ApiConstants {
   static String get authEndpoint => '$baseUrl/auth';
   static String get investmentsEndpoint => '$baseUrl/investments';
   static String get adminEndpoint => '$baseUrl/admin';
+  static String get messagesEndpoint => '$baseUrl/messages';
   static String get signupInitiateEndpoint => '$authEndpoint/signup-initiate';
   static String get signupVerifyOtpEndpoint => '$authEndpoint/signup-verify-otp';
   static String get onboardingCompleteEndpoint => '$authEndpoint/onboarding-complete';

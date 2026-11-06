@@ -301,6 +301,36 @@ class ApiClient {
     if (!res.ok) throw new Error('Failed to fetch activity logs');
     return res.json();
   }
+
+  // --- Direct In-App Messaging ---
+  async sendMessage(data: { conversation_id?: number; recipient_id?: number; listing_id?: number; content: string }) {
+    const res = await fetch(`${API_BASE_URL}/messages/send`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Failed to send message');
+    }
+    return res.json();
+  }
+
+  async getMyConversations() {
+    const res = await fetch(`${API_BASE_URL}/messages/conversations`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch conversations');
+    return res.json();
+  }
+
+  async getConversationMessages(conversationId: number) {
+    const res = await fetch(`${API_BASE_URL}/messages/conversations/${conversationId}/messages`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch messages');
+    return res.json();
+  }
 }
 
 export const api = new ApiClient();

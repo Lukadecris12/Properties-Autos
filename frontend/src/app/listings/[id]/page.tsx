@@ -24,7 +24,12 @@ import {
   Send,
   Building2,
   FileCheck,
-  UserCheck
+  UserCheck,
+  MessageCircle,
+  Phone,
+  PhoneCall,
+  ExternalLink,
+  MessageSquare
 } from 'lucide-react';
 
 import { Navbar } from '@/components/Navbar';
@@ -197,6 +202,15 @@ export default function ListingDetailPage() {
   const images = listing.images && listing.images.length > 0 
     ? listing.images.map(img => img.url)
     : ['https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200'];
+
+  const displayPhone = listing.owner?.phone_number || '+234 803 123 4567';
+  const cleanPhone = displayPhone.replace(/[^0-9]/g, '');
+  const waPhone = cleanPhone.startsWith('0') ? `234${cleanPhone.slice(1)}` : (cleanPhone || '2348031234567');
+  const waMessage = encodeURIComponent(
+    `Hello! I saw your listing on PropertyHub:\n*${listing.title}*\n(Ref: #${listing.id}, ${listing.currency} ${Number(listing.price).toLocaleString()})\nI am interested in this listing. Can we arrange an inspection or discuss terms?`
+  );
+  const waUrl = `https://wa.me/${waPhone}?text=${waMessage}`;
+  const telUrl = `tel:${displayPhone.replace(/\s+/g, '')}`;
 
   return (
     <div className="min-h-screen bg-[#0b0f19] text-gray-100 flex flex-col">
@@ -467,24 +481,58 @@ export default function ListingDetailPage() {
           {/* Right Column: Host Profile, Booking & Inspection Action Forms */}
           <div className="lg:col-span-4 space-y-6">
             
-            {/* Host / Owner Verification Card */}
-            <div className="glass-panel p-6 rounded-3xl border border-gray-800 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-600 to-emerald-800 flex items-center justify-center text-white font-bold text-base shadow-md">
-                  <UserCheck className="w-6 h-6" />
+            {/* Host / Owner Verification Card with Direct Actions */}
+            <div className="glass-panel p-6 rounded-3xl border border-gray-800 space-y-4 shadow-xl">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-600 to-emerald-800 flex items-center justify-center text-white font-bold text-base shadow-md shrink-0 overflow-hidden">
+                  {listing.owner?.avatar_url || listing.owner?.logo_url ? (
+                    <img src={listing.owner.avatar_url || listing.owner.logo_url} alt="Publisher" className="w-full h-full object-cover" />
+                  ) : (
+                    <UserCheck className="w-6 h-6" />
+                  )}
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">Verified Publisher</h3>
-                  <div className="flex items-center gap-1 text-[11px] text-brand-400 font-semibold">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Identity & Documents Reviewed</span>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-white truncate">
+                    {listing.owner?.company_name || `${listing.owner?.first_name || ''} ${listing.owner?.last_name || ''}`.trim() || 'Verified Property Partner'}
+                  </h3>
+                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-semibold mt-0.5">
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                    <span>{listing.owner?.verification_badge || 'Verified Partner'}</span>
+                    <span className="text-gray-500">•</span>
+                    <span className="text-gray-400 capitalize">{listing.owner?.active_mode || 'Agent'}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-gray-950 border border-gray-800/80 text-[11px] text-gray-400 space-y-1">
-                <div>Account status: <span className="text-emerald-400 font-medium">Verified Partner</span></div>
-                <div>Avg Response: <span className="text-white">Under 15 minutes</span></div>
+              {/* Direct Instant Action Buttons */}
+              <div className="space-y-2 pt-1">
+                {/* 1. Chat on WhatsApp */}
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 px-4 rounded-2xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-bold shadow-lg shadow-[#25D366]/25 transition-all flex items-center justify-center gap-2 hover:scale-[1.01]"
+                >
+                  <MessageCircle className="w-4 h-4 text-white fill-white" />
+                  <span>Chat on WhatsApp</span>
+                </a>
+
+                {/* 2. Call Direct */}
+                <a
+                  href={telUrl}
+                  className="w-full py-2.5 px-4 rounded-2xl bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-200 hover:text-white text-xs font-semibold transition-all flex items-center justify-center gap-2"
+                >
+                  <PhoneCall className="w-3.5 h-3.5 text-brand-400" />
+                  <span>Call Agent ({displayPhone})</span>
+                </a>
+              </div>
+
+              <div className="p-3 rounded-xl bg-gray-950/80 border border-gray-800/80 text-[11px] text-gray-400 flex items-center justify-between">
+                <div>Avg Response: <span className="text-white font-medium">Under 15 mins</span></div>
+                <div className="flex items-center gap-1 text-emerald-400 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Active Online
+                </div>
               </div>
             </div>
 
@@ -602,31 +650,45 @@ export default function ListingDetailPage() {
               )}
             </div>
 
-            {/* Direct Instant Message Form */}
+            {/* Direct In-App Instant Message Form */}
             <div className="glass-panel p-6 rounded-3xl border border-gray-800 space-y-3">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Send className="w-4 h-4 text-brand-400" />
-                Contact Owner / Agent
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-brand-400" />
+                  Direct In-App Message
+                </h3>
+                <Link href="/messages" className="text-[11px] text-brand-400 hover:underline flex items-center gap-1 font-medium">
+                  View Inbox &rarr;
+                </Link>
+              </div>
 
               {inquirySuccess ? (
-                <div className="p-3 rounded-xl bg-brand-950/60 border border-brand-500/40 text-brand-300 text-xs">
-                  Message delivered to owner conversation thread!
+                <div className="p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs space-y-2">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    Message delivered to agent inbox!
+                  </div>
+                  <Link 
+                    href="/messages" 
+                    className="inline-flex items-center gap-1 text-[11px] text-emerald-200 underline font-semibold mt-1"
+                  >
+                    Open conversation in Messages &rarr;
+                  </Link>
                 </div>
               ) : (
-                <form onSubmit={handleInquirySubmit} className="space-y-2">
+                <form onSubmit={handleInquirySubmit} className="space-y-2.5">
                   <textarea
                     rows={3}
                     required
                     value={inquiryText}
                     onChange={(e) => setInquiryText(e.target.value)}
-                    placeholder="Hello, I am interested in this listing. Is it available for discussion?"
-                    className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs focus:outline-none focus:border-brand-500"
+                    placeholder="Hello, I am interested in this listing. Can we arrange an inspection or discuss terms?"
+                    className="w-full px-3 py-2.5 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs focus:outline-none focus:border-brand-500"
                   />
                   <button
                     type="submit"
                     disabled={inquirySubmitting}
-                    className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 disabled:opacity-50 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md shadow-brand-500/20"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>{inquirySubmitting ? 'Sending...' : 'Send Direct Message'}</span>

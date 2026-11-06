@@ -79,6 +79,21 @@ class ListingUpdate(BaseModel):
     videos: Optional[List[str]] = None
     available_from: Optional[datetime] = None
 
+class OwnerContact(BaseModel):
+    id: int
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    company_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    country_code: Optional[str] = "+234"
+    avatar_url: Optional[str] = None
+    logo_url: Optional[str] = None
+    verification_badge: Optional[str] = "Verified"
+    active_mode: Optional[str] = "agent"
+
+    class Config:
+        from_attributes = True
+
 class ListingResponse(ListingBase):
     id: int
     user_id: int
@@ -90,6 +105,7 @@ class ListingResponse(ListingBase):
     created_at: datetime
     updated_at: datetime
     published_at: Optional[datetime]
+    owner: Optional[OwnerContact] = None
 
     class Config:
         from_attributes = True

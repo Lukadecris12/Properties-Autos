@@ -3,6 +3,7 @@ import 'investments_screen.dart';
 import 'admin_screen.dart';
 import 'onboarding_screen.dart';
 import 'welcome_screen.dart';
+import 'messages_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Function(int targetTab)? onNavigateTab;
@@ -228,6 +229,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const AdminScreen()),
+                      );
+                    },
+                  ),
+                  _buildDivider(),
+                  _buildMenuItem(
+                    icon: Icons.forum_outlined,
+                    iconColor: const Color(0xFF10B981),
+                    title: 'Direct Messages Inbox',
+                    subtitle: 'Chat with property agents & developers',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const MessagesScreen()),
                       );
                     },
                   ),

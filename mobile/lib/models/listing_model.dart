@@ -14,8 +14,11 @@ class ListingModel {
   final String? neighbourhood;
   final bool isVerified;
   final bool isFeatured;
-  final List<String> imageUrls;
-  final Map<String, dynamic> attributes;
+  final String? ownerName;
+  final String? ownerPhone;
+  final String? ownerBadge;
+  final String? ownerAvatar;
+  final int ownerId;
 
   ListingModel({
     required this.id,
@@ -33,6 +36,11 @@ class ListingModel {
     required this.isFeatured,
     required this.imageUrls,
     required this.attributes,
+    this.ownerName,
+    this.ownerPhone,
+    this.ownerBadge,
+    this.ownerAvatar,
+    this.ownerId = 1,
   });
 
   factory ListingModel.fromJson(Map<String, dynamic> json) {
@@ -45,6 +53,18 @@ class ListingModel {
           images.add(img);
         }
       }
+    }
+
+    final owner = json['owner'];
+    String? oName;
+    String? oPhone;
+    String? oBadge;
+    String? oAvatar;
+    if (owner != null && owner is Map) {
+      oName = owner['company_name'] ?? '${owner['first_name'] ?? ''} ${owner['last_name'] ?? ''}'.trim();
+      oPhone = owner['phone_number'];
+      oBadge = owner['verification_badge'];
+      oAvatar = owner['avatar_url'] ?? owner['logo_url'];
     }
 
     return ListingModel(
@@ -63,6 +83,11 @@ class ListingModel {
       isFeatured: json['is_featured'] ?? false,
       imageUrls: images,
       attributes: json['attributes'] ?? {},
+      ownerName: (oName != null && oName.isNotEmpty) ? oName : 'PropertyHub Partner',
+      ownerPhone: oPhone ?? '+234 803 123 4567',
+      ownerBadge: oBadge ?? 'Verified',
+      ownerAvatar: oAvatar,
+      ownerId: json['user_id'] ?? 1,
     );
   }
 

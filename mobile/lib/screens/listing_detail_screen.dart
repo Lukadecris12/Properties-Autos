@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/listing_model.dart';
 import '../services/api_service.dart';
 
@@ -15,6 +16,94 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   final ApiService _apiService = ApiService();
   int _activeImageIndex = 0;
   bool _isBooking = false;
+
+  void _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _openWhatsApp(ListingModel item) {
+    final phone = item.ownerPhone ?? '+234 803 123 4567';
+    final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    final waPhone = cleanPhone.startsWith('0') ? '234${cleanPhone.substring(1)}' : (cleanPhone.isNotEmpty ? cleanPhone : '2348031234567');
+    final message = Uri.encodeComponent(
+      'Hello! I saw your listing on PropertyHub: "${item.title}" (Ref: #${item.id}, ${item.formattedPrice}). I would like to inquire about its inspection and details.',
+    );
+    _launchUrl('https://wa.me/$waPhone?text=$message');
+  }
+
+  void _callAgent(ListingModel item) {
+    final phone = item.ownerPhone ?? '+2348031234567';
+    final cleanPhone = phone.replaceAll(RegExp(r'[^0-9+]'), '');
+    _launchUrl('tel:$cleanPhone');
+  }
+
+  void _showInAppInquiryDialog(BuildContext context, ListingModel item) {
+    final controller = TextEditingController(
+      text: 'Hello, I am interested in "${item.title}". Can we arrange a viewing or discuss availability?',
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF111827),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Send In-App Inquiry', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('To: ${item.ownerName ?? "Verified Agent"}', style: const TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 10),
+            TextField(
+              controller: controller,
+              maxLines: 4,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFF0B0F19),
+                hintText: 'Type your message...',
+                hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF059669),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              Navigator.pop(ctx);
+              await _apiService.sendMessage({
+                'listing_id': item.id,
+                'recipient_id': item.ownerId,
+                'content': text,
+              });
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    backgroundColor: Color(0xFF064E3B),
+                    content: Text('Inquiry delivered to agent inbox!'),
+                  ),
+                );
+              }
+            },
+            child: const Text('Send Message', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -268,6 +357,120 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                   ),
                   const SizedBox(height: 24),
 
+                  // Verified Publisher & Direct Contact Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF111827),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF1F2937)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundColor: const Color(0xFF064E3B),
+                              child: Text(
+                                (item.ownerName != null && item.ownerName!.isNotEmpty)
+                                    ? item.ownerName![0].toUpperCase()
+                                    : 'A',
+                                style: const TextStyle(color: Color(0xFF34D399), fontWeight: FontWeight.bold, fontSize: 15),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.ownerName ?? 'Verified Property Partner',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF064E3B),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          item.ownerBadge?.toUpperCase() ?? 'VERIFIED',
+                                          style: const TextStyle(color: Color(0xFF34D399), fontSize: 9, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      const Text('• Fast Response', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // WhatsApp Action Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 44,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF25D366),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.chat, color: Colors.white, size: 18),
+                            label: const Text('Chat on WhatsApp', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            onPressed: () => _openWhatsApp(item),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        Row(
+                          children: [
+                            // Call Agent Button
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  side: const BorderSide(color: Color(0xFF374151)),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                icon: const Icon(Icons.call, color: Color(0xFF10B981), size: 16),
+                                label: const Text('Call Agent', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                                onPressed: () => _callAgent(item),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+
+                            // In-App Message Button
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  side: const BorderSide(color: Color(0xFF374151)),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                icon: const Icon(Icons.mail_outline, color: Color(0xFF60A5FA), size: 16),
+                                label: const Text('In-App Inquiry', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                                onPressed: () => _showInAppInquiryDialog(context, item),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
                   // Security & Verification Notice
                   Container(
                     padding: const EdgeInsets.all(14),
@@ -283,7 +486,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                         SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'PropertyHub Escrow & Safety: Never wire money outside the PropertyHub verified transaction flow. All inspections are scheduled with verified agents.',
+                            'PropertyHub Escrow & Safety: Never wire money outside verified transaction terms. All inspections are scheduled with verified partners.',
                             style: TextStyle(color: Color(0xFF93C5FD), fontSize: 11, height: 1.4),
                           ),
                         ),
@@ -298,7 +501,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
         ],
       ),
 
-      // 3. Sticky Bottom Action Bar
+      // 3. Sticky Bottom Action Bar with Quick WhatsApp
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: const BoxDecoration(
@@ -307,6 +510,20 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
         ),
         child: Row(
           children: [
+            // Quick WhatsApp Icon Button
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF25D366),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.chat, color: Colors.white, size: 20),
+                tooltip: 'WhatsApp Agent',
+                onPressed: () => _openWhatsApp(item),
+              ),
+            ),
+            const SizedBox(width: 8),
+
             // Inspection Booking Button
             Expanded(
               child: OutlinedButton.icon(
@@ -316,12 +533,12 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                icon: const Icon(Icons.calendar_month, size: 18),
-                label: const Text('Schedule Inspection', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                icon: const Icon(Icons.calendar_month, size: 16),
+                label: const Text('Inspection', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 onPressed: () => _showInspectionDialog(context),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
 
             // Book / Reserve or Inquire Button
             Expanded(
@@ -331,9 +548,9 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                icon: const Icon(Icons.flash_on, color: Colors.white, size: 18),
+                icon: const Icon(Icons.flash_on, color: Colors.white, size: 16),
                 label: Text(
-                  item.transactionType == 'RENT' ? 'Reserve Now' : 'Make Offer',
+                  item.transactionType == 'RENT' ? 'Reserve' : 'Make Offer',
                   style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                 ),
                 onPressed: () => _showBookingDialog(context),

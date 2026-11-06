@@ -97,7 +97,12 @@ async def get_my_conversations(
                 Conversation.participant_2_id == current_user.id
             )
         )
-        .options(selectinload(Conversation.messages))
+        .options(
+            selectinload(Conversation.messages),
+            selectinload(Conversation.participant_1),
+            selectinload(Conversation.participant_2),
+            selectinload(Conversation.listing),
+        )
         .order_by(desc(Conversation.last_message_at))
     )
     res = await db.execute(stmt)

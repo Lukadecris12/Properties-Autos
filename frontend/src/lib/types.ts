@@ -22,6 +22,19 @@ export interface User {
   verification_badge: string;
 }
 
+export interface OwnerContact {
+  id: number;
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
+  phone_number?: string;
+  country_code?: string;
+  avatar_url?: string;
+  logo_url?: string;
+  verification_badge?: string;
+  active_mode?: string;
+}
+
 export interface Listing {
   id: number;
   user_id: number;
@@ -53,6 +66,38 @@ export interface Listing {
   is_verified_asset: boolean;
   view_count: number;
   published_at?: string;
+  owner?: OwnerContact;
+}
+
+export interface ChatMessage {
+  id: number;
+  conversation_id: number;
+  sender_id: number;
+  content: string;
+  attachment_url?: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface Conversation {
+  id: number;
+  listing_id?: number;
+  participant_1_id: number;
+  participant_2_id: number;
+  subject?: string;
+  last_message_at: string;
+  created_at: string;
+  messages: ChatMessage[];
+  participant_1?: OwnerContact;
+  participant_2?: OwnerContact;
+  listing?: {
+    id: number;
+    title: string;
+    price?: number;
+    currency?: string;
+    city?: string;
+    images?: Array<{ url: string }>;
+  };
 }
 
 export interface Requirement {

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_optional_current_user
@@ -116,7 +117,7 @@ async def list_listings(
     if user_id is not None:
         query = query.where(Listing.user_id == user_id)
 
-    query = query.order_by(desc(Listing.is_featured), desc(Listing.created_at))
+    query = query.options(selectinload(Listing.owner)).order_by(desc(Listing.is_featured), desc(Listing.created_at))
 
     result = await db.execute(query)
     all_items = result.scalars().all()
@@ -139,7 +140,7 @@ async def get_my_listings(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    stmt = select(Listing).where(Listing.user_id == current_user.id).order_by(desc(Listing.created_at))
+    stmt = select(Listing).where(Listing.user_id == current_user.id).options(selectinload(Listing.owner)).order_by(desc(Listing.created_at))
     res = await db.execute(stmt)
     return ResponseModel(data=res.scalars().all())
 
@@ -148,7 +149,7 @@ async def get_listing(
     listing_id: int,
     db: AsyncSession = Depends(get_db)
 ):
-    stmt = select(Listing).where(Listing.id == listing_id)
+    stmt = select(Listing).where(Listing.id == listing_id).options(selectinload(Listing.owner))
     res = await db.execute(stmt)
     listing = res.scalars().first()
     if not listing:
