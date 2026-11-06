@@ -3,6 +3,10 @@ import '../services/api_service.dart';
 import '../models/listing_model.dart';
 import 'listing_detail_screen.dart';
 import 'ai_chat_screen.dart';
+import 'requests_screen.dart';
+import 'post_listing_screen.dart';
+import 'agents_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -12,10 +16,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int _currentTabIndex = 0;
+
+  // State for Explore Tab
   final ApiService _apiService = ApiService();
   String _selectedTransaction = 'SALE'; // SALE (BUY) or RENT
   String _selectedCategory = 'RESIDENTIAL'; // RESIDENTIAL (Houses), LAND, VEHICLE (Autos)
-  
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   late Future<List<ListingModel>> _listingsFuture;
@@ -35,10 +41,34 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _onTabSelected(int index) {
+    setState(() {
+      _currentTabIndex = index;
+    });
+  }
+
+  String _getAppBarTitle() {
+    switch (_currentTabIndex) {
+      case 1:
+        return 'Requests';
+      case 2:
+        return 'Publish Listing';
+      case 3:
+        return 'Chat AI Advisor';
+      case 4:
+        return 'Agents & Developers';
+      case 5:
+        return 'My Account';
+      default:
+        return 'PropertyHub';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
+      // Clean, professional native mobile AppBar (No web-like buttons at the top)
       appBar: AppBar(
         backgroundColor: const Color(0xFF111827),
         elevation: 0,
@@ -53,202 +83,349 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const Icon(Icons.apartment, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 8),
-            RichText(
-              text: const TextSpan(
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                children: [
-                  TextSpan(text: 'Property'),
-                  TextSpan(text: 'Hub', style: TextStyle(color: Color(0xFF10B981))),
-                ],
+            if (_currentTabIndex == 0)
+              RichText(
+                text: const TextSpan(
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                  children: [
+                    TextSpan(text: 'Property'),
+                    TextSpan(text: 'Hub', style: TextStyle(color: Color(0xFF10B981))),
+                  ],
+                ),
+              )
+            else
+              Text(
+                _getAppBarTitle(),
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
               ),
-            ),
           ],
         ),
         actions: [
-          // Chat AI button (renamed from AI Concierge and navigates to interactive Chat AI screen)
-          TextButton.icon(
-            style: TextButton.styleFrom(
-              backgroundColor: const Color(0xFF064E3B),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            icon: const Icon(Icons.auto_awesome, color: Color(0xFF10B981), size: 16),
-            label: const Text(
-              'Chat AI',
-              style: TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.bold),
-            ),
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Colors.grey, size: 22),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AIChatScreen()),
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('No new notifications. All systems operational.')),
               );
             },
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
         ],
       ),
-      body: Column(
+
+      // 6 Native Mobile Screens indexed by Bottom Navigation
+      body: IndexedStack(
+        index: _currentTabIndex,
         children: [
-          // 1. In-App Mobile Search Bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: const Color(0xFF111827),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0B0F19),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF374151)),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.search, color: Colors.grey, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            style: const TextStyle(color: Colors.white, fontSize: 13),
-                            decoration: const InputDecoration(
-                              hintText: 'Search city, location, or keyword...',
-                              hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
-                              border: InputBorder.none,
-                              isDense: true,
-                            ),
-                            onChanged: (val) {
-                              setState(() {
-                                _searchQuery = val.trim().toLowerCase();
-                              });
-                            },
+          _buildExploreTab(),
+          const RequestsScreen(),
+          const PostListingScreen(),
+          const AIChatScreen(showAppBar: false),
+          AgentsScreen(
+            onSelectAgentPortfolio: (agentName) {
+              setState(() {
+                _searchQuery = agentName.toLowerCase();
+                _currentTabIndex = 0;
+              });
+            },
+          ),
+          ProfileScreen(
+            onNavigateTab: (targetTab) {
+              setState(() => _currentTabIndex = targetTab);
+            },
+          ),
+        ],
+      ),
+
+      // Smart, Professional Bottom Navigation Bar with 6 Icons
+      bottomNavigationBar: _buildLuxuryBottomNav(),
+    );
+  }
+
+  // --- TAB 0: EXPLORE MARKETPLACE FEED ---
+  Widget _buildExploreTab() {
+    return Column(
+      children: [
+        // 1. Mobile Search Bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          color: const Color(0xFF111827),
+          child: Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0B0F19),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF374151)),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search, color: Colors.grey, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          decoration: const InputDecoration(
+                            hintText: 'Search city, location, or keyword...',
+                            hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
+                            border: InputBorder.none,
+                            isDense: true,
                           ),
+                          onChanged: (val) {
+                            setState(() {
+                              _searchQuery = val.trim().toLowerCase();
+                            });
+                          },
                         ),
-                        if (_searchQuery.isNotEmpty)
-                          GestureDetector(
-                            onTap: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                              });
-                            },
-                            child: const Icon(Icons.close, color: Colors.grey, size: 16),
-                          ),
-                      ],
-                    ),
+                      ),
+                      if (_searchQuery.isNotEmpty)
+                        GestureDetector(
+                          onTap: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                            });
+                          },
+                          child: const Icon(Icons.close, color: Colors.grey, size: 16),
+                        ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
 
-          // 2. Transaction Type Selector (BUY | RENT) - Lease removed
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            color: const Color(0xFF111827),
-            child: Row(
-              children: [
-                _buildTxTab('SALE', 'BUY'),
-                const SizedBox(width: 12),
-                _buildTxTab('RENT', 'RENT'),
-              ],
-            ),
+        // 2. Transaction Selector (BUY | RENT) - Lease removed
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          color: const Color(0xFF111827),
+          child: Row(
+            children: [
+              _buildTxTab('SALE', 'BUY'),
+              const SizedBox(width: 12),
+              _buildTxTab('RENT', 'RENT'),
+            ],
           ),
+        ),
 
-          // 3. Category Selector (Houses | Land | Autos) - Commercial removed
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                _buildCategoryChip('RESIDENTIAL', 'Houses & Apartments', Icons.home),
-                const SizedBox(width: 8),
-                _buildCategoryChip('LAND', 'Land', Icons.landscape),
-                const SizedBox(width: 8),
-                _buildCategoryChip('VEHICLE', 'Autos & Vehicles', Icons.directions_car),
-              ],
-            ),
+        // 3. Category Selector (Houses | Land | Autos) - Commercial removed
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              _buildCategoryChip('RESIDENTIAL', 'Houses & Apartments', Icons.home),
+              const SizedBox(width: 8),
+              _buildCategoryChip('LAND', 'Land', Icons.landscape),
+              const SizedBox(width: 8),
+              _buildCategoryChip('VEHICLE', 'Autos & Vehicles', Icons.directions_car),
+            ],
           ),
+        ),
 
-          // 4. Listings Feed with live search filter
-          Expanded(
-            child: FutureBuilder<List<ListingModel>>(
-              future: _listingsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)));
-                } else if (snapshot.hasError) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        'Error connecting to marketplace API: ${snapshot.error}',
-                        style: const TextStyle(color: Colors.redAccent, fontSize: 13),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  );
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(
+        // 4. Live Marketplace Listings Feed
+        Expanded(
+          child: FutureBuilder<List<ListingModel>>(
+            future: _listingsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)));
+              } else if (snapshot.hasError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
                     child: Text(
-                      'No ${_selectedTransaction == 'SALE' ? 'BUY' : 'RENT'} listings found in this category.',
-                      style: const TextStyle(color: Colors.grey),
+                      'Error connecting to marketplace API: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+                      textAlign: TextAlign.center,
                     ),
-                  );
-                }
-
-                var listings = snapshot.data!;
-                if (_searchQuery.isNotEmpty) {
-                  listings = listings.where((item) {
-                    final title = item.title.toLowerCase();
-                    final desc = item.description.toLowerCase();
-                    final city = item.city.toLowerCase();
-                    final state = item.state.toLowerCase();
-                    final neighbourhood = (item.neighbourhood ?? '').toLowerCase();
-                    return title.contains(_searchQuery) ||
-                        desc.contains(_searchQuery) ||
-                        city.contains(_searchQuery) ||
-                        state.contains(_searchQuery) ||
-                        neighbourhood.contains(_searchQuery);
-                  }).toList();
-                }
-
-                if (listings.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'No listings match "$_searchQuery".',
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: listings.length,
-                  itemBuilder: (context, index) {
-                    final item = listings[index];
-                    return _buildListingCard(item);
-                  },
+                  ),
                 );
-              },
-            ),
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No ${_selectedTransaction == 'SALE' ? 'BUY' : 'RENT'} listings found in this category.',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                );
+              }
+
+              var listings = snapshot.data!;
+              if (_searchQuery.isNotEmpty) {
+                listings = listings.where((item) {
+                  final title = item.title.toLowerCase();
+                  final desc = item.description.toLowerCase();
+                  final city = item.city.toLowerCase();
+                  final state = item.state.toLowerCase();
+                  final neighbourhood = (item.neighbourhood ?? '').toLowerCase();
+                  return title.contains(_searchQuery) ||
+                      desc.contains(_searchQuery) ||
+                      city.contains(_searchQuery) ||
+                      state.contains(_searchQuery) ||
+                      neighbourhood.contains(_searchQuery);
+                }).toList();
+              }
+
+              if (listings.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No listings match "$_searchQuery".',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: listings.length,
+                itemBuilder: (context, index) {
+                  final item = listings[index];
+                  return _buildListingCard(item);
+                },
+              );
+            },
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  // --- 6-ITEM NATIVE MOBILE BOTTOM NAVIGATION BAR ---
+  Widget _buildLuxuryBottomNav() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF111827),
+        border: Border(top: BorderSide(color: Color(0xFF1F2937), width: 1)),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF059669),
-        icon: const Icon(Icons.post_add, color: Colors.white),
-        label: const Text('Post a Request', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Request publishing connects to /api/v1/requirements')),
-          );
-        },
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: SafeArea(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavTabItem(
+              index: 0,
+              icon: Icons.explore_outlined,
+              activeIcon: Icons.explore,
+              label: 'Explore',
+            ),
+            _buildNavTabItem(
+              index: 1,
+              icon: Icons.assignment_outlined,
+              activeIcon: Icons.assignment,
+              label: 'Requests',
+            ),
+            _buildNavTabItem(
+              index: 2,
+              icon: Icons.add_circle_outline,
+              activeIcon: Icons.add_circle,
+              label: 'Post',
+              isAccent: true,
+            ),
+            _buildNavTabItem(
+              index: 3,
+              icon: Icons.auto_awesome_outlined,
+              activeIcon: Icons.auto_awesome,
+              label: 'Chat AI',
+              isGold: true,
+            ),
+            _buildNavTabItem(
+              index: 4,
+              icon: Icons.verified_user_outlined,
+              activeIcon: Icons.verified_user,
+              label: 'Agents',
+            ),
+            _buildNavTabItem(
+              index: 5,
+              icon: Icons.person_outline,
+              activeIcon: Icons.person,
+              label: 'Profile',
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  Widget _buildNavTabItem({
+    required int index,
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    bool isAccent = false,
+    bool isGold = false,
+  }) {
+    final isSelected = _currentTabIndex == index;
+    final Color activeColor = isGold 
+        ? const Color(0xFFF59E0B) 
+        : const Color(0xFF10B981);
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => _onTabSelected(index),
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isAccent) ...[
+              // Special center Post button
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF059669) : const Color(0xFF1E293B),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFF10B981) : const Color(0xFF374151),
+                    width: 1.5,
+                  ),
+                ),
+                child: Icon(
+                  isSelected ? activeIcon : icon,
+                  color: isSelected ? Colors.white : const Color(0xFF10B981),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(height: 2),
+            ] else ...[
+              Icon(
+                isSelected ? activeIcon : icon,
+                color: isSelected ? activeColor : const Color(0xFF9CA3AF),
+                size: 20,
+              ),
+              const SizedBox(height: 3),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? activeColor : const Color(0xFF9CA3AF),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            // Subtle glowing active indicator dot
+            Container(
+              width: 4,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isSelected ? activeColor : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- SUB-WIDGETS & CARDS ---
   Widget _buildTxTab(String tx, String label) {
     final isSelected = _selectedTransaction == tx;
     return Expanded(

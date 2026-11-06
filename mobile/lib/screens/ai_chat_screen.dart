@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
 class AIChatScreen extends StatefulWidget {
-  const AIChatScreen({Key? key}) : super(key: key);
+  final bool showAppBar;
+  const AIChatScreen({Key? key, this.showAppBar = true}) : super(key: key);
 
   @override
   State<AIChatScreen> createState() => _AIChatScreenState();
@@ -82,30 +83,32 @@ class _AIChatScreenState extends State<AIChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF111827),
-        elevation: 0,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF059669),
-                borderRadius: BorderRadius.circular(8),
+      appBar: widget.showAppBar
+          ? AppBar(
+              backgroundColor: const Color(0xFF111827),
+              elevation: 0,
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF059669),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+                  ),
+                  const SizedBox(width: 8),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Chat AI', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      Text('Marketplace Intelligence', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                    ],
+                  ),
+                ],
               ),
-              child: const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
-            ),
-            const SizedBox(width: 8),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Chat AI', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text('Marketplace Intelligence', style: TextStyle(fontSize: 10, color: Colors.grey)),
-              ],
-            ),
-          ],
-        ),
-      ),
+            )
+          : null,
       body: Column(
         children: [
           // Quick suggestion chips
