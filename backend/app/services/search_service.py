@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import or_, and_, desc
 
+from sqlalchemy.orm import selectinload
+
 from app.models.listing import Listing
 from app.models.enums import TransactionType, AssetCategory, ListingStatus, RentalPeriod
 
@@ -106,7 +108,7 @@ class SearchService:
         page: int = 1,
         page_size: int = 20
     ) -> Tuple[List[Listing], int]:
-        query = select(Listing).where(Listing.status == ListingStatus.PUBLISHED)
+        query = select(Listing).options(selectinload(Listing.owner)).where(Listing.status == ListingStatus.PUBLISHED)
 
         if transaction_type:
             query = query.where(Listing.transaction_type == transaction_type)
