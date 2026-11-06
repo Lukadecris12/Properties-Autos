@@ -106,7 +106,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.between,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
                           'Post a Request',
@@ -250,7 +250,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                           if (titleController.text.trim().isEmpty) return;
                           final budget = double.tryParse(budgetController.text.trim()) ?? 10000000;
                           
-                          await _apiService.submitRequirement(
+                          await _apiService.postRequirement(
                             title: titleController.text.trim(),
                             transactionType: txType == 'BUY' ? 'SALE' : 'RENT',
                             assetCategory: cat,
@@ -417,7 +417,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.between,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
