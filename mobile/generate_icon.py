@@ -137,7 +137,7 @@ def apply_android_branding(android_dir: str) -> None:
         with open(manifest_path, "r", encoding="utf-8") as f:
             txt = f.read()
 
-        txt = txt.replace('android:label="propertyhub_mobile"', 'android:label="Properties & Autos"')
+        txt = txt.replace('android:label="propertyhub_mobile"', 'android:label="Properties &amp; Autos"')
         if "android.permission.INTERNET" not in txt:
             txt = txt.replace(
                 "<application",
