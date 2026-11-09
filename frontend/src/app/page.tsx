@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 import { Navbar } from '@/components/Navbar';
-import { SearchHero } from '@/components/SearchHero';
+import { SearchHero, SearchFilterParams } from '@/components/SearchHero';
 import { ListingCard } from '@/components/ListingCard';
 import { AIMatchingBanner } from '@/components/AIMatchingBanner';
 import { AIAssistantModal } from '@/components/AIAssistantModal';
@@ -81,14 +81,22 @@ export default function HomePage() {
     }
   };
 
-  const handleStandardSearch = async (params: { keyword?: string; state?: string; max_price?: number }) => {
+  const handleStandardSearch = async (params: SearchFilterParams) => {
     setLoading(true);
     try {
       const res = await api.getListings({
         transaction_type: selectedTransaction,
         asset_category: selectedCategory,
         state: params.state,
+        min_price: params.min_price,
         max_price: params.max_price,
+        subtype: params.subtype,
+        brand: params.brand,
+        model: params.model,
+        condition: params.condition,
+        year: params.year,
+        bedrooms: params.bedrooms,
+        keyword: params.keyword,
         page_size: 12,
       });
       setListings(res.items || []);

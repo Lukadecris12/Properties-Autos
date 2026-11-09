@@ -3,7 +3,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import desc
+from sqlalchemy import desc, or_
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
@@ -93,6 +93,13 @@ async def list_listings(
     max_price: Optional[float] = None,
     is_featured: Optional[bool] = None,
     user_id: Optional[int] = None,
+    subtype: Optional[str] = None,
+    brand: Optional[str] = None,
+    model: Optional[str] = None,
+    condition: Optional[str] = None,
+    year: Optional[int] = None,
+    bedrooms: Optional[int] = None,
+    keyword: Optional[str] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db)
@@ -101,13 +108,24 @@ async def list_listings(
 
     # Mandatory transaction separation: Never mix SALE with RENT/LEASE!
     if transaction_type:
-        query = query.where(Listing.transaction_type == transaction_type)
+        if transaction_type == TransactionType.RENT:
+            query = query.where(Listing.transaction_type.in_([TransactionType.RENT, TransactionType.LEASE]))
+        else:
+            query = query.where(Listing.transaction_type == transaction_type)
     if asset_category:
         query = query.where(Listing.asset_category == asset_category)
     if rental_period:
         query = query.where(Listing.rental_period == rental_period)
     if state:
-        query = query.where(Listing.state.ilike(f"%{state}%"))
+        loc_term = f"%{state.strip()}%"
+        query = query.where(
+            or_(
+                Listing.state.ilike(loc_term),
+                Listing.city.ilike(loc_term),
+                Listing.neighbourhood.ilike(loc_term),
+                Listing.address.ilike(loc_term),
+            )
+        )
     if city:
         query = query.where(Listing.city.ilike(f"%{city}%"))
     if min_price is not None:
@@ -122,7 +140,112 @@ async def list_listings(
     query = query.options(selectinload(Listing.owner)).order_by(desc(Listing.is_featured), desc(Listing.created_at))
 
     result = await db.execute(query)
-    all_items = result.scalars().all()
+    all_items = list(result.scalars().all())
+
+    # 1. Keyword search
+    if keyword and keyword.strip():
+        kw = keyword.lower().strip()
+        all_items = [
+            i for i in all_items
+            if kw in (i.title or "").lower()
+            or kw in (i.description or "").lower()
+            or kw in (i.neighbourhood or "").lower()
+            or kw in (i.city or "").lower()
+            or kw in (i.state or "").lower()
+            or any(kw in str(v).lower() for v in (i.attributes or {}).values())
+        ]
+
+    # 2. Specific Subtype filtering (Houses: duplex, bungalow, mini flat; Commercial: warehouse, office, mall; Land: residential, commercial, farm)
+    if subtype and subtype.strip() and subtype.lower() != "all":
+        st = subtype.lower().replace("_", " ").replace("-", " ").strip()
+        # Extract individual options if slash-separated (e.g. "Plaza / Complex / Mall" -> ["plaza", "complex", "mall"])
+        st_options = [part.strip() for part in st.split("/") if part.strip()]
+        # Also remove generic suffix like "land" when matching permitted_use (e.g. "residential land" -> "residential")
+        st_tokens = set(st_options)
+        for opt in list(st_options):
+            if opt.endswith(" land"):
+                st_tokens.add(opt[:-5].strip())
+            if opt == "mixed used":
+                st_tokens.add("mixed")
+
+        filtered = []
+        for i in all_items:
+            attrs = i.attributes or {}
+            prop_type = str(attrs.get("property_type", "")).lower().replace("_", " ").replace("-", " ")
+            comm_type = str(attrs.get("commercial_type", "")).lower().replace("_", " ").replace("-", " ")
+            perm_use = str(attrs.get("permitted_use", "")).lower().replace("_", " ").replace("-", " ")
+            intended_use = str(attrs.get("intended_use", "")).lower().replace("_", " ").replace("-", " ")
+            title = (i.title or "").lower().replace("_", " ").replace("-", " ")
+            desc = (i.description or "").lower().replace("_", " ").replace("-", " ")
+            
+            matched = False
+            for tok in st_tokens:
+                if not tok:
+                    continue
+                if (
+                    tok in prop_type or (prop_type and prop_type in tok) or
+                    tok in comm_type or (comm_type and comm_type in tok) or
+                    tok in perm_use or (perm_use and perm_use in tok) or
+                    tok in intended_use or
+                    tok in title or
+                    tok in desc
+                ):
+                    matched = True
+                    break
+            if matched:
+                filtered.append(i)
+        all_items = filtered
+
+    # 3. Vehicle Condition filtering (Brand New, Fairly Used/Foreign Used/Tokunbo, Nigerian Used)
+    if condition and condition.strip() and condition.lower() != "all":
+        c_norm = condition.lower().strip()
+        filtered = []
+        for i in all_items:
+            cond = str((i.attributes or {}).get("condition", "")).lower().strip()
+            title = (i.title or "").lower()
+            if "new" in c_norm and ("new" in cond or "brand new" in title):
+                filtered.append(i)
+            elif ("foreign" in c_norm or "fairly" in c_norm or "tokunbo" in c_norm) and ("foreign" in cond or "pre-owned" in cond or "fairly" in cond or "foreign" in title):
+                filtered.append(i)
+            elif "nigerian" in c_norm and ("nigerian" in cond or "local" in cond or "nigerian" in title):
+                filtered.append(i)
+            elif c_norm in cond or cond in c_norm:
+                filtered.append(i)
+        all_items = filtered
+
+    # 4. Vehicle Brand / Make
+    if brand and brand.strip() and brand.lower() != "all":
+        b_norm = brand.lower().strip()
+        all_items = [
+            i for i in all_items
+            if b_norm in str((i.attributes or {}).get("brand", "")).lower()
+            or b_norm in (i.title or "").lower()
+        ]
+
+    # 5. Vehicle Model
+    if model and model.strip():
+        m_norm = model.lower().strip()
+        all_items = [
+            i for i in all_items
+            if m_norm in str((i.attributes or {}).get("model", "")).lower()
+            or m_norm in (i.title or "").lower()
+        ]
+
+    # 6. Vehicle Year
+    if year is not None:
+        all_items = [
+            i for i in all_items
+            if (i.attributes or {}).get("year") == year
+            or str(year) in (i.title or "")
+        ]
+
+    # 7. Bedrooms
+    if bedrooms is not None:
+        all_items = [
+            i for i in all_items
+            if (i.attributes or {}).get("bedrooms") == bedrooms
+            or ((i.attributes or {}).get("bedrooms", 0) >= bedrooms if bedrooms >= 5 else False)
+        ]
     
     total = len(all_items)
     start_idx = (page - 1) * page_size

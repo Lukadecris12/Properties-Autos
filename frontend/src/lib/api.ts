@@ -27,6 +27,13 @@ class ApiClient {
     max_price?: number;
     is_featured?: boolean;
     user_id?: number;
+    subtype?: string;
+    brand?: string;
+    model?: string;
+    condition?: string;
+    year?: number;
+    bedrooms?: number;
+    keyword?: string;
     page?: number;
     page_size?: number;
   } = {}) {
@@ -39,6 +46,13 @@ class ApiClient {
     if (params.max_price) query.append('max_price', params.max_price.toString());
     if (params.is_featured !== undefined) query.append('is_featured', String(params.is_featured));
     if (params.user_id !== undefined) query.append('user_id', params.user_id.toString());
+    if (params.subtype) query.append('subtype', params.subtype);
+    if (params.brand) query.append('brand', params.brand);
+    if (params.model) query.append('model', params.model);
+    if (params.condition) query.append('condition', params.condition);
+    if (params.year) query.append('year', params.year.toString());
+    if (params.bedrooms) query.append('bedrooms', params.bedrooms.toString());
+    if (params.keyword) query.append('keyword', params.keyword);
     if (params.page) query.append('page', params.page.toString());
     if (params.page_size) query.append('page_size', params.page_size.toString());
 

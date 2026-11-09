@@ -75,9 +75,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const submenus: { id: AssetCategory; label: string; icon: any; desc: string }[] = [
-    { id: 'RESIDENTIAL', label: 'Houses & Apartments', icon: Home, desc: 'Luxury duplexes, villas, flats' },
-    { id: 'LAND', label: 'Land', icon: LandPlot, desc: 'Dry residential & mixed plots' },
-    { id: 'VEHICLE', label: 'Autos & Vehicles', icon: Car, desc: 'SUVs, sedans, trucks, luxury cars' },
+    { id: 'RESIDENTIAL', label: 'Houses & Apartments', icon: Home, desc: 'Duplexes, bungalows, mini flats, apartments' },
+    { id: 'COMMERCIAL', label: 'Commercial Property', icon: Briefcase, desc: 'Offices, warehouses, malls, hotels, shops' },
+    { id: 'LAND', label: 'Land', icon: LandPlot, desc: 'Residential, commercial, industrial & farm land' },
+    { id: 'VEHICLE', label: 'Cars & Vehicles', icon: Car, desc: 'Brand new, foreign used & Nigerian used cars' },
   ];
 
   const handleSubmenuSelect = (tx: 'SALE' | 'RENT', cat: AssetCategory) => {

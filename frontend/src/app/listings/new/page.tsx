@@ -75,11 +75,12 @@ export default function NewListingPage() {
   // Land
   const [landSize, setLandSize] = useState('1000');
   const [landUnit, setLandUnit] = useState('sqm');
+  const [permittedUse, setPermittedUse] = useState('Residential Land');
   const [titleDocument, setTitleDocument] = useState("Governor's Consent");
   const [roadAccess, setRoadAccess] = useState('Tarred Road');
 
   // Commercial
-  const [commercialType, setCommercialType] = useState('office');
+  const [commercialType, setCommercialType] = useState('Office Space');
   const [floorArea, setFloorArea] = useState('250');
 
   // Vehicle
@@ -185,6 +186,7 @@ export default function NewListingPage() {
       attributes = {
         land_size: Number(landSize),
         land_unit: landUnit,
+        permitted_use: permittedUse,
         title_document: titleDocument,
         road_access: roadAccess,
       };
@@ -696,12 +698,18 @@ export default function NewListingPage() {
                         onChange={(e) => setPropertyType(e.target.value)}
                         className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
                       >
-                        <option value="detached_duplex">Detached Duplex</option>
-                        <option value="semi_detached">Semi-Detached Duplex</option>
-                        <option value="terraced_duplex">Terraced Duplex</option>
-                        <option value="apartment">Apartment / Flat</option>
-                        <option value="short_let">Serviced Short-let</option>
-                        <option value="bungalow">Bungalow</option>
+                        <option value="Mini Flat">Mini Flat</option>
+                        <option value="Self-Contain">Self-Contain</option>
+                        <option value="Blocks of Flats">Blocks of Flats</option>
+                        <option value="Detached Duplex">Detached Duplex</option>
+                        <option value="Semi-Detached Duplex">Semi-Detached Duplex</option>
+                        <option value="Detached Bungalow">Detached Bungalow</option>
+                        <option value="Semi-Detached Bungalow">Semi-Detached Bungalow</option>
+                        <option value="Terraced Bungalow">Terraced Bungalow</option>
+                        <option value="Terraced Duplex">Terraced Duplex</option>
+                        <option value="Apartment / Flat">Apartment / Flat</option>
+                        <option value="Penthouse">Penthouse</option>
+                        <option value="Serviced Short-let">Serviced Short-let</option>
                       </select>
                     </div>
                     <div>
@@ -741,10 +749,62 @@ export default function NewListingPage() {
                 </div>
               )}
 
+              {assetCategory === 'COMMERCIAL' && (
+                <div className="space-y-4 pt-4 border-t border-gray-800">
+                  <h3 className="text-xs font-bold text-brand-400 uppercase tracking-wider">Commercial Property Specifications</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] text-gray-400 mb-1">Commercial Property Type</label>
+                      <select
+                        value={commercialType}
+                        onChange={(e) => setCommercialType(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                      >
+                        <option value="Factory">Factory</option>
+                        <option value="School">School</option>
+                        <option value="Church">Church</option>
+                        <option value="Restaurant / Bar">Restaurant / Bar</option>
+                        <option value="Filling Station">Filling Station</option>
+                        <option value="Tank Farm">Tank Farm</option>
+                        <option value="Plaza / Complex / Mall">Plaza / Complex / Mall</option>
+                        <option value="Warehouse">Warehouse</option>
+                        <option value="Shop">Shop</option>
+                        <option value="Hotel / Guest House">Hotel / Guest House</option>
+                        <option value="Hostel">Hostel</option>
+                        <option value="Office Space">Office Space</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-gray-400 mb-1">Floor Area (sqm)</label>
+                      <input
+                        type="number"
+                        value={floorArea}
+                        onChange={(e) => setFloorArea(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {assetCategory === 'LAND' && (
                 <div className="space-y-4 pt-4 border-t border-gray-800">
                   <h3 className="text-xs font-bold text-brand-400 uppercase tracking-wider">Land Specifications</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    <div>
+                      <label className="block text-[11px] text-gray-400 mb-1">Land Type / Use</label>
+                      <select
+                        value={permittedUse}
+                        onChange={(e) => setPermittedUse(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                      >
+                        <option value="Residential Land">Residential Land</option>
+                        <option value="Commercial Land">Commercial Land</option>
+                        <option value="Industrial Land">Industrial Land</option>
+                        <option value="Mixed-Used Land">Mixed-Used Land</option>
+                        <option value="Farm Land">Farm Land</option>
+                      </select>
+                    </div>
                     <div>
                       <label className="block text-[11px] text-gray-400 mb-1">Land Size</label>
                       <input
@@ -775,7 +835,7 @@ export default function NewListingPage() {
                         className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
                       >
                         <option value="Certificate of Occupancy (C of O)">Certificate of Occupancy (C of O)</option>
-                        <option value="Governor's Consent">Governor's Consent</option>
+                        <option value="Governor's Consent">Governor&apos;s Consent</option>
                         <option value="Gazette">Gazette</option>
                         <option value="Excision">Excision</option>
                         <option value="Deed of Assignment">Deed of Assignment</option>
@@ -837,7 +897,7 @@ export default function NewListingPage() {
                         className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
                       >
                         <option value="Brand New">Brand New</option>
-                        <option value="Foreign Used">Foreign Used (Tokunbo)</option>
+                        <option value="Fairly Used">Fairly Used (Foreign Used / Tokunbo)</option>
                         <option value="Nigerian Used">Nigerian Used</option>
                       </select>
                     </div>
