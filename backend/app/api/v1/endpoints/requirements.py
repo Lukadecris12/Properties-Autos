@@ -19,6 +19,7 @@ from app.services.matching_engine import MatchingEngine
 
 router = APIRouter()
 
+@router.post("", response_model=ResponseModel[RequirementResponse], status_code=status.HTTP_201_CREATED, include_in_schema=False)
 @router.post("/", response_model=ResponseModel[RequirementResponse], status_code=status.HTTP_201_CREATED)
 async def create_requirement(
     req_in: RequirementCreate,
@@ -65,6 +66,7 @@ async def create_requirement(
         data=req
     )
 
+@router.get("", response_model=PaginatedResponse[RequirementResponse], include_in_schema=False)
 @router.get("/", response_model=PaginatedResponse[RequirementResponse])
 async def list_requirements(
     transaction_type: Optional[TransactionType] = None,

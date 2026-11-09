@@ -42,7 +42,9 @@ class ApiClient {
     if (params.page) query.append('page', params.page.toString());
     if (params.page_size) query.append('page_size', params.page_size.toString());
 
-    const res = await fetch(`${API_BASE_URL}/listings/?${query.toString()}`);
+    const queryString = query.toString();
+    const url = queryString ? `${API_BASE_URL}/listings?${queryString}` : `${API_BASE_URL}/listings`;
+    const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch listings');
     return res.json();
   }

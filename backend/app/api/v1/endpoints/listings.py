@@ -23,6 +23,7 @@ from app.services.matching_engine import MatchingEngine
 
 router = APIRouter()
 
+@router.post("", response_model=ResponseModel[ListingResponse], status_code=status.HTTP_201_CREATED, include_in_schema=False)
 @router.post("/", response_model=ResponseModel[ListingResponse], status_code=status.HTTP_201_CREATED)
 async def create_listing(
     listing_in: ListingCreate,
@@ -80,6 +81,7 @@ async def create_listing(
 
     return ResponseModel(message="Listing created successfully", data=listing)
 
+@router.get("", response_model=PaginatedResponse[ListingResponse], include_in_schema=False)
 @router.get("/", response_model=PaginatedResponse[ListingResponse])
 async def list_listings(
     transaction_type: Optional[TransactionType] = None,
