@@ -695,6 +695,11 @@ class ApiService {
     String? assetCategory,
     String? state,
     double? maxPrice,
+    String? subtype,
+    String? condition,
+    String? brand,
+    String? model,
+    int? year,
   }) async {
     try {
       final queryParams = <String, String>{};
@@ -702,6 +707,11 @@ class ApiService {
       if (assetCategory != null) queryParams['asset_category'] = assetCategory;
       if (state != null && state.isNotEmpty) queryParams['state'] = state;
       if (maxPrice != null) queryParams['max_price'] = maxPrice.toString();
+      if (subtype != null && subtype.isNotEmpty) queryParams['subtype'] = subtype;
+      if (condition != null && condition.isNotEmpty) queryParams['condition'] = condition;
+      if (brand != null && brand.isNotEmpty) queryParams['brand'] = brand;
+      if (model != null && model.isNotEmpty) queryParams['model'] = model;
+      if (year != null) queryParams['year'] = year.toString();
 
       final uri = Uri.parse(ApiConstants.listingsEndpoint).replace(queryParameters: queryParams);
 
@@ -719,7 +729,9 @@ class ApiService {
     }
 
     return _seedFallbackListings.where((item) {
-      final matchTx = transactionType == null || item.transactionType == transactionType;
+      final matchTx = transactionType == null ||
+          item.transactionType == transactionType ||
+          (transactionType == 'RENT' && item.transactionType == 'LEASE');
       final matchCat = assetCategory == null || item.assetCategory == assetCategory;
       return matchTx && matchCat;
     }).toList();

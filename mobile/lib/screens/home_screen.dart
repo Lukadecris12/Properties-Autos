@@ -23,10 +23,72 @@ class _HomeScreenState extends State<HomeScreen> {
   // State for Explore Tab
   final ApiService _apiService = ApiService();
   String _selectedTransaction = 'SALE'; // SALE (BUY) or RENT
-  String _selectedCategory = 'RESIDENTIAL'; // RESIDENTIAL (Houses), LAND, VEHICLE (Autos)
+  String _selectedCategory = 'RESIDENTIAL'; // RESIDENTIAL, COMMERCIAL, LAND, VEHICLE
+  String _selectedSubtype = '';
+  String _selectedCarCondition = '';
+  String _selectedCarBrand = '';
+  String _selectedCarYear = '';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   late Future<List<ListingModel>> _listingsFuture;
+
+  static const List<String> _residentialSubtypes = [
+    'Mini Flat',
+    'Self-Contain',
+    'Blocks of Flats',
+    'Detached Duplex',
+    'Semi-Detached Duplex',
+    'Detached Bungalow',
+    'Semi-Detached Bungalow',
+    'Terraced Bungalow',
+    'Terraced Duplex',
+    'Apartment / Flat',
+    'Penthouse',
+  ];
+
+  static const List<String> _commercialSubtypes = [
+    'Factory',
+    'School',
+    'Church',
+    'Restaurant / Bar',
+    'Filling Station',
+    'Tank Farm',
+    'Plaza / Complex / Mall',
+    'Warehouse',
+    'Shop',
+    'Hotel / Guest House',
+    'Hostel',
+    'Office Space',
+  ];
+
+  static const List<String> _landSubtypes = [
+    'Residential Land',
+    'Commercial Land',
+    'Industrial Land',
+    'Mixed-Used Land',
+    'Farm Land',
+  ];
+
+  static const List<String> _carConditions = [
+    'Brand New',
+    'Fairly Used',
+    'Nigerian Used',
+  ];
+
+  static const List<String> _carBrands = [
+    'Toyota',
+    'Mercedes-Benz',
+    'Lexus',
+    'Honda',
+    'Land Rover',
+    'Ford',
+    'BMW',
+    'Hyundai',
+    'Kia',
+    'Porsche',
+    'Audi',
+    'Tesla',
+  ];
 
   @override
   void initState() {
@@ -39,6 +101,10 @@ class _HomeScreenState extends State<HomeScreen> {
       _listingsFuture = _apiService.fetchListings(
         transactionType: _selectedTransaction,
         assetCategory: _selectedCategory,
+        subtype: _selectedSubtype.isNotEmpty ? _selectedSubtype : null,
+        condition: _selectedCarCondition.isNotEmpty ? _selectedCarCondition : null,
+        brand: _selectedCarBrand.isNotEmpty ? _selectedCarBrand : null,
+        year: _selectedCarYear.isNotEmpty ? int.tryParse(_selectedCarYear) : null,
       );
     });
   }
@@ -236,20 +302,25 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
 
-        // 3. Category Selector (Houses | Land | Autos) - Commercial removed
+        // 3. Category Selector (Houses & Apartments | Commercial Property | Land | Cars & Vehicles)
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           child: Row(
             children: [
               _buildCategoryChip('RESIDENTIAL', 'Houses & Apartments', Icons.home),
               const SizedBox(width: 8),
+              _buildCategoryChip('COMMERCIAL', 'Commercial Property', Icons.business),
+              const SizedBox(width: 8),
               _buildCategoryChip('LAND', 'Land', Icons.landscape),
               const SizedBox(width: 8),
-              _buildCategoryChip('VEHICLE', 'Autos & Vehicles', Icons.directions_car),
+              _buildCategoryChip('VEHICLE', 'Cars & Vehicles', Icons.directions_car),
             ],
           ),
         ),
+
+        // 3B. Dynamic Subcategory / Vehicle Filter Provision
+        _buildSubcategoryProvisionBar(),
 
         // 4. Live Marketplace Listings Feed
         Expanded(
@@ -497,10 +568,134 @@ class _HomeScreenState extends State<HomeScreen> {
         if (selected) {
           setState(() {
             _selectedCategory = cat;
+            _selectedSubtype = '';
+            _selectedCarCondition = '';
+            _selectedCarBrand = '';
+            _selectedCarYear = '';
           });
           _loadListings();
         }
       },
+    );
+  }
+
+  Widget _buildSubcategoryProvisionBar() {
+    if (_selectedCategory == 'VEHICLE') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterPill(
+                    label: 'All Conditions',
+                    isSelected: _selectedCarCondition.isEmpty,
+                    onTap: () {
+                      setState(() => _selectedCarCondition = '');
+                      _loadListings();
+                    },
+                  ),
+                  ..._carConditions.map((cond) => _buildFilterPill(
+                        label: cond == 'Fairly Used' ? 'Fairly Used (Foreign)' : cond,
+                        isSelected: _selectedCarCondition == cond,
+                        onTap: () {
+                          setState(() => _selectedCarCondition = _selectedCarCondition == cond ? '' : cond);
+                          _loadListings();
+                        },
+                      )),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterPill(
+                    label: 'All Brands',
+                    isSelected: _selectedCarBrand.isEmpty,
+                    onTap: () {
+                      setState(() => _selectedCarBrand = '');
+                      _loadListings();
+                    },
+                  ),
+                  ..._carBrands.map((brand) => _buildFilterPill(
+                        label: brand,
+                        isSelected: _selectedCarBrand == brand,
+                        onTap: () {
+                          setState(() => _selectedCarBrand = _selectedCarBrand == brand ? '' : brand);
+                          _loadListings();
+                        },
+                      )),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final List<String> subtypes = _selectedCategory == 'RESIDENTIAL'
+        ? _residentialSubtypes
+        : _selectedCategory == 'COMMERCIAL'
+            ? _commercialSubtypes
+            : _landSubtypes;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          _buildFilterPill(
+            label: 'All Types',
+            isSelected: _selectedSubtype.isEmpty,
+            onTap: () {
+              setState(() => _selectedSubtype = '');
+              _loadListings();
+            },
+          ),
+          ...subtypes.map((st) => _buildFilterPill(
+                label: st,
+                isSelected: _selectedSubtype == st,
+                onTap: () {
+                  setState(() => _selectedSubtype = _selectedSubtype == st ? '' : st);
+                  _loadListings();
+                },
+              )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterPill({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(right: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF064E3B) : const Color(0xFF111827),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF10B981) : const Color(0xFF1F2937),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? const Color(0xFF10B981) : Colors.grey.shade400,
+          ),
+        ),
+      ),
     );
   }
 
