@@ -839,7 +839,7 @@ class ApiService {
       }
     } catch (_) {}
 
-    return 'PropertyHub AI Advisory: For "$message", always verify the land title (Certificate of Occupancy or Governor\'s Consent) at the State Land Registry, or inspect vehicle custom duty papers before completing escrow payment.';
+    return 'Properties & Autos AI Advisory: For "$message", always verify the land title (Certificate of Occupancy or Governor\'s Consent) at the State Land Registry, or inspect vehicle custom duty papers before completing escrow payment.';
   }
 
   // --- 6-Digit Resend OTP Onboarding ---

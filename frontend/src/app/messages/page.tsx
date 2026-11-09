@@ -141,7 +141,7 @@ export default function MessagesPage() {
   const otherPhone = otherUser?.phone_number || '+234 803 123 4567';
   const cleanPhone = otherPhone.replace(/[^0-9]/g, '');
   const waPhone = cleanPhone.startsWith('0') ? `234${cleanPhone.slice(1)}` : cleanPhone;
-  const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(`Hello ${otherUserName}, I am following up on our conversation on PropertyHub.`)}`;
+  const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(`Hello ${otherUserName}, I am following up on our conversation on Properties & Autos.`)}`;
 
   const filteredConversations = conversations.filter(c => {
     const partner = c.participant_1_id === currentUserId ? c.participant_2 : c.participant_1;

@@ -207,7 +207,7 @@ export default function HomePage() {
               An Intelligent Marketplace That Works In Both Directions
             </h3>
             <p className="text-xs sm:text-sm text-gray-400 mt-3">
-              Traditional platforms make seekers spend weeks searching. PropertyHub proactively connects demand with supply.
+              Traditional platforms make seekers spend weeks searching. Properties & Autos proactively connects demand with supply.
             </p>
           </div>
 

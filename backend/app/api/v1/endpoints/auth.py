@@ -162,45 +162,60 @@ async def onboarding_complete(req: OnboardingCompleteRequest, db: AsyncSession =
         )
 
     # Strict Validation of required fields
-    if req.entity_type in ["agent", "individual"]:
+    if req.entity_type in ["agent", "individual", "owner", "seeker", "buyer"]:
         if not req.first_name or not req.first_name.strip() or not req.last_name or not req.last_name.strip():
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="First name and Last name are strictly required for individuals and agents."
+                detail="First name and Last name are strictly required."
             )
-    elif req.entity_type in ["company", "developer"]:
+    elif req.entity_type in ["company", "developer", "dealer"]:
         if not req.company_name or not req.company_name.strip():
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Company name is strictly required for corporate entities and property developers."
-            )
+            if not req.first_name or not req.first_name.strip():
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Company name or contact name is required."
+                )
 
     if not req.phone_number or not req.phone_number.strip():
         raise HTTPException(status_code=422, detail="Authenticated phone number is required.")
     if not req.country or not req.state or not req.city:
         raise HTTPException(status_code=422, detail="Country, State/Province, and City are all required.")
 
-    # Determine account roles and active mode
-    roles = []
-    if req.user_type == "seller":
-        if req.entity_type == "developer":
-            roles = ["seller", "developer"]
-            active_mode = "developer"
-        elif req.entity_type == "agent":
-            roles = ["seller", "agent"]
-            active_mode = "agent"
-        else:
-            roles = ["seller", "company"]
-            active_mode = "seller"
+    # Determine account roles and active mode based on selected entity_type
+    if req.entity_type == "seeker":
+        roles = ["buyer", "tenant", "renter"]
+        active_mode = "buyer"
+        user_type = "buyer"
+    elif req.entity_type == "owner":
+        roles = ["seller", "landlord"]
+        active_mode = "seller"
+        user_type = "seller"
+    elif req.entity_type == "agent":
+        roles = ["seller", "agent", "buyer"]
+        active_mode = "agent"
+        user_type = "seller"
+    elif req.entity_type == "developer":
+        roles = ["seller", "developer"]
+        active_mode = "developer"
+        user_type = "seller"
+    elif req.entity_type == "dealer":
+        roles = ["seller", "dealer", "rental_company"]
+        active_mode = "dealer"
+        user_type = "seller"
+    elif req.user_type == "seller":
+        roles = ["seller", "agent"]
+        active_mode = "agent"
+        user_type = "seller"
     else:
         roles = ["buyer", "tenant", "renter"]
         active_mode = "buyer"
+        user_type = "buyer"
 
     first_name = req.first_name.strip() if req.first_name else ""
     last_name = req.last_name.strip() if req.last_name else ""
     if not first_name and req.company_name:
         first_name = req.company_name.split(" ")[0]
-        last_name = " ".join(req.company_name.split(" ")[1:]) or "Corp"
+        last_name = " ".join(req.company_name.split(" ")[1:]) or "Enterprise"
 
     # Create new verified User
     new_user = User(

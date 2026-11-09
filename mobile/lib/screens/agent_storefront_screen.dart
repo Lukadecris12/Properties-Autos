@@ -49,7 +49,7 @@ class _AgentStorefrontScreenState extends State<AgentStorefrontScreen> {
     final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
     final waPhone = cleanPhone.startsWith('0') ? '234${cleanPhone.substring(1)}' : (cleanPhone.isNotEmpty ? cleanPhone : '2348031234567');
     final name = widget.agent['company_name'] ?? '${widget.agent['first_name'] ?? ''} ${widget.agent['last_name'] ?? ''}'.trim();
-    final message = 'Hello $name, I am viewing your storefront portfolio on PropertyHub and would like to inquire about your available listings.';
+    final message = 'Hello $name, I am viewing your storefront portfolio on Properties & Autos and would like to inquire about your available listings.';
     final waUrl = 'https://wa.me/$waPhone?text=${Uri.encodeComponent(message)}';
     _launchUrl(waUrl);
   }
@@ -151,7 +151,7 @@ class _AgentStorefrontScreenState extends State<AgentStorefrontScreen> {
     final badge = ag['verification_badge'] ?? (ag['is_business_verified'] == true ? 'Certified Partner' : 'Verified');
     final role = ag['active_mode'] ?? (ag['roles'] is List && ag['roles'].isNotEmpty ? ag['roles'][0] : 'agent');
     final location = '${ag['city'] != null && ag['city'].toString().isNotEmpty ? "${ag['city']}, " : ""}${ag['state'] ?? "Nigeria"}';
-    final bio = ag['bio'] ?? 'Accredited real estate professional and property developer on the PropertyHub marketplace.';
+    final bio = ag['bio'] ?? 'Accredited real estate professional and property developer on the Properties & Autos marketplace.';
 
     final filteredListings = _selectedCategory == 'ALL'
         ? _listings

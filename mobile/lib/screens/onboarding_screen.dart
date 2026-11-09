@@ -221,7 +221,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             // Step 1: Email & Password
             if (_step == 1) ...[
               const Text(
-                'Get Started with PropertyHub',
+                'Get Started with Properties & Autos',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
               ),
               const SizedBox(height: 6),

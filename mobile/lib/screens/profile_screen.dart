@@ -47,7 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Sign In to PropertyHub', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                  const Text('Sign In to Properties & Autos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                   IconButton(icon: const Icon(Icons.close, color: Colors.grey), onPressed: () => Navigator.pop(ctx)),
                 ],
               ),
@@ -326,7 +326,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     subtitle: 'Instant assistance for high-value acquisitions',
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Connecting to PropertyHub VIP Concierge Desk')),
+                        const SnackBar(content: Text('Connecting to Properties & Autos VIP Concierge Desk')),
                       );
                     },
                   ),
@@ -387,7 +387,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onTap: () {
                         setState(() => _isLoggedIn = false);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Logged out of PropertyHub')),
+                          const SnackBar(content: Text('Logged out of Properties & Autos')),
                         );
                       },
                     ),
@@ -399,7 +399,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // App Version
             const Center(
               child: Text(
-                'PropertyHub Luxury Marketplace • v1.0.2 Production\nAI Escrow • Real Estate & Autos',
+                'Properties & Autos Luxury Marketplace • v1.0.2 Production\nAI Escrow • Real Estate & Autos',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 10, color: Color(0xFF6B7280), height: 1.5),
               ),

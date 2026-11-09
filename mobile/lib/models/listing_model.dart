@@ -85,7 +85,7 @@ class ListingModel {
       isFeatured: json['is_featured'] ?? false,
       imageUrls: images,
       attributes: json['attributes'] ?? {},
-      ownerName: (oName != null && oName.isNotEmpty) ? oName : 'PropertyHub Partner',
+      ownerName: (oName != null && oName.isNotEmpty) ? oName : 'Properties & Autos Partner',
       ownerPhone: oPhone ?? '+234 803 123 4567',
       ownerBadge: oBadge ?? 'Verified',
       ownerAvatar: oAvatar,

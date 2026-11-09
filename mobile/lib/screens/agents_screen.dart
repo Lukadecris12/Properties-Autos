@@ -55,7 +55,7 @@ class _AgentsScreenState extends State<AgentsScreen> {
     final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
     final waPhone = cleanPhone.startsWith('0') ? '234${cleanPhone.substring(1)}' : (cleanPhone.isNotEmpty ? cleanPhone : '2348031234567');
     final name = ag['company_name'] ?? '${ag['first_name'] ?? ''} ${ag['last_name'] ?? ''}'.trim();
-    final message = 'Hello $name, I found your agency profile on PropertyHub and would like to inquire about your property listings.';
+    final message = 'Hello $name, I found your agency profile on Properties & Autos and would like to inquire about your property listings.';
     final waUrl = 'https://wa.me/$waPhone?text=${Uri.encodeComponent(message)}';
     _launchUrl(waUrl);
   }

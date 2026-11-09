@@ -37,7 +37,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
     final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
     final waPhone = cleanPhone.startsWith('0') ? '234${cleanPhone.substring(1)}' : (cleanPhone.isNotEmpty ? cleanPhone : '2348031234567');
     final message = Uri.encodeComponent(
-      'Hello! I saw your listing on PropertyHub: "${item.title}" (Ref: #${item.id}, ${item.formattedPrice}). I would like to inquire about its inspection and details.',
+      'Hello! I saw your listing on Properties & Autos: "${item.title}" (Ref: #${item.id}, ${item.formattedPrice}). I would like to inquire about its inspection and details.',
     );
     _launchUrl('https://wa.me/$waPhone?text=$message');
   }
@@ -545,7 +545,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                         SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'PropertyHub Escrow & Safety: Never wire money outside verified transaction terms. All inspections are scheduled with verified partners.',
+                            'Properties & Autos Escrow & Safety: Never wire money outside verified transaction terms. All inspections are scheduled with verified partners.',
                             style: TextStyle(color: Color(0xFF93C5FD), fontSize: 11, height: 1.4),
                           ),
                         ),

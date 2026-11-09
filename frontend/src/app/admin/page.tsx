@@ -124,7 +124,7 @@ export default function AdminDashboardPage() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/80 border border-red-500/30 text-red-300 text-xs font-semibold mb-2">
               <Lock className="w-3.5 h-3.5" />
-              <span>PropertyHub Master Administrator Portal</span>
+              <span>Properties & Autos Master Administrator Portal</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
               Platform Administration & Audit Console

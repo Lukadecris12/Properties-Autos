@@ -133,12 +133,30 @@ class ApiClient {
     return res.json();
   }
 
+  private async parseErrorResponse(res: Response, defaultMessage: string): Promise<string> {
+    try {
+      const err = await res.json();
+      return err.detail || err.message || defaultMessage;
+    } catch (_) {
+      try {
+        const text = await res.text();
+        if (text && !text.includes('<!DOCTYPE') && !text.includes('Internal Server Error')) {
+          return text;
+        }
+      } catch (_) {}
+      return defaultMessage;
+    }
+  }
+
   async login(formData: FormData) {
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       body: formData,
     });
-    if (!res.ok) throw new Error('Invalid credentials');
+    if (!res.ok) {
+      const msg = await this.parseErrorResponse(res, 'Invalid email or password. Please verify your credentials.');
+      throw new Error(msg);
+    }
     return res.json();
   }
 
@@ -149,8 +167,8 @@ class ApiClient {
       body: JSON.stringify(data),
     });
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || 'Registration failed');
+      const msg = await this.parseErrorResponse(res, 'Registration failed. Please check your details.');
+      throw new Error(msg);
     }
     return res.json();
   }
@@ -188,8 +206,8 @@ class ApiClient {
       body: JSON.stringify({ email, password }),
     });
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || 'Failed to initiate signup');
+      const msg = await this.parseErrorResponse(res, 'Failed to initiate signup. Please check your connection.');
+      throw new Error(msg);
     }
     return res.json();
   }
@@ -201,8 +219,8 @@ class ApiClient {
       body: JSON.stringify({ email, otp_code }),
     });
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || 'Invalid verification code');
+      const msg = await this.parseErrorResponse(res, 'Invalid or expired verification code.');
+      throw new Error(msg);
     }
     return res.json();
   }
@@ -214,8 +232,8 @@ class ApiClient {
       body: JSON.stringify({ email }),
     });
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || 'Failed to resend code');
+      const msg = await this.parseErrorResponse(res, 'Failed to resend code.');
+      throw new Error(msg);
     }
     return res.json();
   }
@@ -227,8 +245,8 @@ class ApiClient {
       body: JSON.stringify(data),
     });
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || 'Failed to complete onboarding');
+      const msg = await this.parseErrorResponse(res, 'Failed to complete onboarding. Please check all required fields.');
+      throw new Error(msg);
     }
     return res.json();
   }

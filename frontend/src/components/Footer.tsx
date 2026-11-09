@@ -85,10 +85,10 @@ export const Footer: React.FC = () => {
         {/* Disclaimer & Legal Notice */}
         <div className="pt-8 border-t border-gray-900 text-[11px] text-gray-500 space-y-2">
           <p>
-            Regulatory Notice: PropertyHub is a technology marketplace platform connecting verified asset owners, landlords, agents, dealers, and seekers. Automated document extraction or AI compatibility scoring does not constitute legal title guarantee or statutory ownership transfer. All property transactions should be finalized with authoritative land registry searches and accredited legal representation.
+            Regulatory Notice: Properties & Autos is a technology marketplace platform connecting verified asset owners, landlords, agents, dealers, and seekers. Automated document extraction or AI compatibility scoring does not constitute legal title guarantee or statutory ownership transfer. All property transactions should be finalized with authoritative land registry searches and accredited legal representation.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-            <p>© {new Date().getFullYear()} PropertyHub Technologies Ltd. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} Properties & Autos Technologies Ltd. All rights reserved.</p>
             <div className="flex items-center gap-6">
               <Link href="/terms" className="hover:text-gray-400">Terms of Service</Link>
               <Link href="/privacy" className="hover:text-gray-400">Privacy Policy</Link>

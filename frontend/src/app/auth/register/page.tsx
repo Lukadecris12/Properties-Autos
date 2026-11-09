@@ -43,9 +43,8 @@ export default function RegisterPage() {
   const [resendingOtp, setResendingOtp] = useState(false);
 
   // Step 3: Detailed Onboarding State
-  const [userType, setUserType] = useState<'buyer' | 'seller'>('buyer');
-  const [entityType, setEntityType] = useState<'individual' | 'agent' | 'company' | 'developer'>('individual');
-  const [assetInterests, setAssetInterests] = useState<string[]>(['residential', 'land']);
+  const [selectedRole, setSelectedRole] = useState<'seeker' | 'owner' | 'agent' | 'developer' | 'dealer'>('seeker');
+  const [assetInterests, setAssetInterests] = useState<string[]>(['residential', 'vehicle']);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -71,16 +70,6 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-
-  // Switch entity type options when userType changes
-  const handleUserTypeChange = (type: 'buyer' | 'seller') => {
-    setUserType(type);
-    if (type === 'buyer') {
-      setEntityType('individual');
-    } else {
-      setEntityType('agent');
-    }
-  };
 
   // Toggle asset interests
   const toggleAssetInterest = (asset: string) => {
@@ -213,15 +202,15 @@ export default function RegisterPage() {
     e.preventDefault();
     setErrorMsg('');
 
-    // Strict validation
-    if (entityType === 'individual' || entityType === 'agent') {
-      if (!firstName.trim() || !lastName.trim()) {
-        setErrorMsg('First Name and Last Name are required for individual and agent accounts.');
+    // Strict validation based on selected role
+    if (selectedRole === 'developer' || selectedRole === 'dealer') {
+      if (!companyName.trim()) {
+        setErrorMsg(selectedRole === 'developer' ? 'Development Company / Entity Name is required.' : 'Dealership / Showroom Name is required.');
         return;
       }
     } else {
-      if (!companyName.trim()) {
-        setErrorMsg('Company Name is required for corporate and developer accounts.');
+      if (!firstName.trim() || !lastName.trim()) {
+        setErrorMsg('First Name and Last Name are required.');
         return;
       }
     }
@@ -240,13 +229,13 @@ export default function RegisterPage() {
     try {
       const payload = {
         email,
-        verification_token: verificationToken,
-        user_type: userType,
-        entity_type: entityType,
+        verification_token: verificationToken || 'direct_onboarding',
+        user_type: selectedRole === 'seeker' ? 'buyer' : 'seller',
+        entity_type: selectedRole,
         asset_interests: assetInterests,
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        company_name: companyName.trim(),
+        first_name: firstName.trim() || (companyName.trim() ? companyName.trim().split(' ')[0] : 'Member'),
+        last_name: lastName.trim() || (companyName.trim() ? companyName.trim().split(' ').slice(1).join(' ') || 'User' : 'User'),
+        company_name: companyName.trim() || undefined,
         country_code: selectedCountry.dialCode,
         phone_number: phoneNumber.trim(),
         country: selectedCountry.name,
@@ -284,7 +273,7 @@ export default function RegisterPage() {
             <Building2 className="w-4 h-4 text-white" />
           </div>
           <span className="text-lg font-bold tracking-tight text-white">
-            Property<span className="text-brand-500">Hub</span>
+            Properties<span className="text-brand-400 ml-1">&amp; Autos</span>
           </span>
         </Link>
         <Link href="/auth/login" className="text-xs text-gray-400 hover:text-white transition-colors">
@@ -335,9 +324,9 @@ export default function RegisterPage() {
           {step === 1 && (
             <div>
               <div className="mb-6">
-                <h1 className="text-2xl font-extrabold text-white tracking-tight">Create Your PropertyHub Account</h1>
+                <h1 className="text-2xl font-extrabold text-white tracking-tight">Create Your Properties &amp; Autos Account</h1>
                 <p className="text-xs text-gray-400 mt-1">
-                  Enter your email and password to begin creating your PropertyHub account.
+                  Enter your email and password to begin creating your Properties &amp; Autos account.
                 </p>
               </div>
 
@@ -498,94 +487,74 @@ export default function RegisterPage() {
 
               <form onSubmit={handleCompleteOnboarding} className="space-y-6">
 
-                {/* 1. SELLER VS BUYER TAB */}
+                {/* 1. ROLE SELECTION */}
                 <div>
                   <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">
-                    1. Are you joining primarily as a Seller or Buyer? <span className="text-red-400">*</span>
+                    1. Select Your Role on Properties & Autos <span className="text-red-400">*</span>
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleUserTypeChange('buyer')}
-                      className={`p-3.5 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all ${
-                        userType === 'buyer'
-                          ? 'bg-brand-600 border-brand-500 text-white shadow-lg shadow-brand-600/30'
-                          : 'bg-gray-900 border-gray-800 text-gray-400 hover:border-gray-700'
-                      }`}
-                    >
-                      <User className="w-4 h-4" />
-                      <span>I Want to BUY / RENT</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleUserTypeChange('seller')}
-                      className={`p-3.5 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all ${
-                        userType === 'seller'
-                          ? 'bg-brand-600 border-brand-500 text-white shadow-lg shadow-brand-600/30'
-                          : 'bg-gray-900 border-gray-800 text-gray-400 hover:border-gray-700'
-                      }`}
-                    >
-                      <Briefcase className="w-4 h-4" />
-                      <span>I Want to SELL / LIST</span>
-                    </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {[
+                      {
+                        id: 'seeker',
+                        title: 'Property / Auto Seeker',
+                        desc: 'Looking to buy, rent, or lease property or vehicles',
+                        icon: User,
+                      },
+                      {
+                        id: 'owner',
+                        title: 'Property / Auto Owner',
+                        desc: 'Private owner selling or leasing personal properties or cars',
+                        icon: Home,
+                      },
+                      {
+                        id: 'agent',
+                        title: 'Property / Auto Agent',
+                        desc: 'Licensed broker, agent, or representative managing listings',
+                        icon: Briefcase,
+                      },
+                      {
+                        id: 'developer',
+                        title: 'Property Developer',
+                        desc: 'Real estate developer, construction firm, or project sponsor',
+                        icon: Building2,
+                      },
+                      {
+                        id: 'dealer',
+                        title: 'Auto Dealer',
+                        desc: 'Automotive dealership, verified showroom, or leasing fleet',
+                        icon: Car,
+                      },
+                    ].map((role) => {
+                      const Icon = role.icon;
+                      const isSelected = selectedRole === role.id;
+                      return (
+                        <button
+                          key={role.id}
+                          type="button"
+                          onClick={() => setSelectedRole(role.id as any)}
+                          className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                            isSelected
+                              ? 'bg-brand-950 border-brand-500 text-brand-300 shadow-md shadow-brand-500/20 ring-1 ring-brand-500'
+                              : 'bg-gray-900 border-gray-800 text-gray-400 hover:border-gray-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 mb-1.5">
+                            <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-brand-600/20 text-brand-400' : 'bg-gray-800 text-gray-400'}`}>
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <span className="text-xs font-bold text-white">{role.title}</span>
+                          </div>
+                          <p className="text-[11px] text-gray-400 leading-tight">{role.desc}</p>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* 2. SUB-ROLE CLASSIFICATION */}
+                {/* 2. ASSET INTERESTS (Houses, Land, Autos) */}
                 <div>
                   <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">
-                    2. Classification Entity <span className="text-red-400">*</span>
-                  </label>
-                  {userType === 'seller' ? (
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { id: 'agent', label: 'Property Agent', desc: 'Licensed Broker' },
-                        { id: 'developer', label: 'Property Developer', desc: 'Real Estate Developer' },
-                        { id: 'company', label: 'Company / Firm', desc: 'Corporate Seller' },
-                      ].map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => setEntityType(item.id as any)}
-                          className={`p-3 rounded-xl border text-left transition-all ${
-                            entityType === item.id
-                              ? 'bg-brand-950 border-brand-500 text-brand-300 shadow-md shadow-brand-500/20'
-                              : 'bg-gray-900 border-gray-800 text-gray-400 hover:border-gray-700'
-                          }`}
-                        >
-                          <div className="text-xs font-bold text-white">{item.label}</div>
-                          <div className="text-[10px] text-gray-400">{item.desc}</div>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { id: 'individual', label: 'Individual Investor / Buyer', desc: 'Private citizen' },
-                        { id: 'company', label: 'Corporate Entity / Buyer', desc: 'Business organisation' },
-                      ].map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => setEntityType(item.id as any)}
-                          className={`p-3 rounded-xl border text-left transition-all ${
-                            entityType === item.id
-                              ? 'bg-brand-950 border-brand-500 text-brand-300 shadow-md shadow-brand-500/20'
-                              : 'bg-gray-900 border-gray-800 text-gray-400 hover:border-gray-700'
-                          }`}
-                        >
-                          <div className="text-xs font-bold text-white">{item.label}</div>
-                          <div className="text-[10px] text-gray-400">{item.desc}</div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* 3. ASSET INTERESTS (Houses, Land, Autos) */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">
-                    3. What do you {userType === 'seller' ? 'sell/offer' : 'seek to buy'}? <span className="text-red-400">*</span>
+                    2. Primary Asset Focus <span className="text-red-400">*</span>
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
@@ -602,7 +571,7 @@ export default function RegisterPage() {
                           onClick={() => toggleAssetInterest(item.id)}
                           className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
                             isSelected
-                              ? 'bg-brand-950 border-brand-500 text-brand-300 shadow-md shadow-brand-500/20'
+                              ? 'bg-brand-950 border-brand-500 text-brand-300 shadow-md shadow-brand-500/20 ring-1 ring-brand-500'
                               : 'bg-gray-900 border-gray-800 text-gray-400 hover:border-gray-700'
                           }`}
                         >
@@ -614,49 +583,135 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                {/* 4. NAME FIELDS: Individual/Agent vs Company/Developer */}
-                {entityType === 'individual' || entityType === 'agent' ? (
-                  <div className="grid grid-cols-2 gap-3">
+                {/* 3. NAME & IDENTIFICATION FIELDS */}
+                {selectedRole === 'developer' ? (
+                  <div className="space-y-3">
                     <div>
                       <label className="block text-xs font-semibold text-gray-300 mb-1">
-                        First Name <span className="text-red-400">*</span>
+                        Development Company / Firm Name <span className="text-red-400">*</span>
                       </label>
                       <input
                         type="text"
                         required
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="John"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        placeholder="e.g. Apex Horizon Urban Developers Ltd"
                         className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
                       />
                     </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1">
+                          Primary Contact First Name
+                        </label>
+                        <input
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="John"
+                          className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1">
+                          Primary Contact Last Name
+                        </label>
+                        <input
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Doe"
+                          className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : selectedRole === 'dealer' ? (
+                  <div className="space-y-3">
                     <div>
                       <label className="block text-xs font-semibold text-gray-300 mb-1">
-                        Last Name <span className="text-red-400">*</span>
+                        Dealership / Showroom Name <span className="text-red-400">*</span>
                       </label>
                       <input
                         type="text"
                         required
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Doe"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        placeholder="e.g. Prestige Auto Gallery & Motors"
                         className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
                       />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1">
+                          Showroom Representative First Name
+                        </label>
+                        <input
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="John"
+                          className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1">
+                          Showroom Representative Last Name
+                        </label>
+                        <input
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Doe"
+                          className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
+                        />
+                      </div>
                     </div>
                   </div>
                 ) : (
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-300 mb-1">
-                      Registered Company / Developer Name <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      placeholder="e.g. Apex Horizon Urban Developers Ltd"
-                      className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
-                    />
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1">
+                          First Name <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="John"
+                          className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1">
+                          Last Name <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Doe"
+                          className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
+                        />
+                      </div>
+                    </div>
+                    {selectedRole === 'agent' && (
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1">
+                          Agency / Brokerage Name (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={companyName}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          placeholder="e.g. Apex Realty & Luxury Motors"
+                          className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -729,7 +784,7 @@ export default function RegisterPage() {
                   {/* Searchable Country Dropdown */}
                   <div className="relative">
                     <label className="block text-xs font-semibold text-gray-300 mb-1">
-                      {entityType === 'company' || entityType === 'developer' ? 'Operating Country' : 'Residence Country'} <span className="text-red-400">*</span>
+                      {selectedRole === 'developer' || selectedRole === 'dealer' ? 'Operating Country' : 'Residence Country'} <span className="text-red-400">*</span>
                     </label>
                     <button
                       type="button"
@@ -827,15 +882,15 @@ export default function RegisterPage() {
                 {/* 7. PROFILE PHOTO OR COMPANY LOGO (OPTIONAL) */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-300 mb-1">
-                    {entityType === 'company' || entityType === 'developer' ? 'Company Logo URL' : 'Profile Picture URL'} <span className="text-gray-500">(Optional)</span>
+                    {selectedRole === 'developer' || selectedRole === 'dealer' ? 'Company / Showroom Logo URL' : 'Profile Picture URL'} <span className="text-gray-500">(Optional)</span>
                   </label>
                   <div className="relative">
                     <Upload className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="url"
-                      value={entityType === 'company' || entityType === 'developer' ? logoUrl : avatarUrl}
+                      value={selectedRole === 'developer' || selectedRole === 'dealer' ? logoUrl : avatarUrl}
                       onChange={(e) => {
-                        if (entityType === 'company' || entityType === 'developer') {
+                        if (selectedRole === 'developer' || selectedRole === 'dealer') {
                           setLogoUrl(e.target.value);
                         } else {
                           setAvatarUrl(e.target.value);

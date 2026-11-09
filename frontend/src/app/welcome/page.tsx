@@ -40,7 +40,7 @@ export default function WelcomePage() {
 
             {/* Main Headline */}
             <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-white max-w-5xl mx-auto leading-tight md:leading-[1.15] mb-6">
-              Welcome to <span className="bg-gradient-to-r from-emerald-400 via-brand-400 to-gold-400 bg-clip-text text-transparent">PropertyHub</span>
+              Welcome to <span className="bg-gradient-to-r from-emerald-400 via-brand-400 to-gold-400 bg-clip-text text-transparent">Properties & Autos</span>
             </h1>
 
             <p className="text-base sm:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed mb-10">

@@ -264,7 +264,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 backgroundColor: Color(0xFF065F46),
-                                content: Text('Request posted successfully! PropertyHub AI will notify matching agents.'),
+                                content: Text('Request posted successfully! Properties & Autos AI will notify matching agents.'),
                               ),
                             );
                           }

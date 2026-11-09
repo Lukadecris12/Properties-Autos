@@ -41,11 +41,11 @@ class _MessagesScreenState extends State<MessagesScreen> {
     final partner = conv['participant_1'] ?? {};
     final partnerName = partner['company_name'] ?? 
         '${partner['first_name'] ?? ''} ${partner['last_name'] ?? ''}'.trim();
-    final displayName = partnerName.isNotEmpty ? partnerName : 'PropertyHub Partner';
+    final displayName = partnerName.isNotEmpty ? partnerName : 'Properties & Autos Partner';
     final phone = partner['phone_number'] ?? '+234 803 123 4567';
     final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
     final waPhone = cleanPhone.startsWith('0') ? '234${cleanPhone.substring(1)}' : (cleanPhone.isNotEmpty ? cleanPhone : '2348031234567');
-    final waUrl = 'https://wa.me/$waPhone?text=${Uri.encodeComponent('Hello $displayName, I am following up on our conversation on PropertyHub.')}';
+    final waUrl = 'https://wa.me/$waPhone?text=${Uri.encodeComponent('Hello $displayName, I am following up on our conversation on Properties & Autos.')}';
     final telUrl = 'tel:$cleanPhone';
 
     final textController = TextEditingController();
@@ -312,7 +312,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                           final partner = conv['participant_1'] ?? {};
                           final partnerName = partner['company_name'] ??
                               '${partner['first_name'] ?? ''} ${partner['last_name'] ?? ''}'.trim();
-                          final displayName = partnerName.isNotEmpty ? partnerName : 'PropertyHub Partner';
+                          final displayName = partnerName.isNotEmpty ? partnerName : 'Properties & Autos Partner';
                           final subject = conv['subject'] ?? 'Direct Inquiry';
                           final lastMsg = (conv['messages'] != null && (conv['messages'] as List).isNotEmpty)
                               ? (conv['messages'] as List).last['content']

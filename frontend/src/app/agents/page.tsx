@@ -196,7 +196,7 @@ export default function AgentsPage() {
                   const phone = selectedAgent.phone_number || '+234 803 123 4567';
                   const cleanPhone = phone.replace(/[^0-9]/g, '');
                   const waNumber = cleanPhone.startsWith('0') ? '234' + cleanPhone.slice(1) : (cleanPhone || '2348031234567');
-                  const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello ${agentTitle}, I am viewing your property storefront on PropertyHub and would like to inquire about your available listings.`)}`;
+                  const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello ${agentTitle}, I am viewing your storefront on Properties & Autos and would like to inquire about your available listings.`)}`;
 
                   return (
                     <div className="glass-panel p-6 rounded-3xl border border-gray-800 space-y-4">

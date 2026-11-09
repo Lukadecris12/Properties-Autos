@@ -3,6 +3,9 @@ from typing import List, Union
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import AnyHttpUrl, field_validator
 
+_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+_DEFAULT_DB_FILE = os.path.join(_ROOT_DIR, "propertyhub.db").replace("\\", "/")
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Properties & Autos"
     VERSION: str = "1.0.0"
@@ -11,8 +14,8 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # Database URLs
-    DATABASE_URL: str = "sqlite+aiosqlite:///./propertyhub.db"
-    SYNC_DATABASE_URL: str = "sqlite:///./propertyhub.db"
+    DATABASE_URL: str = f"sqlite+aiosqlite:///{_DEFAULT_DB_FILE}"
+    SYNC_DATABASE_URL: str = f"sqlite:///{_DEFAULT_DB_FILE}"
 
     # Security
     SECRET_KEY: str = "propertyhub_development_jwt_secret_key_needs_64_bytes_secure_2026_xxyyzz"

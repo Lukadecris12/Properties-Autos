@@ -52,7 +52,7 @@ export default function LoginPage() {
             <Building2 className="w-6 h-6 text-white" />
           </div>
           <span className="text-2xl font-bold tracking-tight text-white">
-            Property<span className="text-brand-500">Hub</span>
+            Properties <span className="text-brand-500">& Autos</span>
           </span>
         </Link>
         <h2 className="mt-6 text-2xl font-bold tracking-tight text-white">

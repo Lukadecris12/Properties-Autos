@@ -20,7 +20,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: 'ai',
-      text: "Hello! I am PropertyHub Chat AI. I can help you find compatible properties or automobiles, explain title documents (like C of O or Governor's Consent), assist with rental bookings, or help you formulate requirements.",
+      text: "Hello! I am Properties & Autos AI. I can help you find compatible properties or automobiles, explain title documents (like C of O or Governor's Consent), assist with rental bookings, or help you formulate requirements.",
       suggestedActions: [
         "Explain C of O vs Governor's Consent",
         "Find Short-let Apartments in Lagos",
@@ -78,7 +78,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
             </div>
             <div>
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                PropertyHub Chat AI
+                Properties & Autos AI
                 <span className="text-[10px] bg-brand-950 text-brand-300 border border-brand-500/40 px-2 py-0.5 rounded-full font-medium">
                   Live
                 </span>

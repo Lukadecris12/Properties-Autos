@@ -213,7 +213,7 @@ export default function ListingDetailPage() {
   const cleanPhone = displayPhone.replace(/[^0-9]/g, '');
   const waPhone = cleanPhone.startsWith('0') ? `234${cleanPhone.slice(1)}` : (cleanPhone || '2348031234567');
   const waMessage = encodeURIComponent(
-    `Hello! I saw your listing on PropertyHub:\n*${listing.title}*\n(Ref: #${listing.id}, ${listing.currency} ${Number(listing.price).toLocaleString()})\nI am interested in this listing. Can we arrange an inspection or discuss terms?`
+    `Hello! I saw your listing on Properties & Autos:\n*${listing.title}*\n(Ref: #${listing.id}, ${listing.currency} ${Number(listing.price).toLocaleString()})\nI am interested in this listing. Can we arrange an inspection or discuss terms?`
   );
   const waUrl = `https://wa.me/${waPhone}?text=${waMessage}`;
   const telUrl = `tel:${displayPhone.replace(/\s+/g, '')}`;

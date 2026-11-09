@@ -23,7 +23,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
   final List<_ChatMessage> _messages = [
     _ChatMessage(
       isUser: false,
-      text: "Hello! I am PropertyHub Chat AI. Ask me anything about Nigerian properties, land title verifications (like C of O and Governor's Consent), short-let apartment reservations, or automobile rentals.",
+      text: "Hello! I am Properties & Autos AI. Ask me anything about Nigerian properties, land title verifications (like C of O and Governor's Consent), short-let apartment reservations, or automobile rentals.",
     ),
   ];
   bool _loading = false;
