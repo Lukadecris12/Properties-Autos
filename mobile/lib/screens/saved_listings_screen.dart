@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/constants.dart';
 import '../models/listing_model.dart';
 import '../services/api_service.dart';
 import 'listing_detail_screen.dart';
