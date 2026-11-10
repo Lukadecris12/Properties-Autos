@@ -49,6 +49,10 @@ mobile/*.lock
 *.key
 *.apk
 
+# User media uploads
+uploads/
+*/uploads/
+
 
 # IDE and OS files
 .vscode/

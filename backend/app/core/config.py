@@ -5,6 +5,7 @@ from pydantic import AnyHttpUrl, field_validator
 
 _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 _DEFAULT_DB_FILE = os.path.join(_ROOT_DIR, "propertyhub.db").replace("\\", "/")
+_DEFAULT_UPLOAD_DIR = os.path.join(_ROOT_DIR, "uploads").replace("\\", "/")
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Properties & Autos"
@@ -28,7 +29,7 @@ class Settings(BaseSettings):
 
     # Storage
     STORAGE_TYPE: str = "local"
-    UPLOAD_DIR: str = "./uploads"
+    UPLOAD_DIR: str = _DEFAULT_UPLOAD_DIR
 
     # AI Config
     OPENAI_API_KEY: str = ""

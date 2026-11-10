@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -20,13 +20,21 @@ import {
   DollarSign,
   ShieldCheck,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Star,
+  Camera,
+  Loader2,
+  UploadCloud,
+  X
 } from 'lucide-react';
 
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { AIAssistantModal } from '@/components/AIAssistantModal';
 import { TransactionType, AssetCategory, RentalPeriod } from '@/lib/types';
+import { api } from '@/lib/api';
 
 export default function NewListingPage() {
   const router = useRouter();
@@ -92,8 +100,13 @@ export default function NewListingPage() {
   const [condition, setCondition] = useState('Foreign Used');
   const [vehicleServiceType, setVehicleServiceType] = useState('chauffeur_driven');
 
-  // Media URLs
+  // Media State: Supports up to 5 photos via device upload or direct link
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [mediaTab, setMediaTab] = useState<'device' | 'link'>('device');
   const [imageUrl, setImageUrl] = useState('');
+  const [imageCaption, setImageCaption] = useState('');
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [mediaError, setMediaError] = useState<string | null>(null);
   const [imagesList, setImagesList] = useState<Array<{ url: string; caption: string; is_cover: boolean }>>([
     {
       url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
@@ -110,18 +123,105 @@ export default function NewListingPage() {
     }
   };
 
-  const handleAddImage = () => {
-    if (imageUrl.trim()) {
-      setImagesList([
-        ...imagesList,
-        { url: imageUrl.trim(), caption: 'Photo', is_cover: imagesList.length === 0 }
-      ]);
-      setImageUrl('');
+  // Upload pictures from device (up to 5 total)
+  const handleDeviceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setMediaError(null);
+    const remainingSlots = 5 - imagesList.length;
+
+    if (remainingSlots <= 0) {
+      setMediaError('Maximum 5 pictures allowed per listing. Remove an existing photo to upload another.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    const filesArray = Array.from(files);
+    if (filesArray.length > remainingSlots) {
+      setMediaError(`Only ${remainingSlots} more picture(s) allowed. Uploading the first ${remainingSlots}.`);
+    }
+
+    const selectedFiles = filesArray.slice(0, remainingSlots);
+
+    // Validate size (10MB)
+    const oversize = selectedFiles.find(f => f.size > 10 * 1024 * 1024);
+    if (oversize) {
+      setMediaError(`File "${oversize.name}" exceeds the 10MB limit. Please upload an image under 10MB.`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setUploadingImages(true);
+    try {
+      const res = await api.uploadMedia(selectedFiles);
+      if (res.images && res.images.length > 0) {
+        const newImages = res.images.map((item, idx) => ({
+          url: item.url,
+          caption: item.original_name.split('.')[0] || (assetCategory === 'VEHICLE' ? 'Auto Photo' : 'Property Photo'),
+          is_cover: imagesList.length === 0 && idx === 0,
+        }));
+        setImagesList(prev => [...prev, ...newImages]);
+      }
+    } catch (err: any) {
+      setMediaError(err.message || 'Failed to upload pictures. Please try again or use direct links.');
+    } finally {
+      setUploadingImages(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
+  // Add picture via direct link
+  const handleAddLink = () => {
+    setMediaError(null);
+    if (imagesList.length >= 5) {
+      setMediaError('Maximum 5 pictures allowed per listing. Remove an existing picture first.');
+      return;
+    }
+
+    if (!imageUrl.trim()) {
+      setMediaError('Please enter a valid picture URL.');
+      return;
+    }
+
+    try {
+      new URL(imageUrl.trim());
+    } catch {
+      setMediaError('Please enter a valid website URL starting with http:// or https://');
+      return;
+    }
+
+    setImagesList(prev => [
+      ...prev,
+      {
+        url: imageUrl.trim(),
+        caption: imageCaption.trim() || (assetCategory === 'VEHICLE' ? 'Auto Photo' : 'Property Photo'),
+        is_cover: prev.length === 0,
+      }
+    ]);
+
+    setImageUrl('');
+    setImageCaption('');
+  };
+
   const handleRemoveImage = (index: number) => {
-    setImagesList(imagesList.filter((_, i) => i !== index));
+    setMediaError(null);
+    setImagesList(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+      if (prev[index]?.is_cover && updated.length > 0) {
+        updated[0].is_cover = true;
+      }
+      return updated;
+    });
+  };
+
+  const handleSetCover = (index: number) => {
+    setImagesList(prev =>
+      prev.map((img, i) => ({
+        ...img,
+        is_cover: i === index,
+      }))
+    );
   };
 
   // AI Description Enhancement
@@ -132,7 +232,7 @@ export default function NewListingPage() {
     }
     setEnhancingAI(true);
     try {
-      const res = await fetch('http://localhost:8000/api/v1/ai/enhance-listing', {
+      const res = await fetch('/api/v1/ai/enhance-listing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -239,7 +339,7 @@ export default function NewListingPage() {
 
       // If no token stored yet, obtain quick agent bearer token
       if (!token) {
-        const authRes = await fetch('http://localhost:8000/api/v1/auth/login', {
+        const authRes = await fetch('/api/v1/auth/login', {
           method: 'POST',
           body: new URLSearchParams({
             username: 'agent@apexproperties.ng',
@@ -255,7 +355,7 @@ export default function NewListingPage() {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch('http://localhost:8000/api/v1/listings/', {
+      const res = await fetch('/api/v1/listings/', {
         method: 'POST',
         headers,
         body: JSON.stringify(payload)
@@ -905,45 +1005,294 @@ export default function NewListingPage() {
                 </div>
               )}
 
-              {/* Photos & Media */}
-              <div className="space-y-3 pt-4 border-t border-gray-800">
-                <h3 className="text-xs font-bold text-brand-400 uppercase tracking-wider">Media & Photos</h3>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="Paste image URL (e.g. Unsplash or S3 image link)..."
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
-                  />
+              {/* Photos & Media: Up to 5 Pictures (Device Upload or Picture Links) */}
+              <div className="space-y-4 pt-6 border-t border-gray-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-brand-400" />
+                      <h3 className="text-xs font-bold text-brand-400 uppercase tracking-wider">
+                        {assetCategory === 'VEHICLE' ? 'Auto Photos & Showcase' : 'Property Photos & Showcase'}
+                      </h3>
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      Upload from your device or paste direct links. You can add up to 5 high-resolution pictures.
+                    </p>
+                  </div>
+                  
+                  {/* Photo Counter Pill */}
+                  <div className={`px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1.5 self-start sm:self-auto border ${
+                    imagesList.length >= 5
+                      ? 'bg-amber-950/80 border-amber-500/40 text-amber-300'
+                      : imagesList.length > 0
+                      ? 'bg-brand-950/80 border-brand-500/40 text-brand-300'
+                      : 'bg-gray-900 border-gray-800 text-gray-400'
+                  }`}>
+                    {imagesList.length >= 5 ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
+                        <span>5 / 5 Photos (Max Reached)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>{imagesList.length} of 5 Photos Added</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Media Tab Selector */}
+                <div className="flex items-center gap-2 border-b border-gray-800 pb-2">
                   <button
                     type="button"
-                    onClick={handleAddImage}
-                    className="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold flex items-center gap-1.5"
+                    onClick={() => { setMediaTab('device'); setMediaError(null); }}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+                      mediaTab === 'device'
+                        ? 'bg-brand-600 text-white shadow-md shadow-brand-600/30'
+                        : 'bg-gray-900 text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Photo</span>
+                    <UploadCloud className="w-3.5 h-3.5" />
+                    <span>Upload From Device</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setMediaTab('link'); setMediaError(null); }}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+                      mediaTab === 'link'
+                        ? 'bg-brand-600 text-white shadow-md shadow-brand-600/30'
+                        : 'bg-gray-900 text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    <LinkIcon className="w-3.5 h-3.5" />
+                    <span>Add Picture Link</span>
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                  {imagesList.map((img, idx) => (
-                    <div key={idx} className="relative aspect-[16/10] rounded-xl overflow-hidden border border-gray-800 group">
-                      <img src={img.url} alt="listing" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(idx)}
-                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/70 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                      {img.is_cover && (
-                        <span className="absolute bottom-1 left-1 px-2 py-0.5 rounded text-[10px] bg-brand-600 text-white font-bold">
-                          Cover
-                        </span>
+                {/* Media Error Message */}
+                {mediaError && (
+                  <div className="p-3 rounded-xl bg-red-950/60 border border-red-500/40 text-red-300 text-xs flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                      <span>{mediaError}</span>
+                    </div>
+                    <button type="button" onClick={() => setMediaError(null)} className="text-red-400 hover:text-white">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                {/* TAB 1: DEVICE UPLOAD DROPZONE */}
+                {mediaTab === 'device' && (
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleDeviceUpload}
+                      disabled={imagesList.length >= 5 || uploadingImages}
+                      className="hidden"
+                    />
+
+                    <div
+                      onClick={() => {
+                        if (imagesList.length < 5 && !uploadingImages && fileInputRef.current) {
+                          fileInputRef.current.click();
+                        }
+                      }}
+                      className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all ${
+                        imagesList.length >= 5
+                          ? 'border-gray-800 bg-gray-950/40 opacity-60 cursor-not-allowed'
+                          : uploadingImages
+                          ? 'border-brand-500/50 bg-brand-950/20 cursor-wait'
+                          : 'border-gray-800 hover:border-brand-500/50 hover:bg-gray-900/50 cursor-pointer bg-gray-950/60'
+                      }`}
+                    >
+                      {uploadingImages ? (
+                        <div className="flex flex-col items-center justify-center py-2">
+                          <Loader2 className="w-8 h-8 text-brand-400 animate-spin mb-2" />
+                          <p className="text-xs font-bold text-white">Uploading & Optimizing Pictures...</p>
+                          <p className="text-[11px] text-gray-400 mt-1">Saving high-resolution images to platform storage</p>
+                        </div>
+                      ) : imagesList.length >= 5 ? (
+                        <div className="flex flex-col items-center justify-center py-2">
+                          <CheckCircle2 className="w-8 h-8 text-amber-400 mb-2" />
+                          <p className="text-xs font-bold text-white">Maximum 5 Pictures Reached</p>
+                          <p className="text-[11px] text-gray-400 mt-1">To replace an image, delete one from your gallery below.</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-2">
+                          <div className="w-12 h-12 rounded-2xl bg-brand-950 border border-brand-500/30 flex items-center justify-center text-brand-400 mb-3 shadow-lg shadow-brand-500/20">
+                            <UploadCloud className="w-6 h-6" />
+                          </div>
+                          <p className="text-xs font-bold text-white">
+                            Click to Browse or Drag & Drop Pictures from Your Device
+                          </p>
+                          <p className="text-[11px] text-gray-400 mt-1">
+                            PNG, JPG, JPEG, WebP, AVIF up to 10MB each • Up to 5 photos total ({5 - imagesList.length} slots left)
+                          </p>
+                          <button
+                            type="button"
+                            className="mt-3 px-4 py-2 rounded-xl bg-gray-900 border border-gray-700 hover:border-brand-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+                          >
+                            <Camera className="w-3.5 h-3.5 text-brand-400" />
+                            <span>Select Photos From Device</span>
+                          </button>
+                        </div>
                       )}
                     </div>
-                  ))}
+                  </div>
+                )}
+
+                {/* TAB 2: PASTE PICTURE LINK */}
+                {mediaTab === 'link' && (
+                  <div className="p-4 rounded-2xl bg-gray-950/60 border border-gray-800 space-y-3">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="relative flex-1">
+                        <LinkIcon className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="url"
+                          value={imageUrl}
+                          onChange={(e) => setImageUrl(e.target.value)}
+                          disabled={imagesList.length >= 5}
+                          placeholder="Paste image URL (e.g. https://images.unsplash.com/... or cloud image link)"
+                          className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#0b0f19] border border-gray-800 text-white text-xs focus:outline-none focus:border-brand-500 disabled:opacity-50"
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        value={imageCaption}
+                        onChange={(e) => setImageCaption(e.target.value)}
+                        disabled={imagesList.length >= 5}
+                        placeholder="Caption (e.g. Front View)"
+                        className="sm:w-48 px-3 py-2.5 rounded-xl bg-[#0b0f19] border border-gray-800 text-white text-xs focus:outline-none focus:border-brand-500 disabled:opacity-50"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddLink}
+                        disabled={imagesList.length >= 5 || !imageUrl.trim()}
+                        className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-brand-600/25 shrink-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Picture</span>
+                      </button>
+                    </div>
+
+                    {/* Category Caption Suggestions */}
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                      <span className="text-[10px] text-gray-500 uppercase font-semibold">Quick labels:</span>
+                      {(assetCategory === 'VEHICLE'
+                        ? ['Front View', 'Dashboard & Interior', 'Rear Angle', 'Engine Bay', 'Side Profile']
+                        : ['Living Room', 'Master Bedroom', 'Kitchen & Dining', 'Exterior / Compound', 'Floor Plan / Title']
+                      ).map((label) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => setImageCaption(label)}
+                          className="text-[10px] px-2 py-0.5 rounded-full bg-gray-900 hover:bg-brand-950 border border-gray-800 hover:border-brand-500/40 text-gray-300 hover:text-brand-300 transition-all"
+                        >
+                          + {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 5-PHOTO GALLERY SHOWCASE GRID */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-gray-300">
+                      Listing Photo Gallery ({imagesList.length} of 5 slots filled)
+                    </span>
+                    {imagesList.length > 0 && (
+                      <span className="text-[11px] text-gray-400">
+                        First or starred photo is your listing's primary cover image.
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    {/* Render Added Photos */}
+                    {imagesList.map((img, idx) => (
+                      <div
+                        key={idx}
+                        className={`relative aspect-[16/11] rounded-2xl overflow-hidden border transition-all group ${
+                          img.is_cover
+                            ? 'border-brand-500 ring-2 ring-brand-500/50 shadow-lg shadow-brand-500/20'
+                            : 'border-gray-800 hover:border-gray-700 bg-gray-950'
+                        }`}
+                      >
+                        <img
+                          src={img.url}
+                          alt={img.caption || `Photo ${idx + 1}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+
+                        {/* Cover Badge */}
+                        {img.is_cover ? (
+                          <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] bg-brand-600 text-white font-bold flex items-center gap-1 shadow-md shadow-brand-600/40">
+                            <Star className="w-3 h-3 fill-current" />
+                            Cover
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSetCover(idx)}
+                            title="Set as main cover photo"
+                            className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[10px] bg-black/70 hover:bg-brand-600 text-gray-300 hover:text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
+                          >
+                            <Star className="w-3 h-3" />
+                            Set Cover
+                          </button>
+                        )}
+
+                        {/* Delete Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(idx)}
+                          title="Remove photo"
+                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/75 hover:bg-red-600 text-red-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Caption Overlay */}
+                        <div className="absolute bottom-0 inset-x-0 p-1.5 bg-gradient-to-t from-black/90 via-black/60 to-transparent">
+                          <p className="text-[10px] text-white truncate font-medium">
+                            {img.caption || `Photo #${idx + 1}`}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Render Empty Slots up to 5 */}
+                    {Array.from({ length: Math.max(0, 5 - imagesList.length) }).map((_, emptyIdx) => {
+                      const slotNum = imagesList.length + emptyIdx + 1;
+                      return (
+                        <div
+                          key={`empty-${emptyIdx}`}
+                          onClick={() => {
+                            if (mediaTab === 'device' && fileInputRef.current) {
+                              fileInputRef.current.click();
+                            }
+                          }}
+                          className="aspect-[16/11] rounded-2xl border-2 border-dashed border-gray-800/80 hover:border-brand-500/40 bg-gray-950/40 hover:bg-gray-900/30 flex flex-col items-center justify-center p-2 text-center transition-all cursor-pointer group"
+                        >
+                          <div className="w-7 h-7 rounded-xl bg-gray-900 group-hover:bg-brand-950 border border-gray-800 group-hover:border-brand-500/30 flex items-center justify-center text-gray-500 group-hover:text-brand-400 transition-colors mb-1">
+                            <Plus className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-300">
+                            Slot {slotNum}
+                          </span>
+                          <span className="text-[9px] text-gray-600">
+                            {emptyIdx === 0 && imagesList.length === 0 ? 'Primary Photo' : 'Optional Photo'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 

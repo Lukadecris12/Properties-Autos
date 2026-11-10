@@ -69,6 +69,19 @@ class ApiClient {
     return res.json();
   }
 
+  async createListing(data: any) {
+    const res = await fetch(`${API_BASE_URL}/listings/`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to create listing');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
   async naturalLanguageSearch(query: string) {
     const res = await fetch(`${API_BASE_URL}/search/natural-language`, {
       method: 'POST',
@@ -363,6 +376,24 @@ class ApiClient {
       headers: this.getAuthHeaders(),
     });
     if (!res.ok) throw new Error('Failed to fetch messages');
+    return res.json();
+  }
+
+  // --- Media & File Uploads ---
+  async uploadMedia(files: File[]): Promise<{ images: Array<{ url: string; filename: string; original_name: string; size: number }>; message: string }> {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+
+    const res = await fetch(`${API_BASE_URL}/media/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to upload image(s)');
+      throw new Error(errMsg);
+    }
     return res.json();
   }
 }

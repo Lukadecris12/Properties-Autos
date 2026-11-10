@@ -78,6 +78,10 @@ app.add_middleware(
 # Mount API Router
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
+# Mount Static Uploads Directory
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+
 # Health Check Endpoint
 @app.get("/health", response_model=HealthStatus, tags=["System Health"])
 async def health_check():

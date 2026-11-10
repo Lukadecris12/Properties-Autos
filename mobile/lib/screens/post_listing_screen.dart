@@ -19,7 +19,29 @@ class _PostListingScreenState extends State<PostListingScreen> {
   final _descController = TextEditingController();
   final _specsController = TextEditingController();
   final _imageUrlController = TextEditingController();
+  final List<String> _photos = [];
   bool _submitting = false;
+
+  void _addPhoto() {
+    final url = _imageUrlController.text.trim();
+    if (url.isEmpty) return;
+    if (_photos.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum 5 photos allowed per listing.')),
+      );
+      return;
+    }
+    setState(() {
+      _photos.add(url);
+      _imageUrlController.clear();
+    });
+  }
+
+  void _removePhoto(int index) {
+    setState(() {
+      _photos.removeAt(index);
+    });
+  }
 
   void _submitListing() async {
     final title = _titleController.text.trim();
@@ -42,6 +64,7 @@ class _PostListingScreenState extends State<PostListingScreen> {
       _descController.clear();
       _specsController.clear();
       _imageUrlController.clear();
+      _photos.clear();
 
       showDialog(
         context: context,
@@ -335,20 +358,127 @@ class _PostListingScreenState extends State<PostListingScreen> {
             ),
             const SizedBox(height: 14),
 
-            // Image URL
-            TextField(
-              controller: _imageUrlController,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              decoration: InputDecoration(
-                labelText: 'Photo Link / Image URL',
-                labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
-                hintText: 'https://images.unsplash.com/...',
-                hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
-                filled: true,
-                fillColor: const Color(0xFF111827),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1F2937))),
-              ),
+            // Photos & Media Showcase (Up to 5 pictures)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Photos & Showcase (Max 5)',
+                  style: TextStyle(color: Color(0xFF10B981), fontSize: 13, fontWeight: FontWeight.bold),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _photos.length >= 5 ? const Color(0xFF78350F) : const Color(0xFF064E3B),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_photos.length} / 5 Added',
+                    style: TextStyle(
+                      color: _photos.length >= 5 ? Colors.amber : Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 8),
+
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _imageUrlController,
+                    enabled: _photos.length < 5,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: _photos.length >= 5 ? 'Maximum 5 photos reached' : 'Photo Link / URL',
+                      labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                      hintText: 'https://images.unsplash.com/...',
+                      hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                      filled: true,
+                      fillColor: const Color(0xFF111827),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1F2937))),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF059669),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  ),
+                  onPressed: _photos.length < 5 ? _addPhoto : null,
+                  icon: const Icon(Icons.add_photo_alternate, size: 18, color: Colors.white),
+                  label: const Text('Add', style: TextStyle(color: Colors.white, fontSize: 12)),
+                ),
+              ],
+            ),
+
+            if (_photos.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 80,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _photos.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, idx) {
+                    final photoUrl = _photos[idx];
+                    final isCover = idx == 0;
+                    return Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            width: 100,
+                            height: 80,
+                            color: const Color(0xFF1F2937),
+                            child: Image.network(
+                              photoUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Center(
+                                child: Icon(Icons.broken_image, color: Colors.grey, size: 24),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (isCover)
+                          Positioned(
+                            bottom: 4,
+                            left: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF059669),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text('Cover', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: InkWell(
+                            onTap: () => _removePhoto(idx),
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.7),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close, color: Colors.redAccent, size: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
             const SizedBox(height: 14),
 
             // Description
