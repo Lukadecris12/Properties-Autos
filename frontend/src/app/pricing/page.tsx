@@ -24,6 +24,7 @@ import {
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { api } from '@/lib/api';
+import { openPaystackPopup } from '@/lib/paystack';
 
 export default function PricingSubscriptionPage() {
   const [activeTab, setActiveTab] = useState<'STANDARD' | 'BUSINESS' | 'ENTERPRISE'>('STANDARD');
@@ -77,14 +78,23 @@ export default function PricingSubscriptionPage() {
   const enterprisePlans = plans.filter(p => p.tier_category === 'ENTERPRISE');
 
   const handleSelectPlan = async (plan: any) => {
+    if (!currentUser) {
+      // Require authentication to bind subscription to account
+      window.location.href = `/auth/login?redirect=/pricing`;
+      return;
+    }
+
     setSelectedPlan(plan);
     setErrorMsg('');
     setCheckoutStep('DETAILS');
 
-    // Initiate invoice from backend
+    // Initiate invoice & Paystack payment from backend
     try {
       setProcessing(true);
-      const res = await api.subscribeToPlan({ plan_slug: plan.slug });
+      const res = await api.subscribeToPlan({ 
+        plan_slug: plan.slug,
+        payment_method: 'PAYSTACK'
+      });
       setInvoiceData(res.data);
       setCheckoutStep('PAYMENT');
     } catch (err: any) {
@@ -94,20 +104,62 @@ export default function PricingSubscriptionPage() {
     }
   };
 
-  const handleConfirmActivation = async () => {
+  const handlePayWithPaystack = async () => {
+    if (!invoiceData || !selectedPlan || !currentUser) return;
+
+    setErrorMsg('');
+    setProcessing(true);
+
+    try {
+      const opened = await openPaystackPopup({
+        key: invoiceData.paystack_public_key || process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
+        email: currentUser.email || 'customer@propertyhub.ng',
+        amount: Number(selectedPlan.price_ngn),
+        ref: invoiceData.reference,
+        metadata: {
+          user_id: currentUser.id,
+          plan_slug: selectedPlan.slug,
+          plan_name: selectedPlan.name,
+          customer_name: `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim()
+        },
+        onSuccess: async (reference: string) => {
+          await handleConfirmActivation(reference);
+        },
+        onClose: () => {
+          setProcessing(false);
+        }
+      });
+
+      if (!opened) {
+        // Fallback to hosted redirect URL if popup failed to open
+        if (invoiceData.paystack_authorization_url) {
+          window.location.href = invoiceData.paystack_authorization_url;
+        } else {
+          setErrorMsg('Could not open Paystack checkout window. Please check your browser popup blocker.');
+          setProcessing(false);
+        }
+      }
+    } catch (e: any) {
+      setErrorMsg(e.message || 'Payment initiation error.');
+      setProcessing(false);
+    }
+  };
+
+  const handleConfirmActivation = async (explicitRef?: string) => {
     if (!invoiceData || !selectedPlan) return;
     setProcessing(true);
     setErrorMsg('');
+    const refToVerify = explicitRef || invoiceData.reference;
     try {
       const res = await api.verifySubscriptionPayment({
-        reference: invoiceData.reference,
+        reference: refToVerify,
         plan_slug: selectedPlan.slug,
-        provider: invoiceData.provider || 'PAYSTACK'
+        provider: 'PAYSTACK'
       });
       setUserSubscription(res.data);
       setCheckoutStep('SUCCESS');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Payment verification failed');
+      setErrorMsg(err.message || 'Payment verification failed. If your card was charged, contact support with reference: ' + refToVerify);
     } finally {
       setProcessing(false);
     }
@@ -504,36 +556,73 @@ export default function PricingSubscriptionPage() {
                   </div>
                 </div>
 
-                {/* Designated Bank Clearing Details */}
-                <div className="p-4 rounded-2xl bg-brand-950/40 border border-brand-500/30 space-y-2 text-xs">
-                  <div className="font-bold text-white flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Designated Corporate Bank Account:</span>
-                  </div>
-                  <div className="text-gray-300 space-y-1 text-[11px]">
-                    <div>Bank: <strong>{invoiceData?.designated_bank?.bank_name || 'Zenith Bank PLC'}</strong></div>
-                    <div>Account Name: <strong>{invoiceData?.designated_bank?.account_name || 'Properties & Autos Technologies Ltd'}</strong></div>
-                    <div>Account Number: <strong className="text-brand-300 font-mono text-xs">1018899223</strong></div>
-                    <div>Narration: <strong className="text-amber-300 font-mono text-[10px]">{invoiceData?.reference}</strong></div>
-                  </div>
-                </div>
-
-                <div className="pt-2 flex gap-3">
+                {/* Payment Action Options */}
+                <div className="space-y-3 pt-2">
+                  {/* Primary Paystack Button */}
                   <button
                     type="button"
                     disabled={processing}
-                    onClick={handleConfirmActivation}
-                    className="flex-1 py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white font-bold text-xs shadow-lg shadow-brand-600/30 flex items-center justify-center gap-2"
+                    onClick={handlePayWithPaystack}
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-brand-600 hover:from-emerald-500 hover:to-brand-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-xl shadow-brand-600/30 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.01]"
                   >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>{processing ? 'Verifying...' : 'Confirm Payment & Activate'}</span>
+                    <CreditCard className="w-4 h-4" />
+                    <span>
+                      {processing ? 'Connecting to Paystack...' : `Pay ₦${Number(selectedPlan.price_ngn).toLocaleString()} with Paystack`}
+                    </span>
                   </button>
+
+                  <div className="flex items-center justify-between text-[11px] text-gray-400 px-1">
+                    <span className="flex items-center gap-1 text-emerald-400">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      Secured by Paystack 256-bit SSL
+                    </span>
+                    {invoiceData?.paystack_authorization_url && (
+                      <a
+                        href={invoiceData.paystack_authorization_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brand-400 hover:underline"
+                      >
+                        Open checkout page &rarr;
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Collapsible Designated Bank Clearing Details */}
+                <details className="p-3.5 rounded-2xl bg-gray-900/60 border border-gray-800 text-xs">
+                  <summary className="font-semibold text-gray-300 cursor-pointer flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4 text-gray-400" />
+                      <span>Corporate Bank Transfer Alternative</span>
+                    </span>
+                    <span className="text-[10px] text-brand-400">View details</span>
+                  </summary>
+                  <div className="text-gray-300 space-y-1.5 text-[11px] mt-3 pt-3 border-t border-gray-800">
+                    <div>Bank: <strong>{invoiceData?.designated_bank?.bank_name || 'Zenith Bank PLC'}</strong></div>
+                    <div>Account Name: <strong>{invoiceData?.designated_bank?.account_name || 'Properties & Autos Technologies Ltd'}</strong></div>
+                    <div>Account Number: <strong className="text-brand-300 font-mono text-xs">1018899223</strong></div>
+                    <div>Payment Narration: <strong className="text-amber-300 font-mono text-[10px]">{invoiceData?.reference}</strong></div>
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        disabled={processing}
+                        onClick={() => handleConfirmActivation()}
+                        className="w-full py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold border border-gray-700"
+                      >
+                        {processing ? 'Verifying...' : 'I have made the bank transfer'}
+                      </button>
+                    </div>
+                  </div>
+                </details>
+
+                <div className="pt-1 flex justify-end">
                   <button
                     type="button"
                     onClick={() => setSelectedPlan(null)}
-                    className="px-5 py-3.5 rounded-2xl bg-gray-800 hover:bg-gray-750 text-gray-300 text-xs font-semibold"
+                    className="px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white text-xs font-medium"
                   >
-                    Cancel
+                    Close
                   </button>
                 </div>
               </>

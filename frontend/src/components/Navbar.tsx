@@ -96,31 +96,31 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-50 glass-panel border-b border-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+      <div className="w-full max-w-[1720px] mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-2 lg:gap-3 h-20">
           
           {/* Logo & Brand Identity */}
-          <Link href="/" className="flex items-center gap-3 shrink-0 select-none">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-brand-500/20 shrink-0">
+          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 shrink-0 select-none">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-brand-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-brand-500/20 shrink-0">
               <Building2 className="w-5 h-5 text-white" />
             </div>
             <div className="flex flex-col justify-center">
               <div className="flex items-center whitespace-nowrap leading-none">
-                <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                <span className="text-lg sm:text-xl xl:text-2xl font-extrabold tracking-tight text-white">
                   Properties
                 </span>
-                <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-brand-400 ml-1.5">
+                <span className="text-lg sm:text-xl xl:text-2xl font-extrabold tracking-tight text-brand-400 ml-1.5">
                   &amp;&nbsp;Autos
                 </span>
               </div>
-              <span className="text-[9px] sm:text-[10px] tracking-widest uppercase text-gray-400 font-semibold whitespace-nowrap mt-1 leading-none">
+              <span className="text-[8px] sm:text-[9px] tracking-widest uppercase text-gray-400 font-semibold whitespace-nowrap mt-1 leading-none">
                 Luxury Real Estate &amp; Vehicles
               </span>
             </div>
           </Link>
 
           {/* Primary Transaction Navigation with Dropdowns: BUY | RENT */}
-          <nav className="hidden md:flex items-center gap-1 bg-gray-900/80 p-1.5 rounded-full border border-gray-800 shadow-inner relative">
+          <nav className="hidden md:flex items-center gap-1 bg-gray-900/80 p-1 sm:p-1.5 rounded-full border border-gray-800 shadow-inner relative shrink-0">
             
             {/* BUY Menu with Submenu */}
             <div 
@@ -134,7 +134,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   if (onSelectTransaction) onSelectTransaction('SALE');
                   setBuyDropdownOpen(!buyDropdownOpen);
                 }}
-                className={`flex items-center gap-1.5 px-5 py-2 text-xs font-bold rounded-full transition-all duration-200 ${
+                className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200 ${
                   activeTransaction === 'SALE'
                     ? 'bg-brand-600 text-white shadow-md shadow-brand-600/30'
                     : 'text-gray-300 hover:text-white hover:bg-gray-800/60'
@@ -190,7 +190,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   if (onSelectTransaction) onSelectTransaction('RENT');
                   setRentDropdownOpen(!rentDropdownOpen);
                 }}
-                className={`flex items-center gap-1.5 px-5 py-2 text-xs font-bold rounded-full transition-all duration-200 ${
+                className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200 ${
                   activeTransaction === 'RENT'
                     ? 'bg-brand-600 text-white shadow-md shadow-brand-600/30'
                     : 'text-gray-300 hover:text-white hover:bg-gray-800/60'
@@ -236,84 +236,84 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           </nav>
 
-          {/* Directory Links: Agents & Developers, Messages, Saved, Admin */}
-          <div className="hidden xl:flex items-center gap-2 text-xs font-medium text-gray-300">
+          {/* Directory Links: Agents & Developers, Messages, Saved, Plans, Support, FAQ */}
+          <div className="hidden xl:flex items-center gap-1 2xl:gap-1.5 text-xs font-medium text-gray-300 shrink min-w-0">
             <Link 
               href="/agents" 
-              className="flex items-center gap-1.5 hover:text-brand-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
+              className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
             >
-              <UserCheck className="w-4 h-4 text-emerald-400" />
-              <span>Agents & Developers</span>
+              <UserCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>Agents<span className="hidden 2xl:inline">&nbsp;&amp;&nbsp;Developers</span></span>
             </Link>
             <Link 
               href="/messages" 
-              className="flex items-center gap-1.5 hover:text-brand-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
+              className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
             >
-              <MessageSquare className="w-4 h-4 text-brand-400" />
+              <MessageSquare className="w-3.5 h-3.5 text-brand-400 shrink-0" />
               <span>Messages</span>
             </Link>
             <Link 
               href="/saved" 
-              className="flex items-center gap-1.5 hover:text-rose-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50 text-gray-300"
+              className="flex items-center gap-1 hover:text-rose-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 text-gray-300 whitespace-nowrap"
             >
-              <Heart className="w-4 h-4 text-rose-500" />
+              <Heart className="w-3.5 h-3.5 text-rose-500 shrink-0" />
               <span>Saved</span>
             </Link>
             <Link 
               href="/pricing" 
-              className="flex items-center gap-1.5 hover:text-brand-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
+              className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
             >
-              <Crown className="w-4 h-4 text-amber-400" />
+              <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>Plans</span>
             </Link>
             <Link 
               href="/contact" 
-              className="flex items-center gap-1.5 hover:text-brand-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
+              className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
             >
-              <Headphones className="w-4 h-4 text-brand-400" />
+              <Headphones className="w-3.5 h-3.5 text-brand-400 shrink-0" />
               <span>Support</span>
             </Link>
             <Link 
               href="/faq" 
-              className="flex items-center gap-1.5 hover:text-brand-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
+              className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
             >
-              <HelpCircle className="w-4 h-4 text-amber-400" />
+              <HelpCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>FAQ</span>
             </Link>
             {currentUser?.is_superuser && (
               <Link 
                 href="/admin" 
-                className="flex items-center gap-1.5 text-red-400 hover:text-red-300 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
+                className="flex items-center gap-1 text-red-400 hover:text-red-300 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
               >
-                <ShieldCheck className="w-4 h-4 text-red-400" />
+                <ShieldCheck className="w-3.5 h-3.5 text-red-400 shrink-0" />
                 <span>Admin</span>
               </Link>
             )}
           </div>
 
           {/* Quick Actions & Auth */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-2 sm:gap-2.5 shrink-0">
             
             {/* Post Request */}
             <Link
               href="/requirements/new"
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-300 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-300 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 transition-all shrink-0 whitespace-nowrap"
             >
-              <FileText className="w-4 h-4 text-gold-500" />
+              <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>Post Request</span>
             </Link>
 
             {/* Post Listing CTA */}
             <Link
               href="/listings/new"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 transition-all shadow-lg shadow-brand-600/20"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 transition-all shadow-md shadow-brand-600/20 shrink-0 whitespace-nowrap"
             >
-              <PlusCircle className="w-4 h-4" />
+              <PlusCircle className="w-3.5 h-3.5 shrink-0" />
               <span>Publish Listing</span>
             </Link>
 
             {/* Unified Profile Menu Dropdown */}
-            <div className="relative border-l border-gray-800 pl-3">
+            <div className="relative border-l border-gray-800 pl-2 sm:pl-2.5 shrink-0">
               <button
                 type="button"
                 onClick={() => {
@@ -321,7 +321,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setBuyDropdownOpen(false);
                   setRentDropdownOpen(false);
                 }}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl border transition-all ${
+                className={`flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 rounded-2xl border transition-all shrink-0 ${
                   profileDropdownOpen
                     ? 'bg-brand-950/90 border-brand-500 text-white shadow-lg shadow-brand-500/20 ring-1 ring-brand-500'
                     : 'bg-gray-900 border-gray-800 text-gray-300 hover:text-white hover:border-gray-700'
@@ -330,7 +330,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-brand-500 to-emerald-600 flex items-center justify-center font-bold text-white text-xs shadow-md shadow-brand-500/25 shrink-0">
                   {currentUser ? (currentUser.first_name || currentUser.company_name || 'U')[0].toUpperCase() : <UserIcon className="w-3.5 h-3.5" />}
                 </div>
-                <div className="text-left hidden xl:block">
+                <div className="text-left hidden 2xl:block">
                   <div className="text-xs font-bold text-white leading-tight flex items-center gap-1">
                     <span className="max-w-[85px] truncate">
                       {currentUser ? (currentUser.first_name || currentUser.company_name) : 'Profile'}
@@ -341,7 +341,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {currentUser ? `${currentUser.active_mode || 'Member'}` : 'Sign In'}
                   </div>
                 </div>
-                <ChevronDown className={`w-3.5 h-3.5 opacity-60 transition-transform duration-200 ${profileDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3.5 h-3.5 opacity-60 transition-transform duration-200 shrink-0 ${profileDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Profile Dropdown Menu Card */}
@@ -450,26 +450,29 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <span className="font-semibold">24/7 VIP Concierge Desk</span>
                       </a>
                       <Link 
-              href="/pricing" 
-              className="flex items-center gap-1.5 hover:text-brand-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
-            >
-              <Crown className="w-4 h-4 text-amber-400" />
-              <span>Plans</span>
-            </Link>
-            <Link 
-              href="/contact" 
-              className="flex items-center gap-1.5 hover:text-brand-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
-            >
-              <Headphones className="w-4 h-4 text-brand-400" />
-              <span>Support</span>
-            </Link>
-            <Link 
-              href="/faq" 
-              className="flex items-center gap-1.5 hover:text-brand-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
-            >
-              <HelpCircle className="w-4 h-4 text-amber-400" />
-              <span>FAQ</span>
-            </Link>
+                        href="/pricing" 
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs text-gray-200 hover:text-white hover:bg-gray-800/70 transition-all group"
+                      >
+                        <Crown className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                        <span className="font-semibold">Plans &amp; Subscriptions</span>
+                      </Link>
+                      <Link 
+                        href="/contact" 
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs text-gray-200 hover:text-white hover:bg-gray-800/70 transition-all group"
+                      >
+                        <Headphones className="w-4 h-4 text-brand-400 group-hover:scale-110 transition-transform" />
+                        <span className="font-semibold">Client Support Desk</span>
+                      </Link>
+                      <Link 
+                        href="/faq" 
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs text-gray-200 hover:text-white hover:bg-gray-800/70 transition-all group"
+                      >
+                        <HelpCircle className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                        <span className="font-semibold">Frequently Asked Questions</span>
+                      </Link>
             {currentUser?.is_superuser && (
                         <Link
                           href="/admin"

@@ -1,10 +1,12 @@
+import json
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
@@ -20,6 +22,7 @@ from app.schemas.subscription import (
 )
 from app.schemas.common import ResponseModel
 from app.services.subscription_service import SubscriptionService
+from app.services.paystack_service import PaystackService
 
 router = APIRouter()
 
@@ -97,6 +100,21 @@ async def initiate_subscription(
     # Generate unique transaction reference
     tx_ref = f"SUB-{req.plan_slug.upper()}-{current_user.id}-{int(datetime.now(timezone.utc).timestamp())}"
     
+    paystack_init_data = {}
+    if req.payment_method.upper() == "PAYSTACK" and settings.PAYSTACK_SECRET_KEY:
+        ok, p_msg, p_data = await PaystackService.initialize_payment(
+            email=current_user.email,
+            amount_ngn=float(plan.price_ngn),
+            reference=tx_ref,
+            metadata={
+                "user_id": current_user.id,
+                "plan_slug": plan.slug,
+                "plan_name": plan.name
+            }
+        )
+        if ok:
+            paystack_init_data = p_data
+
     return ResponseModel(
         message="Subscription invoice generated successfully. Proceed with payment verification.",
         data={
@@ -107,6 +125,9 @@ async def initiate_subscription(
             "amount_ngn": float(plan.price_ngn),
             "payment_required": True,
             "provider": req.payment_method,
+            "paystack_authorization_url": paystack_init_data.get("authorization_url"),
+            "paystack_access_code": paystack_init_data.get("access_code"),
+            "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
             "designated_bank": {
                 "bank_name": "Zenith Bank PLC",
                 "account_name": "Properties & Autos Technologies Ltd - Subscription Clearing",
@@ -124,7 +145,7 @@ async def verify_subscription_payment(
 ):
     """
     Server-side verification of payment reference and activation of subscription.
-    Idempotent: prevents duplicate activations.
+    Validates directly with Paystack API if provider is PAYSTACK.
     """
     stmt = select(SubscriptionPlan).where(SubscriptionPlan.slug == req.plan_slug)
     plan = (await db.execute(stmt)).scalars().first()
@@ -134,15 +155,25 @@ async def verify_subscription_payment(
             detail="Specified subscription plan was not found."
         )
 
-    # In production with Paystack/Flutterwave, verify server-side via secret key API
-    # Here, validate the reference format and idempotency
+    verified_amount = float(plan.price_ngn)
+
+    # If provider is Paystack and secret key configured, verify directly with Paystack API
+    if req.provider.upper() == "PAYSTACK" and settings.PAYSTACK_SECRET_KEY:
+        verified, v_msg, v_data = await PaystackService.verify_payment(req.reference)
+        if not verified:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Paystack verification failed: {v_msg}"
+            )
+        verified_amount = v_data.get("amount_ngn", verified_amount)
+
     success, msg, sub = await SubscriptionService.activate_subscription(
         db=db,
         user_id=current_user.id,
         plan_slug=req.plan_slug,
         provider=req.provider,
         reference=req.reference,
-        amount_ngn=float(plan.price_ngn)
+        amount_ngn=verified_amount
     )
 
     if not success:
@@ -156,6 +187,50 @@ async def verify_subscription_payment(
         message=msg,
         data=usage
     )
+
+@router.post("/paystack-webhook")
+async def paystack_subscription_webhook(
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Paystack Webhook listener.
+    Receives charge.success and activates the user subscription automatically.
+    """
+    signature = request.headers.get("x-paystack-signature", "")
+    body_bytes = await request.body()
+    
+    if not PaystackService.verify_webhook_signature(body_bytes, signature):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid Paystack signature."
+        )
+
+    try:
+        event_data = json.loads(body_bytes.decode("utf-8"))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Malformed JSON")
+
+    event_type = event_data.get("event")
+    if event_type == "charge.success":
+        data = event_data.get("data", {})
+        reference = data.get("reference")
+        metadata = data.get("metadata", {})
+        user_id = metadata.get("user_id")
+        plan_slug = metadata.get("plan_slug")
+        amount_ngn = data.get("amount", 0) / 100.0
+
+        if user_id and plan_slug and reference:
+            await SubscriptionService.activate_subscription(
+                db=db,
+                user_id=int(user_id),
+                plan_slug=plan_slug,
+                provider="PAYSTACK",
+                reference=reference,
+                amount_ngn=amount_ngn
+            )
+
+    return {"status": "success"}
 
 @router.post("/listings/{listing_id}/feature")
 async def toggle_listing_featured(

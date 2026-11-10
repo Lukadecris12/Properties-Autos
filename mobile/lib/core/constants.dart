@@ -44,3 +44,19 @@ class ApiConstants {
 
 enum TransactionType { sale, rent, lease }
 enum AssetCategory { land, residential, commercial, vehicle }
+
+/// RevenueCat Mobile In-App Subscriptions Configuration
+/// Replace the placeholder keys with your live API keys from https://app.revenuecat.com
+class RevenueCatConstants {
+  // Public API Keys from RevenueCat Dashboard -> Project -> API Keys
+  static const String apiKeyAndroid = 'goog_YOUR_REVENUECAT_ANDROID_API_KEY';
+  static const String apiKeyIOS = 'appl_YOUR_REVENUECAT_IOS_API_KEY';
+
+  // Entitlement Identifiers configured in RevenueCat Dashboard -> Entitlements
+  static const String entitlementAgentPro = 'agent_pro_access';
+  static const String entitlementDeveloperEnterprise = 'enterprise_access';
+  static const String entitlementVIP = 'vip_access';
+
+  // Offering Identifier (defaults to 'default')
+  static const String defaultOfferingId = 'default';
+}

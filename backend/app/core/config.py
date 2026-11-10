@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     # AI Config
     OPENAI_API_KEY: str = ""
     AI_MODEL: str = "gpt-4o-mini"
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.5-flash"
+
+    # Payment Gateways (Paystack)
+    PAYSTACK_SECRET_KEY: str = ""
+    PAYSTACK_PUBLIC_KEY: str = ""
 
     # Google Maps
     GOOGLE_MAPS_API_KEY: str = ""
