@@ -212,7 +212,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="text-2xl font-extrabold text-white">{stats.listings?.total || 0}</div>
                   <div className="text-[11px] text-blue-400 mt-1">
-                    {stats.listings?.verified || 0} Title & Escrow Verified
+                    {stats.listings?.verified || 0} Title &amp; Document Verified
                   </div>
                 </div>
 

@@ -545,7 +545,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                         SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Properties & Autos Escrow & Safety: Never wire money outside verified transaction terms. All inspections are scheduled with verified partners.',
+                            'Properties & Autos Safety Advisory: Always inspect the asset in person and verify statutory title documents directly with the owner or dealer before concluding any offline transaction.',
                             style: TextStyle(color: Color(0xFF93C5FD), fontSize: 11, height: 1.4),
                           ),
                         ),

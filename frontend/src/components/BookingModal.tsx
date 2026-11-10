@@ -158,11 +158,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({ listing, isOpen, onC
                   </div>
                 )}
                 <div className="flex justify-between text-gray-400">
-                  <span>Platform Service Fee (5%)</span>
-                  <span className="text-white font-medium">₦{serviceFee.toLocaleString()}</span>
+                  <span>Reservation Handling</span>
+                  <span className="text-emerald-400 font-medium">Free (Pay Host Directly)</span>
                 </div>
                 <div className="pt-2 border-t border-gray-800 flex justify-between font-bold text-sm text-white">
-                  <span>Estimated Total</span>
+                  <span>Estimated Total (Pay Offline)</span>
                   <span className="text-brand-400">₦{totalAmount.toLocaleString()}</span>
                 </div>
               </div>
@@ -180,7 +180,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ listing, isOpen, onC
 
             <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-500 text-center">
               <ShieldCheck className="w-3.5 h-3.5 text-brand-400" />
-              <span>Anti-double-booking verified. Funds held securely according to policy.</span>
+              <span>Anti-double-booking verified. Reservation confirmed directly with host; pay offline upon check-in.</span>
             </div>
 
           </form>

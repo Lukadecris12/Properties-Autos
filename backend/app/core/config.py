@@ -38,10 +38,6 @@ class Settings(BaseSettings):
     # Google Maps
     GOOGLE_MAPS_API_KEY: str = ""
 
-    # External Payments
-    PAYSTACK_SECRET_KEY: str = ""
-    FLUTTERWAVE_SECRET_KEY: str = ""
-
     # Resend Email Service
     RESEND_API_KEY: str = ""
     RESEND_FROM_EMAIL: str = "PropertyHub <onboarding@resend.dev>"

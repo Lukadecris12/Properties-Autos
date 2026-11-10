@@ -79,7 +79,7 @@ class _PostListingScreenState extends State<PostListingScreen> {
             ],
           ),
           content: const Text(
-            'Your asset has been published and submitted for AI Title Verification & Escrow Protection. It is now live in the Properties & Autos marketplace.',
+            'Your asset has been published and submitted for Title Verification & Safety Inspection. It is now live in the Properties & Autos marketplace.',
             style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
           ),
           actions: [

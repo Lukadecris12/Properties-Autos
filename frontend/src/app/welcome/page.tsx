@@ -44,7 +44,7 @@ export default function WelcomePage() {
             </h1>
 
             <p className="text-base sm:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed mb-10">
-              The premier AI-powered marketplace where verified buyers, property developers, licensed agents, and corporate investors trade luxury properties, land, exotic autos, and participate in high-yield property co-investments.
+              The premier AI-powered marketplace where verified buyers, property developers, licensed agents, and corporate clients discover luxury properties, land, and exotic autos.
             </p>
 
             {/* Action Buttons */}
@@ -70,15 +70,15 @@ export default function WelcomePage() {
               <div className="flex items-start gap-3">
                 <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-sm font-bold text-white">Title & Escrow Verified</div>
-                  <div className="text-xs text-gray-400">C of O, Gov Consent & Custom papers inspected</div>
+                  <div className="text-sm font-bold text-white">Title &amp; Document Verified</div>
+                  <div className="text-xs text-gray-400">C of O, Gov Consent &amp; Custom papers inspected</div>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <TrendingUp className="w-5 h-5 text-gold-400 shrink-0 mt-0.5" />
+                <Building2 className="w-5 h-5 text-gold-400 shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-sm font-bold text-white">Co-Investment Portals</div>
-                  <div className="text-xs text-gray-400">Earn 24% - 34% annual ROI with master developers</div>
+                  <div className="text-sm font-bold text-white">Verified Partner Network</div>
+                  <div className="text-xs text-gray-400">Accredited realtors, builders &amp; dealerships</div>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -108,7 +108,7 @@ export default function WelcomePage() {
                 Everything You Need Under One Roof
               </h2>
               <p className="text-sm text-gray-400">
-                Whether you are acquiring a waterfront villa, expanding land holdings, buying armored vehicles, or funding developer projects.
+                Whether you are acquiring a waterfront villa, expanding land holdings, or finding exotic automobiles.
               </p>
             </div>
 
@@ -128,17 +128,17 @@ export default function WelcomePage() {
                 </Link>
               </div>
 
-              {/* Card 2: Property Investment */}
+              {/* Card 2: Verified Agents & Developers */}
               <div className="bg-gray-900/80 border border-gray-800 rounded-2xl p-8 hover:border-gold-500/50 transition-all group">
                 <div className="w-12 h-12 rounded-xl bg-gold-950 border border-gold-500/30 flex items-center justify-center mb-6 group-hover:scale-105 transition-transform">
-                  <TrendingUp className="w-6 h-6 text-gold-400" />
+                  <Users className="w-6 h-6 text-gold-400" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">Developer Co-Investments</h3>
+                <h3 className="text-lg font-bold text-white mb-2">Verified Agents &amp; Developers</h3>
                 <p className="text-xs text-gray-400 leading-relaxed mb-6">
-                  Developers list prime projects for fractional investment. Earn guaranteed quarterly returns and capital growth backed by legal trust deeds.
+                  Connect directly with certified property brokers, corporate developers, and authorized auto dealerships for in-person consultation and viewing.
                 </p>
-                <Link href="/investments" className="inline-flex items-center gap-1.5 text-xs font-bold text-gold-400 hover:text-gold-300">
-                  <span>Explore Investments</span>
+                <Link href="/agents" className="inline-flex items-center gap-1.5 text-xs font-bold text-gold-400 hover:text-gold-300">
+                  <span>Explore Directory</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>

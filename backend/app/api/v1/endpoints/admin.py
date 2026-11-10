@@ -195,6 +195,6 @@ async def get_activity_logs(
         {"timestamp": now, "type": "INVESTMENT", "event": "Co-Investment pool active: Eko Atlantic Oceanfront Luxury Towers Phase II", "status": "LIVE"},
         {"timestamp": now, "type": "ONBOARDING", "event": "6-Digit OTP Email verification engine operational via Resend", "status": "ACTIVE"},
         {"timestamp": now, "type": "MARKETPLACE", "event": "Luxury duplexes, land banking plots & exotic autos synchronized", "status": "VERIFIED"},
-        {"timestamp": now, "type": "ESCROW", "event": "Title Document Inspection & Escrow Protection Service active", "status": "HEALTHY"},
+        {"timestamp": now, "type": "VERIFICATION", "event": "Title Document Inspection & Legal Verification Service active", "status": "HEALTHY"},
     ]
     return ResponseModel(data=logs)

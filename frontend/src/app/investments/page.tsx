@@ -231,7 +231,7 @@ export default function InvestmentsPage() {
                         className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-black font-bold text-xs shadow-lg shadow-gold-500/20 flex items-center justify-center gap-1.5 transition-all"
                       >
                         <Calculator className="w-3.5 h-3.5" />
-                        <span>Invest & Calculate</span>
+                        <span>View Details &amp; Returns Calculator</span>
                       </button>
                     </div>
 
@@ -331,19 +331,46 @@ export default function InvestmentsPage() {
                     </div>
                   </div>
 
-                  {/* Legal Term Warning */}
-                  <div className="flex items-start gap-2 text-[11px] text-gray-400 bg-gray-900/60 p-3 rounded-lg border border-gray-800">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>All investments are protected by deed of trust and verified title documents. Returns are paid out according to the project's agreed schedule.</span>
+                  {/* Offline Store Compliance & Office Visit Notice */}
+                  <div className="flex items-start gap-2 text-[11px] text-gray-300 bg-amber-950/40 p-3.5 rounded-xl border border-amber-500/40">
+                    <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <span>
+                      <strong className="text-white block mb-0.5">Offline Inquiries Only:</strong>
+                      No payments or financial transactions are processed in this app. Please contact the developer directly or visit their corporate office to conduct statutory due diligence, review title documents, and finalize participation offline.
+                    </span>
                   </div>
 
-                  {/* Action Button */}
+                  {/* Office & Direct Contact Actions */}
+                  <div className="p-4 rounded-xl bg-[#0b0f19] border border-gray-800 space-y-3">
+                    <div className="text-xs font-bold text-gray-300">Developer Corporate Office:</div>
+                    <p className="text-xs text-gray-400">
+                      {activeInvestment.developer_name} Headquarters<br />
+                      Plot 14, Admiralty Way, Lekki Phase 1, Lagos State, Nigeria
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <a
+                        href={`https://wa.me/2348031234567?text=${encodeURIComponent(`Hello ${activeInvestment.developer_name}, I am reviewing "${activeInvestment.title}" on Properties & Autos and would like to arrange an office consultation.`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md"
+                      >
+                        <span>WhatsApp Office</span>
+                      </a>
+                      <a
+                        href="tel:+2348031234567"
+                        className="py-2.5 px-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 border border-gray-700 transition-all"
+                      >
+                        <span>Call Developer</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Close / Inquire Button */}
                   <button
-                    onClick={handleCommitInvestment}
-                    disabled={investing || calcAmount < activeInvestment.minimum_investment}
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-black font-extrabold text-sm shadow-xl shadow-gold-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                    onClick={() => setActiveInvestment(null)}
+                    className="w-full py-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-xs border border-gray-700 transition-all"
                   >
-                    {investing ? 'Processing Investment...' : `Confirm Co-Investment of ₦${calcAmount.toLocaleString()}`}
+                    Close Project Details
                   </button>
                 </div>
               )}

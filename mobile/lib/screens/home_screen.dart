@@ -180,16 +180,6 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.trending_up, color: Color(0xFFF59E0B), size: 22),
-            tooltip: 'Property Investments',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const InvestmentsScreen()),
-              );
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.notifications_none, color: Colors.grey, size: 22),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(

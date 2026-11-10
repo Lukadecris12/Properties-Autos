@@ -234,15 +234,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           </nav>
 
-          {/* Directory Links: Property Investments, Agents & Developers, Admin */}
+          {/* Directory Links: Agents & Developers, Messages, Saved, Admin */}
           <div className="hidden xl:flex items-center gap-2 text-xs font-medium text-gray-300">
-            <Link 
-              href="/investments" 
-              className="flex items-center gap-1.5 text-gold-400 hover:text-gold-300 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
-            >
-              <TrendingUp className="w-4 h-4 text-gold-400" />
-              <span>Investments</span>
-            </Link>
             <Link 
               href="/agents" 
               className="flex items-center gap-1.5 hover:text-brand-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
@@ -417,17 +410,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {/* Menu Group 2: High Value Ecosystem */}
                     <div className="py-2 space-y-1">
                       <Link
-                        href="/investments"
-                        onClick={() => setProfileDropdownOpen(false)}
-                        className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-gray-200 hover:text-white hover:bg-gray-800/70 transition-all group"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <TrendingUp className="w-4 h-4 text-gold-400 group-hover:scale-110 transition-transform" />
-                          <span className="font-semibold">Property Co-Investments</span>
-                        </div>
-                        <span className="text-[9px] bg-gold-950 text-gold-400 px-1.5 py-0.5 rounded font-bold">24-34%</span>
-                      </Link>
-                      <Link
                         href="/agents"
                         onClick={() => setProfileDropdownOpen(false)}
                         className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs text-gray-200 hover:text-white hover:bg-gray-800/70 transition-all group"
@@ -564,14 +546,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Directory Links on Mobile */}
           <div className="border-t border-gray-800 pt-3 space-y-2">
-            <Link
-              href="/investments"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 p-2.5 rounded-xl bg-gray-900 text-xs font-medium text-gold-400 border border-gray-800"
-            >
-              <TrendingUp className="w-4 h-4 text-gold-400" />
-              <span>Property Investments (Co-Investment)</span>
-            </Link>
             <Link
               href="/agents"
               onClick={() => setMobileMenuOpen(false)}

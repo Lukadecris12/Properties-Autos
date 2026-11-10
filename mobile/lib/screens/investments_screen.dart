@@ -125,27 +125,91 @@ class _InvestmentsScreenState extends State<InvestmentsScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 14),
 
-                    // Confirm Investment Button
+                    // Offline Inquiries Store Compliance Notice
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1F2937),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFF374151)),
+                      ),
+                      child: const Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline, color: Color(0xFFF59E0B), size: 16),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'No payments are processed in this app. To participate or review legal title deeds, please visit the developer\'s corporate office directly.',
+                              style: TextStyle(color: Color(0xFFD1D5DB), fontSize: 11, height: 1.4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Contact Developer Office Button
                     SizedBox(
                       width: double.infinity,
                       height: 48,
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF59E0B),
+                          backgroundColor: const Color(0xFF10B981),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
+                        icon: const Icon(Icons.location_on, color: Colors.white, size: 18),
                         onPressed: () {
                           Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              backgroundColor: const Color(0xFF065F46),
-                              content: Text('Investment of ₦${investedAmount.toInt()} placed in escrow with ${inv['developer_name']}.'),
+                          showDialog(
+                            context: context,
+                            builder: (dCtx) => AlertDialog(
+                              backgroundColor: const Color(0xFF111827),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              title: Row(
+                                children: [
+                                  const Icon(Icons.business, color: Color(0xFF10B981), size: 22),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '${inv['developer_name']} Office',
+                                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Corporate Office Address:', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Plot 14, Admiralty Way, Lekki Phase 1, Lagos, Nigeria',
+                                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  const Text('Contact Hotline: +234 803 123 4567', style: TextStyle(color: Color(0xFF34D399), fontSize: 13)),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'Please visit their registered corporate office during working hours (Mon-Fri 8am - 5pm) to conduct due diligence, title review, and offline agreement execution.',
+                                    style: TextStyle(color: Colors.grey, fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(dCtx),
+                                  child: const Text('Close', style: TextStyle(color: Colors.white)),
+                                ),
+                              ],
                             ),
                           );
                         },
-                        child: const Text('Confirm Co-Investment', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14)),
+                        label: const Text('Developer Corporate Office & Inquiries', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                       ),
                     ),
                   ],
@@ -330,7 +394,7 @@ class _InvestmentsScreenState extends State<InvestmentsScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       icon: const Icon(Icons.calculate, color: Colors.black, size: 16),
-                      label: const Text('Calculate & Invest', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11)),
+                      label: const Text('View Yield & Office Inquiries', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11)),
                       onPressed: () => _showReturnCalculator(inv),
                     ),
                   ],

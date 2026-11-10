@@ -41,7 +41,7 @@ class InvestmentResponse(BaseModel):
 
 class InvestOrderRequest(BaseModel):
     amount: float = Field(..., gt=0)
-    payment_method: str = "escrow"
+    payment_method: str = "offline_direct"
 
 class UserInvestmentResponse(BaseModel):
     id: int

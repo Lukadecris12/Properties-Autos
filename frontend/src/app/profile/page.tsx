@@ -182,7 +182,7 @@ export default function ProfilePage() {
               My Profile &amp; Preferences
             </h1>
             <p className="text-xs text-gray-400 mt-1">
-              Switch unified marketplace roles, manage escrow settlements, and configure platform settings.
+              Switch unified marketplace roles, manage inquiries &amp; contacts, and configure platform settings.
             </p>
           </div>
 
@@ -247,7 +247,7 @@ export default function ProfilePage() {
                   
                   <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold">
                     <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                    <span>Tier 3 Verified Escrow Member</span>
+                    <span>Tier 3 Verified Platform Member</span>
                   </div>
                 </div>
               </div>
@@ -330,9 +330,9 @@ export default function ProfilePage() {
                   <div className="text-[10px] text-emerald-400 mt-0.5">2 Real Estate • 2 Autos</div>
                 </div>
                 <div className="p-3 rounded-2xl bg-gray-950 border border-gray-800">
-                  <div className="text-[11px] text-gray-400">Escrow Balance</div>
-                  <div className="text-xl font-extrabold text-gold-400 mt-1">₦42.5M</div>
-                  <div className="text-[10px] text-gray-400 mt-0.5">Protected Funds</div>
+                  <div className="text-[11px] text-gray-400">Saved Wishlist</div>
+                  <div className="text-xl font-extrabold text-gold-400 mt-1">12</div>
+                  <div className="text-[10px] text-gray-400 mt-0.5">Properties &amp; Autos</div>
                 </div>
                 <div className="p-3 rounded-2xl bg-gray-950 border border-gray-800">
                   <div className="text-[11px] text-gray-400">Inquiries Received</div>
@@ -515,37 +515,14 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* SECTION 2: HIGH-YIELD INVESTMENTS & DIRECTORY */}
+            {/* SECTION 2: VERIFIED DIRECTORY & CONCIERGE SUPPORT */}
             <div className="glass-panel p-6 rounded-3xl border border-gray-800 space-y-3">
-              <h3 className="text-xs font-bold text-gold-400 uppercase tracking-wider mb-2">
-                High-Yield Investments &amp; Ecosystem
+              <h3 className="text-xs font-bold text-brand-400 uppercase tracking-wider mb-2">
+                Verified Directory &amp; Concierge Support
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* 1. Property Co-Investments */}
-                <Link
-                  href="/investments"
-                  className="p-4 rounded-2xl bg-gray-950/70 border border-gray-800 hover:border-gold-500/50 hover:bg-gray-900/50 transition-all flex items-start gap-3.5 group"
-                >
-                  <div className="p-2.5 rounded-xl bg-gold-950/80 border border-gold-500/30 text-gold-400 group-hover:scale-105 transition-transform">
-                    <TrendingUp className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white group-hover:text-gold-300 transition-colors">
-                        Property Co-Investments
-                      </span>
-                      <span className="text-[10px] bg-gold-950 text-gold-400 px-2 py-0.5 rounded-full font-bold">
-                        24% - 34% ROI
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      Participate in funded real estate developments with accredited master builders.
-                    </p>
-                  </div>
-                </Link>
-
-                {/* 2. Agents & Developers Directory */}
+                {/* 1. Agents & Developers Directory */}
                 <Link
                   href="/agents"
                   className="p-4 rounded-2xl bg-gray-950/70 border border-gray-800 hover:border-emerald-500/50 hover:bg-gray-900/50 transition-all flex items-start gap-3.5 group"
@@ -566,30 +543,30 @@ export default function ProfilePage() {
                   </div>
                 </Link>
 
-                {/* 3. AI Escrow & Title Verification */}
+                {/* 2. Title Verification & Document Guidance */}
                 <div className="p-4 rounded-2xl bg-gray-950/70 border border-gray-800 flex items-start gap-3.5">
                   <div className="p-2.5 rounded-xl bg-teal-950/80 border border-teal-500/30 text-teal-400">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white">Title Verification &amp; Escrow</span>
+                      <span className="text-xs font-bold text-white">Title Verification &amp; Legal Guidance</span>
                       <span className="text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded-full font-bold">
                         Active
                       </span>
                     </div>
                     <p className="text-[11px] text-gray-400 mt-0.5">
-                      Automated legal title scanning (C of O, Governor&apos;s Consent, Custom Duty papers).
+                      Legal title guidance and checklist (C of O, Governor&apos;s Consent, Custom Duty papers).
                     </p>
                   </div>
                 </div>
 
-                {/* 4. VIP WhatsApp Concierge */}
+                {/* 3. VIP WhatsApp Concierge */}
                 <a
                   href="https://wa.me/2348031234567?text=Hello%20Properties%20%26%20Autos%20VIP%20Concierge%20Desk%2C%20I%20would%20like%20assistance%20with%20a%20transaction."
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-4 rounded-2xl bg-gray-950/70 border border-gray-800 hover:border-emerald-500/50 hover:bg-gray-900/50 transition-all flex items-start gap-3.5 group"
+                  className="p-4 rounded-2xl bg-gray-950/70 border border-gray-800 hover:border-emerald-500/50 hover:bg-gray-900/50 transition-all flex items-start gap-3.5 group col-span-1 md:col-span-2"
                 >
                   <div className="p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-500/30 text-emerald-400 group-hover:scale-105 transition-transform">
                     <Headphones className="w-5 h-5" />
@@ -654,7 +631,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-white">Master Administration &amp; Moderation Console</h4>
-                    <p className="text-[11px] text-gray-400">Review pending developer verifications, user audits, and escrow transactions.</p>
+                    <p className="text-[11px] text-gray-400">Review pending developer verifications, user audits, and documentation checks.</p>
                   </div>
                 </div>
                 <Link

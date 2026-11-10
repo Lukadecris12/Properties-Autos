@@ -106,7 +106,7 @@ async def send_verification_otp_email(to_email: str, otp_code: str) -> dict:
         </div>
         <div class="footer">
           &copy; 2026 PropertyHub Technologies. All rights reserved.<br>
-          AI-Powered Property & Automobile Marketplace • Escrow Protected
+          AI-Powered Property & Automobile Marketplace • Verified Platform
         </div>
       </div>
     </body>

@@ -51,7 +51,7 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Luxury Real Estate • Exotic Autos • Co-Investments',
+                    'Luxury Real Estate • Exotic Autos',
                     style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF), letterSpacing: 0.5),
                     textAlign: TextAlign.center,
                   ),
@@ -64,22 +64,22 @@ class WelcomeScreen extends StatelessWidget {
                   _buildFeatureRow(
                     icon: Icons.shield_outlined,
                     iconColor: const Color(0xFF10B981),
-                    title: 'Title Verified & Escrow Protected',
+                    title: 'Title Verified & Partner Checked',
                     desc: 'C of O, Governor\'s Consent & custom duty papers audited.',
                   ),
                   const SizedBox(height: 14),
                   _buildFeatureRow(
-                    icon: Icons.trending_up,
+                    icon: Icons.storefront_outlined,
                     iconColor: const Color(0xFFF59E0B),
-                    title: 'Developer Co-Investments',
-                    desc: 'Earn 24% - 34% annual ROI with master property developers.',
+                    title: 'Verified Partners & Developers',
+                    desc: 'Connect directly with accredited builders, realtors & showrooms.',
                   ),
                   const SizedBox(height: 14),
                   _buildFeatureRow(
                     icon: Icons.directions_car_outlined,
                     iconColor: const Color(0xFF60A5FA),
                     title: 'Houses, Land & Exotic Autos',
-                    desc: 'Buy, rent or invest in verified assets across prime hubs.',
+                    desc: 'Buy, rent or lease verified assets across prime hubs.',
                   ),
                   const SizedBox(height: 14),
                   _buildFeatureRow(

@@ -51,7 +51,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   IconButton(icon: const Icon(Icons.close, color: Colors.grey), onPressed: () => Navigator.pop(ctx)),
                 ],
               ),
-              const Text('Access your unified portfolio, escrow orders, and AI matched requests.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const Text('Access your unified portfolio, saved listings, and AI matched requests.', style: TextStyle(fontSize: 12, color: Colors.grey)),
               const SizedBox(height: 16),
               TextField(
                 controller: emailController,
@@ -210,19 +210,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 children: [
                   _buildMenuItem(
-                    icon: Icons.trending_up,
-                    iconColor: const Color(0xFFF59E0B),
-                    title: 'Property Co-Investments',
-                    subtitle: 'Earn 24% - 34% annual ROI with master developers',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const InvestmentsScreen()),
-                      );
-                    },
-                  ),
-                  _buildDivider(),
-                  _buildMenuItem(
                     icon: Icons.admin_panel_settings,
                     iconColor: Colors.redAccent,
                     title: 'Admin Console & Moderation',
@@ -277,11 +264,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildMenuItem(
                     icon: Icons.gavel,
                     iconColor: const Color(0xFF10B981),
-                    title: 'Title Verification & Escrow Services',
+                    title: 'Title Verification & Legal Documentation',
                     subtitle: 'Verify C of O, Governor\'s Consent & Custom duty papers',
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('AI Escrow & Title verification engine active')),
+                        const SnackBar(content: Text('Title verification guidance active')),
                       );
                     },
                   ),
@@ -399,7 +386,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // App Version
             const Center(
               child: Text(
-                'Properties & Autos Luxury Marketplace • v1.0.2 Production\nAI Escrow • Real Estate & Autos',
+                'Properties & Autos Luxury Marketplace • v1.0.2 Production\nVerified Real Estate & Autos',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 10, color: Color(0xFF6B7280), height: 1.5),
               ),
