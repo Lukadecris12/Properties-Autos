@@ -63,8 +63,11 @@ class Listing(Base):
     videos = Column(JSON, default=list)  # list of video URLs
     virtual_tour_url = Column(String(500), nullable=True)
     
-    # Verification & Highlights
-    is_featured = Column(Boolean, default=False)
+    # Verification, Promotion & Highlights
+    is_featured = Column(Boolean, default=False, index=True)
+    featured_at = Column(DateTime, nullable=True)
+    is_boosted = Column(Boolean, default=False, index=True)
+    boosted_until = Column(DateTime, nullable=True, index=True)
     is_verified_asset = Column(Boolean, default=False)
     view_count = Column(Integer, default=0)
     

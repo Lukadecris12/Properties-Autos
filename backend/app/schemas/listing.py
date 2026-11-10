@@ -100,6 +100,9 @@ class ListingResponse(ListingBase):
     slug: Optional[str]
     status: ListingStatus
     is_featured: bool
+    featured_at: Optional[datetime] = None
+    is_boosted: bool = False
+    boosted_until: Optional[datetime] = None
     is_verified_asset: bool
     view_count: int
     created_at: datetime

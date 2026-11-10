@@ -27,7 +27,13 @@ import {
   Send,
   MessageSquare,
   Check,
-  X
+  X,
+  Crown,
+  Flame,
+  Rocket,
+  Zap,
+  CreditCard,
+  Settings
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -43,7 +49,7 @@ export default function AdminDashboardPage() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   // Tab & Filters
-  const [activeTab, setActiveTab] = useState<'users' | 'support' | 'activity' | 'stats'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'subscriptions' | 'plans_settings' | 'support' | 'activity' | 'stats'>('users');
   const [selectedRole, setSelectedRole] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -53,6 +59,20 @@ export default function AdminDashboardPage() {
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [adminResponseText, setAdminResponseText] = useState('');
   const [updatingTicket, setUpdatingTicket] = useState(false);
+
+  // Subscriptions & Boost Engine state
+  const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [subStats, setSubStats] = useState<any>(null);
+  const [adminPlans, setAdminPlans] = useState<any[]>([]);
+  const [subscriberSearch, setSubscriberSearch] = useState('');
+  const [subscriberStatus, setSubscriberStatus] = useState('ALL');
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assignUserId, setAssignUserId] = useState<number | ''>('');
+  const [assignPlanSlug, setAssignPlanSlug] = useState('growth');
+  const [assignDuration, setAssignDuration] = useState(30);
+  const [assignNotes, setAssignNotes] = useState('');
+  const [boostDurationSetting, setBoostDurationSetting] = useState('72');
+  const [savingSetting, setSavingSetting] = useState(false);
 
   // Admin Credentials
   const [adminEmail, setAdminEmail] = useState('admin@propertyhub.ng');
@@ -67,14 +87,24 @@ export default function AdminDashboardPage() {
       setStats(statsRes.data);
       setIsAdmin(true);
 
-      const [usersRes, logsRes, ticketsRes] = await Promise.all([
+      const [usersRes, logsRes, ticketsRes, subStatsRes, subRes, plansRes, settingsRes] = await Promise.all([
         api.getAdminUsers(selectedRole, searchQuery),
         api.getAdminActivityLogs(),
         api.getAdminSupportTickets(ticketStatus, ticketSearch).catch(() => ({ data: [] })),
+        api.getAdminSubscriptionStats().catch(() => ({ data: null })),
+        api.getAdminSubscribers(subscriberStatus, subscriberSearch).catch(() => ({ data: [] })),
+        api.adminGetPlans().catch(() => ({ data: [] })),
+        api.adminGetSettings().catch(() => ({ data: {} })),
       ]);
       setUsers(usersRes.data || []);
       setActivityLogs(logsRes.data || []);
       setTickets(ticketsRes.data || []);
+      setSubStats(subStatsRes.data);
+      setSubscribers(subRes.data || []);
+      setAdminPlans(plansRes.data || []);
+      if (settingsRes.data?.default_boost_duration_hours) {
+        setBoostDurationSetting(settingsRes.data.default_boost_duration_hours);
+      }
     } catch (err) {
       console.warn('User not authenticated as admin');
       setIsAdmin(false);
@@ -174,6 +204,47 @@ export default function AdminDashboardPage() {
       console.error('Failed to respond to ticket:', err);
     } finally {
       setUpdatingTicket(false);
+    }
+  };
+
+  const handleAssignSubscription = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignUserId) return;
+    try {
+      await api.adminAssignSubscription({
+        user_id: Number(assignUserId),
+        plan_slug: assignPlanSlug,
+        duration_days: assignDuration,
+        notes: assignNotes || undefined,
+      });
+      setAssignModalOpen(false);
+      setAssignNotes('');
+      await checkAdminAuthAndLoad();
+    } catch (err: any) {
+      alert(err.message || 'Failed to assign subscription');
+    }
+  };
+
+  const handleRevokeSubscription = async (userId: number) => {
+    if (!confirm('Are you sure you want to revoke this user subscription and downgrade to Free Plan?')) return;
+    try {
+      await api.adminRevokeSubscription(userId);
+      await checkAdminAuthAndLoad();
+    } catch (err: any) {
+      alert(err.message || 'Failed to revoke subscription');
+    }
+  };
+
+  const handleUpdateBoostDuration = async (val: string) => {
+    setSavingSetting(true);
+    try {
+      await api.adminUpdateSettings('default_boost_duration_hours', val, 'Default boost duration in hours');
+      setBoostDurationSetting(val);
+      await checkAdminAuthAndLoad();
+    } catch (err: any) {
+      alert(err.message || 'Failed to update setting');
+    } finally {
+      setSavingSetting(false);
     }
   };
 
@@ -346,6 +417,28 @@ export default function AdminDashboardPage() {
                     {tickets.filter(t => t.status === 'PENDING').length}
                   </span>
                 )}
+              </button>
+              <button
+                onClick={() => setActiveTab('subscriptions')}
+                className={`py-3 px-5 text-xs font-bold border-b-2 transition-all shrink-0 flex items-center gap-1.5 ${
+                  activeTab === 'subscriptions'
+                    ? 'border-brand-500 text-brand-400'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>Subscribers &amp; Quotas ({subscribers.length})</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('plans_settings')}
+                className={`py-3 px-5 text-xs font-bold border-b-2 transition-all shrink-0 flex items-center gap-1.5 ${
+                  activeTab === 'plans_settings'
+                    ? 'border-brand-500 text-brand-400'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span>Plans &amp; Boost Settings ({adminPlans.length})</span>
               </button>
               <button
                 onClick={() => setActiveTab('activity')}
@@ -614,6 +707,248 @@ export default function AdminDashboardPage() {
               </div>
             )}
 
+            {/* TAB: SUBSCRIBERS & QUOTA ENGINE */}
+            {activeTab === 'subscriptions' && (
+              <div className="space-y-6">
+                
+                {/* Subscription KPIs */}
+                {subStats && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="bg-[#111827] border border-gray-800 rounded-2xl p-5 space-y-1">
+                      <span className="text-xs text-gray-400 font-semibold">Total Revenue</span>
+                      <div className="text-2xl font-extrabold text-emerald-400">
+                        ₦{Number(subStats.total_revenue_ngn || 0).toLocaleString()}
+                      </div>
+                      <span className="text-[11px] text-gray-500">Verified platform payments</span>
+                    </div>
+
+                    <div className="bg-[#111827] border border-gray-800 rounded-2xl p-5 space-y-1">
+                      <span className="text-xs text-gray-400 font-semibold">Active Subscribers</span>
+                      <div className="text-2xl font-extrabold text-white">
+                        {subStats.active_subscribers}
+                      </div>
+                      <span className="text-[11px] text-brand-400">Current billing cycles</span>
+                    </div>
+
+                    <div className="bg-[#111827] border border-gray-800 rounded-2xl p-5 space-y-1">
+                      <span className="text-xs text-gray-400 font-semibold">Active 72h Boosts</span>
+                      <div className="text-2xl font-extrabold text-rose-400 flex items-center gap-1.5">
+                        <Flame className="w-5 h-5" />
+                        <span>{subStats.active_boosts}</span>
+                      </div>
+                      <span className="text-[11px] text-gray-500">Elevated search rankings</span>
+                    </div>
+
+                    <div className="bg-[#111827] border border-gray-800 rounded-2xl p-5 space-y-1">
+                      <span className="text-xs text-gray-400 font-semibold">Active Featured Ads</span>
+                      <div className="text-2xl font-extrabold text-amber-400 flex items-center gap-1.5">
+                        <Crown className="w-5 h-5" />
+                        <span>{subStats.active_featured}</span>
+                      </div>
+                      <span className="text-[11px] text-gray-500">Gold badge placements</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Filter and Actions Bar */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    {['ALL', 'ACTIVE', 'EXPIRED', 'CANCELLED'].map((st) => (
+                      <button
+                        key={st}
+                        onClick={() => {
+                          setSubscriberStatus(st);
+                          api.getAdminSubscribers(st, subscriberSearch).then(res => setSubscribers(res.data || []));
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                          subscriberStatus === st
+                            ? 'bg-brand-600 text-white'
+                            : 'bg-gray-900 text-gray-400 hover:text-white border border-gray-800'
+                        }`}
+                      >
+                        {st}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setAssignModalOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-brand-600/30"
+                  >
+                    <Crown className="w-3.5 h-3.5" />
+                    <span>Assign Plan to User</span>
+                  </button>
+                </div>
+
+                {/* Subscribers Table */}
+                <div className="bg-[#111827] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-gray-300">
+                      <thead className="bg-[#0b0f19] text-gray-400 uppercase text-[10px] font-bold border-b border-gray-800 tracking-wider">
+                        <tr>
+                          <th className="py-3.5 px-4">User</th>
+                          <th className="py-3.5 px-4">Current Plan</th>
+                          <th className="py-3.5 px-4">Listing Allowance</th>
+                          <th className="py-3.5 px-4">Boost Credits</th>
+                          <th className="py-3.5 px-4">Period End</th>
+                          <th className="py-3.5 px-4">Status</th>
+                          <th className="py-3.5 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-800/80">
+                        {subscribers.length > 0 ? (
+                          subscribers.map((sub) => (
+                            <tr key={sub.id} className="hover:bg-gray-800/30 transition-colors">
+                              <td className="py-3.5 px-4">
+                                <div className="font-bold text-white">{sub.user_name}</div>
+                                <div className="text-[11px] text-gray-500">{sub.user_email} (ID #{sub.user_id})</div>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <span className="font-semibold text-white">{sub.plan_name}</span>
+                                <span className="text-[10px] text-gray-500 block uppercase">{sub.tier_category}</span>
+                              </td>
+                              <td className="py-3.5 px-4 font-mono font-semibold text-white">
+                                {sub.listing_allowance?.toLocaleString()} ads
+                              </td>
+                              <td className="py-3.5 px-4 font-mono text-amber-400 font-semibold">
+                                {sub.remaining_boost_credits} left ({sub.used_boost_credits} used)
+                              </td>
+                              <td className="py-3.5 px-4 text-gray-400">
+                                {new Date(sub.current_period_end).toLocaleDateString()}
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                  sub.status === 'ACTIVE'
+                                    ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30'
+                                    : 'bg-gray-800 text-gray-400'
+                                }`}>
+                                  {sub.status}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setAssignUserId(sub.user_id);
+                                      setAssignModalOpen(true);
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold"
+                                  >
+                                    Modify
+                                  </button>
+                                  {sub.plan_name !== 'Free Plan' && sub.status === 'ACTIVE' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRevokeSubscription(sub.user_id)}
+                                      className="px-2.5 py-1 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-800 text-red-300 text-xs font-semibold"
+                                    >
+                                      Revoke
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={7} className="py-8 text-center text-gray-500">
+                              No subscribers found matching the criteria.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* TAB: PLANS & BOOST ENGINE SETTINGS */}
+            {activeTab === 'plans_settings' && (
+              <div className="space-y-6">
+                
+                {/* System Settings Card: Boost Duration */}
+                <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Flame className="w-4 h-4 text-rose-400" />
+                        <span>Promotional Boost Duration Configuration</span>
+                      </h3>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Change the promotional lifespan of each boost without altering application code.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {['24', '72', '168'].map((hrs) => (
+                        <button
+                          key={hrs}
+                          disabled={savingSetting}
+                          onClick={() => handleUpdateBoostDuration(hrs)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                            boostDurationSetting === hrs
+                              ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
+                              : 'bg-gray-900 text-gray-400 hover:text-white border border-gray-800'
+                          }`}
+                        >
+                          {hrs === '24' ? '24 Hours (1 Day)' : hrs === '72' ? '72 Hours (3 Days)' : '168 Hours (7 Days)'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Plans Catalogue Overview */}
+                <div className="bg-[#111827] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+                  <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                      Seeded Subscription Catalogue ({adminPlans.length} Plans)
+                    </h3>
+                  </div>
+
+                  <div className="overflow-x-auto max-h-[500px]">
+                    <table className="w-full text-left text-xs text-gray-300">
+                      <thead className="bg-[#0b0f19] text-gray-400 uppercase text-[10px] font-bold border-b border-gray-800 sticky top-0">
+                        <tr>
+                          <th className="py-3 px-4">Plan Name</th>
+                          <th className="py-3 px-4">Tier</th>
+                          <th className="py-3 px-4">Monthly Price</th>
+                          <th className="py-3 px-4">Listings Allowance</th>
+                          <th className="py-3 px-4">Featured Slots</th>
+                          <th className="py-3 px-4">Boost Credits</th>
+                          <th className="py-3 px-4">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-800/80">
+                        {adminPlans.map((p) => (
+                          <tr key={p.id} className="hover:bg-gray-800/20">
+                            <td className="py-3 px-4 font-bold text-white">{p.name}</td>
+                            <td className="py-3 px-4 text-gray-400 uppercase text-[10px]">{p.tier_category}</td>
+                            <td className="py-3 px-4 font-mono font-semibold text-brand-300">
+                              ₦{Number(p.price_ngn).toLocaleString()}
+                            </td>
+                            <td className="py-3 px-4 font-mono text-white">{p.listing_allowance.toLocaleString()}</td>
+                            <td className="py-3 px-4 font-mono text-amber-400">{p.featured_allowance.toLocaleString()}</td>
+                            <td className="py-3 px-4 font-mono text-rose-400">{p.boost_allowance.toLocaleString()}</td>
+                            <td className="py-3 px-4">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30">
+                                Active
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
             {/* TAB 3: ACTIVITY LOGS */}
             {activeTab === 'activity' && (
               <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-xl">
@@ -700,6 +1035,115 @@ export default function AdminDashboardPage() {
                   >
                     <Check className="w-4 h-4" />
                     <span>{updatingTicket ? 'Saving...' : 'Mark as Resolved'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: Manually Assign / Upgrade User Subscription */}
+        {assignModalOpen && (
+          <div 
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={() => setAssignModalOpen(false)}
+          >
+            <div 
+              className="glass-panel w-full max-w-md rounded-3xl p-6 sm:p-8 border border-gray-800 shadow-2xl relative space-y-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setAssignModalOpen(false)}
+                className="absolute top-5 right-5 p-2 rounded-xl bg-gray-900 border border-gray-800 text-gray-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Crown className="w-5 h-5 text-amber-400" />
+                  <span>Assign Subscription Plan</span>
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  Override or grant active listing, featured and boost allowances to a user account.
+                </p>
+              </div>
+
+              <form onSubmit={handleAssignSubscription} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 mb-1">Target User ID *</label>
+                  <input
+                    type="number"
+                    required
+                    value={assignUserId}
+                    onChange={(e) => setAssignUserId(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="Enter user numeric ID (e.g. 1)"
+                    className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 mb-1">Plan Tier *</label>
+                  <select
+                    value={assignPlanSlug}
+                    onChange={(e) => setAssignPlanSlug(e.target.value)}
+                    className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
+                  >
+                    <optgroup label="Standard Tiers">
+                      <option value="free">Free Plan (1 listing, 0 featured, 0 boosts)</option>
+                      <option value="explorer">Explorer (5 listings, 1 featured, 0 boosts)</option>
+                      <option value="starter">Starter (10 listings, 3 featured, 1 boost)</option>
+                      <option value="growth">Growth (40 listings, 10 featured, 5 boosts)</option>
+                    </optgroup>
+                    <optgroup label="Business Tiers">
+                      <option value="business-100">Business 100 (100 listings, 20 featured, 10 boosts)</option>
+                      <option value="business-250">Business 250 (250 listings, 50 featured, 25 boosts)</option>
+                      <option value="business-500">Business 500 (500 listings, 100 featured, 50 boosts)</option>
+                      <option value="business-1000">Business 1,000 (1,000 listings, 200 featured, 100 boosts)</option>
+                      <option value="business-2500">Business 2,500 (2,500 listings, 500 featured, 250 boosts)</option>
+                    </optgroup>
+                    <optgroup label="Enterprise Tiers">
+                      <option value="enterprise-3000">Enterprise 3,000 (3,000 listings, 600 featured, 300 boosts)</option>
+                      <option value="enterprise-5000">Enterprise 5,000 (5,000 listings, 1,000 featured, 500 boosts)</option>
+                      <option value="enterprise-6000">Enterprise 6,000 (6,000 listings, 1,200 featured, 600 boosts)</option>
+                    </optgroup>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 mb-1">Duration (Days)</label>
+                  <input
+                    type="number"
+                    value={assignDuration}
+                    onChange={(e) => setAssignDuration(Number(e.target.value))}
+                    className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 mb-1">Audit Notes</label>
+                  <input
+                    type="text"
+                    value={assignNotes}
+                    onChange={(e) => setAssignNotes(e.target.value)}
+                    placeholder="Reason for manual assignment (e.g. Bank transfer verified offline)"
+                    className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setAssignModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl bg-gray-800 text-gray-300 text-xs font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs shadow-md shadow-brand-600/30"
+                  >
+                    Confirm &amp; Assign Plan
                   </button>
                 </div>
               </form>

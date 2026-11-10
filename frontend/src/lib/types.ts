@@ -63,6 +63,9 @@ export interface Listing {
   videos: string[];
   virtual_tour_url?: string;
   is_featured: boolean;
+  is_boosted?: boolean;
+  boosted_until?: string | null;
+  featured_at?: string | null;
   is_verified_asset: boolean;
   view_count: number;
   published_at?: string;

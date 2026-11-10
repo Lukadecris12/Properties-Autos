@@ -20,7 +20,11 @@ import {
   AlertCircle,
   Eye,
   Trash2,
-  DollarSign
+  DollarSign,
+  Crown,
+  Flame,
+  Rocket,
+  Zap
 } from 'lucide-react';
 
 import { Navbar } from '@/components/Navbar';
@@ -33,7 +37,7 @@ import { getCoverImageUrl, getFallbackImage } from '@/lib/media';
 export default function DashboardPage() {
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [activeMode, setActiveMode] = useState<'buyer' | 'seller' | 'landlord' | 'dealer'>('buyer');
-  const [activeTab, setActiveTab] = useState<'overview' | 'my_listings' | 'bookings' | 'inspections' | 'verification'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'my_listings' | 'subscription' | 'bookings' | 'inspections' | 'verification'>('overview');
 
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -41,6 +45,8 @@ export default function DashboardPage() {
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [myMatches, setMyMatches] = useState<AIMatch[]>([]);
   const [myInspections, setMyInspections] = useState<any[]>([]);
+  const [userSubscription, setUserSubscription] = useState<any>(null);
+  const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Verification document upload
   const [docType, setDocType] = useState('NATIONAL_ID');
@@ -129,10 +135,40 @@ export default function DashboardPage() {
         setMyDocs(dData.data || []);
       }
 
+      // 7. Fetch Real-Time Subscription & Boost Quotas
+      try {
+        const subRes = await api.getMySubscription();
+        if (subRes && subRes.data) {
+          setUserSubscription(subRes.data);
+        }
+      } catch (_) {}
+
     } catch (err) {
       console.error('Failed to load dashboard:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleFeatured = async (listingId: number, currentFeatured: boolean) => {
+    setActionFeedback(null);
+    try {
+      const res = await api.toggleListingFeatured(listingId, !currentFeatured);
+      setActionFeedback({ type: 'success', text: res.message || 'Featured status updated.' });
+      await loadDashboardData();
+    } catch (err: any) {
+      setActionFeedback({ type: 'error', text: err.message || 'Failed to update featured status.' });
+    }
+  };
+
+  const handleBoostListing = async (listingId: number) => {
+    setActionFeedback(null);
+    try {
+      const res = await api.boostListing(listingId);
+      setActionFeedback({ type: 'success', text: res.message || 'Listing boosted for 72 hours!' });
+      await loadDashboardData();
+    } catch (err: any) {
+      setActionFeedback({ type: 'error', text: err.message || 'Failed to boost listing.' });
     }
   };
 
@@ -228,10 +264,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Dashboard Navigation Tabs */}
-        <div className="flex items-center gap-3 border-b border-gray-800 pb-4 mb-8 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-3 border-b border-gray-800 pb-4 mb-6 overflow-x-auto no-scrollbar">
           {[
             { id: 'overview', label: 'Overview & Activity' },
             { id: 'my_listings', label: `My Inventory (${myListings.length})` },
+            { id: 'subscription', label: `Subscription & Boosts` },
             { id: 'bookings', label: `Reservations & Bookings (${myBookings.length})` },
             { id: 'inspections', label: `Inspections & Viewings (${myInspections.length})` },
             { id: 'verification', label: 'Verification & Badges' },
@@ -249,6 +286,154 @@ export default function DashboardPage() {
             </button>
           ))}
         </div>
+
+        {/* Global Action Feedback Notification */}
+        {actionFeedback && (
+          <div className={`p-4 rounded-2xl mb-6 flex items-center justify-between text-xs border ${
+            actionFeedback.type === 'success'
+              ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+              : 'bg-red-950/60 border-red-500/40 text-red-300'
+          }`}>
+            <div className="flex items-center gap-2">
+              {actionFeedback.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              )}
+              <span>{actionFeedback.text}</span>
+            </div>
+            <button onClick={() => setActionFeedback(null)} className="text-gray-400 hover:text-white text-xs">
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Real-Time Subscription & Quota Engine Card */}
+        {userSubscription && (
+          <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-gray-800 mb-8 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-800">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/40 uppercase">
+                    Active Subscription
+                  </span>
+                  <span className="text-xs text-gray-500 font-mono">
+                    Renewal: {new Date(userSubscription.current_period_end).toLocaleDateString()}
+                  </span>
+                </div>
+                <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
+                  <span>{userSubscription.plan_name}</span>
+                  <span className="text-sm font-semibold text-gray-400">
+                    (₦{Number(userSubscription.price_ngn).toLocaleString()}/mo)
+                  </span>
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/pricing"
+                  className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs shadow-md shadow-brand-600/30 flex items-center gap-1.5 transition-all hover:scale-105"
+                >
+                  <Rocket className="w-3.5 h-3.5" />
+                  <span>Upgrade Plan</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('subscription')}
+                  className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold text-xs border border-gray-700"
+                >
+                  Manage Boosts
+                </button>
+              </div>
+            </div>
+
+            {/* Visual Quota Usage Bars */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
+              
+              {/* Listings Quota */}
+              <div className="p-4 rounded-2xl bg-gray-950/60 border border-gray-800/80 space-y-2">
+                <div className="flex items-center justify-between text-gray-300">
+                  <span className="font-semibold flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-brand-400" />
+                    <span>Listing Allowance</span>
+                  </span>
+                  <span className="font-bold text-white">
+                    {userSubscription.active_listings_count} / {userSubscription.listing_allowance}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      userSubscription.active_listings_count >= userSubscription.listing_allowance
+                        ? 'bg-rose-500'
+                        : 'bg-brand-500'
+                    }`}
+                    style={{
+                      width: `${Math.min(100, (userSubscription.active_listings_count / Math.max(1, userSubscription.listing_allowance)) * 100)}%`
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between text-[11px] text-gray-400">
+                  <span>{userSubscription.remaining_listings} remaining</span>
+                  {userSubscription.excess_listings_count > 0 && (
+                    <span className="text-red-400 font-bold">{userSubscription.excess_listings_count} excess</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Featured Quota */}
+              <div className="p-4 rounded-2xl bg-gray-950/60 border border-gray-800/80 space-y-2">
+                <div className="flex items-center justify-between text-gray-300">
+                  <span className="font-semibold flex items-center gap-1.5">
+                    <Crown className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Featured Slots</span>
+                  </span>
+                  <span className="font-bold text-white">
+                    {userSubscription.used_featured_count} / {userSubscription.featured_allowance}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-amber-500 transition-all"
+                    style={{
+                      width: `${Math.min(100, (userSubscription.used_featured_count / Math.max(1, userSubscription.featured_allowance)) * 100)}%`
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between text-[11px] text-gray-400">
+                  <span>{userSubscription.remaining_featured} slots open</span>
+                  <span className="text-amber-400 font-medium">Top Search</span>
+                </div>
+              </div>
+
+              {/* Boost Credits Quota */}
+              <div className="p-4 rounded-2xl bg-gray-950/60 border border-gray-800/80 space-y-2">
+                <div className="flex items-center justify-between text-gray-300">
+                  <span className="font-semibold flex items-center gap-1.5">
+                    <Flame className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Promotional Boosts</span>
+                  </span>
+                  <span className="font-bold text-white">
+                    {userSubscription.remaining_boost_credits} credits left
+                  </span>
+                </div>
+                <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-rose-500 to-amber-500 transition-all"
+                    style={{
+                      width: `${Math.min(100, (userSubscription.used_boost_credits / Math.max(1, userSubscription.monthly_boost_allowance)) * 100)}%`
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between text-[11px] text-gray-400">
+                  <span>{userSubscription.used_boost_credits} used this cycle</span>
+                  <span className="text-rose-400 font-semibold">{userSubscription.active_boosts_count} active (72h)</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: OVERVIEW */}
         {activeTab === 'overview' && (
@@ -366,6 +551,23 @@ export default function DashboardPage() {
                         <span className="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold bg-brand-600 text-white shadow-md">
                           {l.transaction_type}
                         </span>
+                        
+                        {/* Boost & Featured Badges */}
+                        <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                          {l.is_boosted && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-600 text-white shadow-md flex items-center gap-1 animate-pulse">
+                              <Flame className="w-3 h-3 text-amber-300" />
+                              <span>Boosted</span>
+                            </span>
+                          )}
+                          {l.is_featured && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-600 text-white shadow-md flex items-center gap-1">
+                              <Crown className="w-3 h-3 text-white" />
+                              <span>Featured</span>
+                            </span>
+                          )}
+                        </div>
+
                         {l.images && l.images.length > 1 && (
                           <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-black/80 text-gray-200 border border-white/10">
                             {l.images.length} Photos
@@ -377,12 +579,41 @@ export default function DashboardPage() {
                         {l.currency} {Number(l.price).toLocaleString()} {l.rental_period ? `/ ${l.rental_period.replace('per_', '')}` : ''}
                       </p>
                     </div>
-                    <div className="pt-2 border-t border-gray-800 flex items-center justify-between text-xs">
-                      <span className="text-gray-400">{l.city}, {l.state}</span>
-                      <Link href={`/listings/${l.id}`} className="text-brand-400 font-semibold hover:underline flex items-center gap-1">
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Preview</span>
-                      </Link>
+
+                    {/* Promotional Boost & Featured Controls */}
+                    <div className="pt-3 border-t border-gray-800 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleFeatured(l.id, !!l.is_featured)}
+                          className={`flex-1 py-1.5 px-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                            l.is_featured
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+                              : 'bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700'
+                          }`}
+                        >
+                          <Crown className="w-3.5 h-3.5 text-amber-400" />
+                          <span>{l.is_featured ? 'Remove Featured' : 'Feature Ad'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleBoostListing(l.id)}
+                          className="flex-1 py-1.5 px-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-rose-600/20 transition-all hover:scale-[1.02]"
+                          title="Elevate search rankings for 72 hours"
+                        >
+                          <Flame className="w-3.5 h-3.5 text-amber-200" />
+                          <span>Boost (72h)</span>
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-gray-400 pt-1">
+                        <span>{l.city}, {l.state}</span>
+                        <Link href={`/listings/${l.id}`} className="text-brand-400 font-semibold hover:underline flex items-center gap-1">
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Preview</span>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -402,6 +633,125 @@ export default function DashboardPage() {
                 </Link>
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB 2.5: SUBSCRIPTION & BOOST MANAGEMENT */}
+        {activeTab === 'subscription' && (
+          <div className="space-y-8">
+            <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-gray-800 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-xs font-semibold mb-2">
+                    <Zap className="w-3.5 h-3.5 text-brand-400" />
+                    <span>Promotional Engine &amp; Quotas</span>
+                  </div>
+                  <h2 className="text-xl font-bold text-white">Your Marketplace Membership</h2>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Manage your listing allowance, active featured advertisements, and promotional search boosts.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/pricing"
+                    className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs shadow-md shadow-brand-600/30 flex items-center gap-1.5 transition-all hover:scale-105"
+                  >
+                    <Rocket className="w-3.5 h-3.5" />
+                    <span>Change or Upgrade Plan</span>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Plan metrics cards */}
+              {userSubscription && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+                  <div className="p-4 rounded-2xl bg-gray-950 border border-gray-800 space-y-1">
+                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Plan Name</span>
+                    <div className="text-xl font-extrabold text-white">{userSubscription.plan_name}</div>
+                    <span className="text-[11px] text-brand-400 font-semibold">₦{Number(userSubscription.price_ngn).toLocaleString()} / month</span>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-gray-950 border border-gray-800 space-y-1">
+                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Current Period End</span>
+                    <div className="text-xl font-extrabold text-white">
+                      {new Date(userSubscription.current_period_end).toLocaleDateString()}
+                    </div>
+                    <span className="text-[11px] text-gray-400">Monthly recurring cycle</span>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-gray-950 border border-gray-800 space-y-1">
+                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Available Boost Credits</span>
+                    <div className="text-xl font-extrabold text-amber-400 flex items-center gap-1.5">
+                      <Flame className="w-5 h-5 text-rose-500" />
+                      <span>{userSubscription.remaining_boost_credits} Credits</span>
+                    </div>
+                    <span className="text-[11px] text-gray-400">{userSubscription.used_boost_credits} used this cycle</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Active Promotional Boosts Section */}
+            <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-gray-800 space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-rose-400" />
+                    <span>Currently Active 72-Hour Boosts</span>
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Advertisements elevated to top search placements
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('my_listings')}
+                  className="text-xs font-semibold text-brand-400 hover:underline"
+                >
+                  Boost An Advertisement →
+                </button>
+              </div>
+
+              {userSubscription?.active_boosts && userSubscription.active_boosts.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {userSubscription.active_boosts.map((b: any) => (
+                    <div key={b.id} className="p-4 rounded-2xl bg-gray-950 border border-gray-800 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1">
+                          <Flame className="w-3 h-3 text-rose-400" />
+                          <span>Active Boost</span>
+                        </span>
+                        <span className="text-[11px] text-amber-400 font-mono">
+                          Expires: {new Date(b.expires_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-bold text-white line-clamp-1">{b.listing_title}</h4>
+                      <div className="flex items-center justify-between text-xs text-gray-400 pt-1">
+                        <span>Duration: {b.duration_hours} hours</span>
+                        <Link href={`/listings/${b.listing_id}`} className="text-brand-400 font-semibold hover:underline">
+                          View Listing →
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center rounded-2xl bg-gray-950 border border-gray-800/80 space-y-2">
+                  <Flame className="w-8 h-8 text-gray-600 mx-auto" />
+                  <p className="text-xs text-gray-400">
+                    No active boosts running. Boost any of your published listings to elevate its search placement for 72 hours.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('my_listings')}
+                    className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs inline-block mt-2"
+                  >
+                    Go to My Inventory
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

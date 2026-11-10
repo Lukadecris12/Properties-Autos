@@ -21,6 +21,7 @@ from app.models.user import User
 from app.models.listing import Listing
 from app.models.otp import OTPVerification
 from app.services.email_service import generate_otp_code, send_verification_otp_email
+from app.services.subscription_service import SubscriptionService
 from app.schemas.onboarding import (
     SignupInitiateRequest,
     SignupInitiateResponse,
@@ -246,6 +247,9 @@ async def onboarding_complete(req: OnboardingCompleteRequest, db: AsyncSession =
     await db.commit()
     await db.refresh(new_user)
 
+    # Assign default Free Plan subscription
+    await SubscriptionService.get_or_create_user_subscription(db, new_user.id)
+
     # Issue JWT tokens
     access_token = create_access_token(
         subject=new_user.id,
@@ -297,6 +301,9 @@ async def register(user_in: UserRegister, db: AsyncSession = Depends(get_db)):
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+
+    # Assign default Free Plan subscription
+    await SubscriptionService.get_or_create_user_subscription(db, new_user.id)
 
     return ResponseModel(
         message="User registered successfully",

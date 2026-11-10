@@ -3,7 +3,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import desc, or_
+from sqlalchemy import desc, or_, case
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
@@ -20,6 +20,7 @@ from app.schemas.listing import (
 )
 from app.schemas.common import ResponseModel, PaginatedResponse
 from app.services.matching_engine import MatchingEngine
+from app.services.subscription_service import SubscriptionService
 
 router = APIRouter()
 
@@ -36,6 +37,15 @@ async def create_listing(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Rental and Lease listings must specify a rental_period (e.g. per_night, per_day, per_month, per_year)."
+            )
+
+    target_status = listing_in.status or ListingStatus.PUBLISHED
+    if target_status == ListingStatus.PUBLISHED:
+        can_pub, reason, usage = await SubscriptionService.can_publish_listing(db, current_user.id)
+        if not can_pub:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=reason
             )
 
     listing = Listing(
@@ -146,7 +156,22 @@ async def list_listings(
     if user_id is not None:
         query = query.where(Listing.user_id == user_id)
 
-    query = query.options(selectinload(Listing.owner)).order_by(desc(Listing.created_at))
+    await SubscriptionService.process_expired_boosts(db)
+
+    is_boost_active = case(
+        (Listing.is_boosted == True, 1),
+        else_=0
+    )
+    is_feat_active = case(
+        (Listing.is_featured == True, 1),
+        else_=0
+    )
+
+    query = query.options(selectinload(Listing.owner)).order_by(
+        desc(is_boost_active),
+        desc(is_feat_active),
+        desc(Listing.created_at)
+    )
 
     result = await db.execute(query)
     all_items = list(result.scalars().all())
@@ -312,6 +337,11 @@ async def update_listing(
     # Ownership verification
     if listing.user_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to edit this listing")
+
+    if listing_in.status == ListingStatus.PUBLISHED and listing.status != ListingStatus.PUBLISHED:
+        can_pub, reason, _ = await SubscriptionService.can_publish_listing(db, current_user.id)
+        if not can_pub:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=reason)
 
     update_dict = listing_in.model_dump(exclude_unset=True)
     for k, v in update_dict.items():

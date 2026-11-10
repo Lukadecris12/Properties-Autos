@@ -47,6 +47,16 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     # Ensure uploads directory exists
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    
+    # Ensure default subscription catalogue and settings are seeded
+    try:
+        from app.core.database import AsyncSessionLocal
+        from app.services.subscription_service import SubscriptionService
+        async with AsyncSessionLocal() as session:
+            await SubscriptionService.ensure_plans_seeded(session)
+    except Exception as e:
+        print(f"Warning: Failed to seed subscription catalogue: {e}")
+
     yield
     # Shutdown
     await async_engine.dispose()

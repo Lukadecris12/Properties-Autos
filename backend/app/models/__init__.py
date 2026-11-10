@@ -19,10 +19,24 @@ from app.models.booking import Booking, Inspection, Conversation, Message
 from app.models.otp import OTPVerification
 from app.models.investment import InvestmentProperty, UserInvestment
 from app.models.support import SupportTicket
+from app.models.subscription import (
+    SubscriptionPlan,
+    UserSubscription,
+    SubscriptionPayment,
+    ListingBoost,
+    SubscriptionAuditLog,
+    SystemSetting
+)
 
 __all__ = [
     "Base",
     "SupportTicket",
+    "SubscriptionPlan",
+    "UserSubscription",
+    "SubscriptionPayment",
+    "ListingBoost",
+    "SubscriptionAuditLog",
+    "SystemSetting",
     "TransactionType",
     "AssetCategory",
     "ListingStatus",

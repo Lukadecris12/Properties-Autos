@@ -14,12 +14,14 @@ from app.api.v1.endpoints import (
     investments,
     admin,
     media,
-    support
+    support,
+    subscriptions
 )
 
 api_router = APIRouter()
 
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication & User Accounts"])
+api_router.include_router(subscriptions.router, prefix="/subscriptions", tags=["Subscriptions, Pricing & Boost Engine"])
 api_router.include_router(listings.router, prefix="/listings", tags=["Listings (Sale, Rent, Lease)"])
 api_router.include_router(media.router, prefix="/media", tags=["Media & File Uploads"])
 api_router.include_router(support.router, prefix="/support", tags=["Contact & Customer Support"])

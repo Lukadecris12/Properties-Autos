@@ -458,6 +458,182 @@ class ApiClient {
     }
     return res.json();
   }
+
+  // --- Subscription, Featured & Boost Engine ---
+  async getSubscriptionPlans(tier?: string) {
+    const url = tier ? `${API_BASE_URL}/subscriptions/plans?tier=${encodeURIComponent(tier)}` : `${API_BASE_URL}/subscriptions/plans`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to fetch subscription plans');
+    return res.json();
+  }
+
+  async getMySubscription() {
+    const res = await fetch(`${API_BASE_URL}/subscriptions/my-subscription`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to fetch subscription status');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
+  async subscribeToPlan(data: { plan_slug: string; payment_method?: string; auto_renew?: boolean }) {
+    const res = await fetch(`${API_BASE_URL}/subscriptions/subscribe`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to initiate subscription');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
+  async verifySubscriptionPayment(data: { reference: string; plan_slug: string; provider?: string; gateway_response?: any }) {
+    const res = await fetch(`${API_BASE_URL}/subscriptions/verify-payment`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to verify subscription payment');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
+  async toggleListingFeatured(listingId: number, isFeatured: boolean) {
+    const res = await fetch(`${API_BASE_URL}/subscriptions/listings/${listingId}/feature`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ is_featured: isFeatured }),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to toggle featured status');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
+  async boostListing(listingId: number, durationHours?: number) {
+    const res = await fetch(`${API_BASE_URL}/subscriptions/listings/${listingId}/boost`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ duration_hours: durationHours }),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to boost listing');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
+  async getMyBoosts() {
+    const res = await fetch(`${API_BASE_URL}/subscriptions/my-boosts`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch promotional boosts');
+    return res.json();
+  }
+
+  async getSubscriptionPaymentsHistory() {
+    const res = await fetch(`${API_BASE_URL}/subscriptions/payments/history`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch subscription payments history');
+    return res.json();
+  }
+
+  // Admin Subscriptions Management
+  async getAdminSubscriptionStats() {
+    const res = await fetch(`${API_BASE_URL}/admin/subscriptions/stats`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch admin subscription stats');
+    return res.json();
+  }
+
+  async getAdminSubscribers(status?: string, search?: string) {
+    const q = new URLSearchParams();
+    if (status && status !== 'ALL') q.append('status_filter', status);
+    if (search) q.append('search', search);
+    const qs = q.toString();
+    const url = qs ? `${API_BASE_URL}/admin/subscriptions/subscribers?${qs}` : `${API_BASE_URL}/admin/subscriptions/subscribers`;
+    const res = await fetch(url, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch platform subscribers');
+    return res.json();
+  }
+
+  async adminAssignSubscription(data: { user_id: number; plan_slug: string; duration_days?: number; notes?: string }) {
+    const res = await fetch(`${API_BASE_URL}/admin/subscriptions/assign`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to assign subscription');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
+  async adminRevokeSubscription(userId: number) {
+    const res = await fetch(`${API_BASE_URL}/admin/subscriptions/revoke/${userId}`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to revoke subscription');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
+  async adminGetPlans() {
+    const res = await fetch(`${API_BASE_URL}/admin/subscriptions/plans`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch admin subscription plans');
+    return res.json();
+  }
+
+  async adminUpdatePlan(planId: number, data: any) {
+    const res = await fetch(`${API_BASE_URL}/admin/subscriptions/plans/${planId}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to update plan');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
+  async adminGetSettings() {
+    const res = await fetch(`${API_BASE_URL}/admin/subscriptions/settings`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch subscription settings');
+    return res.json();
+  }
+
+  async adminUpdateSettings(key: string, value: string, description?: string) {
+    const res = await fetch(`${API_BASE_URL}/admin/subscriptions/settings?key=${encodeURIComponent(key)}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ value, description }),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to update system setting');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
 }
 
 export const api = new ApiClient();
