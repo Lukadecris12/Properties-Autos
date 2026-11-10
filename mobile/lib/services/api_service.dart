@@ -5,8 +5,17 @@ import '../models/listing_model.dart';
 
 class ApiService {
   final http.Client client;
+  static String? _authToken;
 
   ApiService({http.Client? client}) : client = client ?? http.Client();
+
+  static void setToken(String? token) {
+    _authToken = token;
+  }
+
+  Future<String?> getToken() async {
+    return _authToken;
+  }
 
   static final List<ListingModel> _seedFallbackListings = [
     ListingModel(
@@ -803,6 +812,7 @@ class ApiService {
         state: state,
         city: city,
         isVerified: true,
+        isFeatured: false,
         imageUrls: photos ?? [],
         attributes: attributes ?? {},
       );
