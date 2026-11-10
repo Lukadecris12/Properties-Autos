@@ -28,6 +28,7 @@ import { Footer } from '@/components/Footer';
 import { AIAssistantModal } from '@/components/AIAssistantModal';
 import { Listing, Booking, AIMatch, User } from '@/lib/types';
 import { api } from '@/lib/api';
+import { getCoverImageUrl, getFallbackImage } from '@/lib/media';
 
 export default function DashboardPage() {
   const [aiModalOpen, setAiModalOpen] = useState(false);
@@ -344,15 +345,29 @@ export default function DashboardPage() {
                 {myListings.map((l) => (
                   <div key={l.id} className="glass-panel rounded-2xl p-4 border border-gray-800 space-y-3 flex flex-col justify-between">
                     <div>
-                      <div className="relative aspect-[16/10] rounded-xl overflow-hidden bg-gray-950 mb-3">
+                      <div className="relative aspect-[16/10] rounded-xl overflow-hidden bg-gray-950 mb-3 flex items-center justify-center">
                         <img
-                          src={l.images && l.images.length > 0 ? l.images[0].url : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600'}
-                          alt={l.title}
-                          className="w-full h-full object-cover"
+                          src={getCoverImageUrl(l)}
+                          alt=""
+                          aria-hidden="true"
+                          className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-20 pointer-events-none"
                         />
-                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold bg-brand-600 text-white">
+                        <img
+                          src={getCoverImageUrl(l)}
+                          alt={l.title}
+                          onError={(e) => {
+                            e.currentTarget.src = getFallbackImage(l.asset_category);
+                          }}
+                          className="relative w-full h-full object-cover object-center"
+                        />
+                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold bg-brand-600 text-white shadow-md">
                           {l.transaction_type}
                         </span>
+                        {l.images && l.images.length > 1 && (
+                          <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-black/80 text-gray-200 border border-white/10">
+                            {l.images.length} Photos
+                          </span>
+                        )}
                       </div>
                       <h3 className="text-sm font-bold text-white line-clamp-2">{l.title}</h3>
                       <p className="text-xs text-brand-400 font-bold mt-1">

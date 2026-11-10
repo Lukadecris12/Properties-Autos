@@ -13,10 +13,12 @@ import {
   Gauge, 
   Sparkles,
   ArrowRight,
-  Heart
+  Heart,
+  Camera
 } from 'lucide-react';
 import { Listing } from '@/lib/types';
 import { isWishlistSaved, toggleWishlistId } from '@/lib/wishlist';
+import { getCoverImageUrl, getFallbackImage } from '@/lib/media';
 
 interface ListingCardProps {
   listing: Listing;
@@ -30,9 +32,24 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   onRequestInspection 
 }) => {
   const isRental = listing.transaction_type === 'RENT' || listing.transaction_type === 'LEASE';
-  const coverImage = listing.images && listing.images.length > 0 
-    ? listing.images[0].url 
-    : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800';
+  const initialCover = getCoverImageUrl(listing);
+  const [currentImage, setCurrentImage] = useState(initialCover);
+  const [hasError, setHasError] = useState(false);
+
+  // Sync image if listing changes
+  useEffect(() => {
+    setCurrentImage(getCoverImageUrl(listing));
+    setHasError(false);
+  }, [listing]);
+
+  const handleImgError = () => {
+    if (!hasError) {
+      setHasError(true);
+      setCurrentImage(getFallbackImage(listing.asset_category));
+    }
+  };
+
+  const photoCount = listing.images ? listing.images.length : 0;
 
   // Format currency (NGN, USD, etc)
   const formatPrice = (amount: number, currency: string) => {
@@ -78,14 +95,27 @@ export const ListingCard: React.FC<ListingCardProps> = ({
     <div className="group rounded-2xl bg-gray-900/90 border border-gray-800 hover:border-brand-500/50 transition-all duration-300 overflow-hidden flex flex-col justify-between hover:shadow-2xl hover:shadow-brand-500/10">
       
       {/* Top Image & Floating Badges */}
-      <div className="relative aspect-[16/10] overflow-hidden bg-gray-950">
+      <div className="relative aspect-[16/10] overflow-hidden bg-gray-950 flex items-center justify-center">
+        {/* Ambient blurred backdrop for seamless edge-to-edge framing */}
         <img
-          src={coverImage}
+          src={currentImage}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-25 pointer-events-none"
+        />
+
+        {/* Crisp foreground photo */}
+        <img
+          src={currentImage}
           alt={listing.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={handleImgError}
+          className="relative w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-black/40" />
+        
+        {/* Soft top and bottom readability gradients */}
+        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-gray-950 via-gray-950/40 to-transparent pointer-events-none" />
 
         {/* Top Tag Bar */}
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
@@ -122,11 +152,18 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           </button>
         </div>
 
-        {/* Category Indicator */}
-        <div className="absolute bottom-3 left-3">
-          <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-black/60 text-gray-300 backdrop-blur-sm border border-white/10 uppercase tracking-wider">
+        {/* Bottom Tag Bar: Category Indicator + Photo Count */}
+        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+          <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-black/70 text-gray-300 backdrop-blur-sm border border-white/10 uppercase tracking-wider">
             {listing.asset_category}
           </span>
+
+          {photoCount > 1 && (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-black/75 text-gray-200 backdrop-blur-md border border-white/10 shadow-sm">
+              <Camera className="w-3 h-3 text-brand-400" />
+              <span>{photoCount} Photos</span>
+            </span>
+          )}
         </div>
       </div>
 

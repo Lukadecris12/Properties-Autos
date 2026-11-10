@@ -541,7 +541,7 @@ class _AgentStorefrontScreenState extends State<AgentStorefrontScreen> {
   Widget _buildListingCard(ListingModel item) {
     final image = item.imageUrls.isNotEmpty
         ? item.imageUrls.first
-        : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1000';
+        : ApiConstants.resolveImageUrl(null, category: item.assetCategory);
 
     return GestureDetector(
       onTap: () {
@@ -566,13 +566,14 @@ class _AgentStorefrontScreenState extends State<AgentStorefrontScreen> {
               children: [
                 Image.network(
                   image,
-                  height: 180,
+                  height: 195,
                   width: double.infinity,
                   fit: BoxFit.cover,
+                  alignment: Alignment.center,
                   errorBuilder: (_, __, ___) => Container(
-                    height: 180,
+                    height: 195,
                     color: const Color(0xFF1F2937),
-                    child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey)),
+                    child: const Center(child: Icon(Icons.broken_image_outlined, color: Colors.grey, size: 36)),
                   ),
                 ),
                 // Transaction Badge

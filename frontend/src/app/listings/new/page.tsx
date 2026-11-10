@@ -107,13 +107,7 @@ export default function NewListingPage() {
   const [imageCaption, setImageCaption] = useState('');
   const [uploadingImages, setUploadingImages] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
-  const [imagesList, setImagesList] = useState<Array<{ url: string; caption: string; is_cover: boolean }>>([
-    {
-      url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-      caption: 'Main View',
-      is_cover: true
-    }
-  ]);
+  const [imagesList, setImagesList] = useState<Array<{ url: string; caption: string; is_cover: boolean }>>([]);
 
   const toggleAmenity = (item: string) => {
     if (selectedAmenities.includes(item)) {

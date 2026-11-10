@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import '../core/constants.dart';
 
 class ListingModel {
   final int id;
@@ -46,15 +47,24 @@ class ListingModel {
   });
 
   factory ListingModel.fromJson(Map<String, dynamic> json) {
+    final category = json['asset_category']?.toString() ?? 'RESIDENTIAL';
     List<String> images = [];
     if (json['images'] != null && json['images'] is List) {
       for (var img in json['images']) {
         if (img is Map && img['url'] != null) {
-          images.add(img['url']);
+          final resolved = ApiConstants.resolveImageUrl(img['url'].toString(), category: category);
+          if (img['is_cover'] == true) {
+            images.insert(0, resolved);
+          } else {
+            images.add(resolved);
+          }
         } else if (img is String) {
-          images.add(img);
+          images.add(ApiConstants.resolveImageUrl(img, category: category));
         }
       }
+    }
+    if (images.isEmpty) {
+      images.add(ApiConstants.resolveImageUrl(null, category: category));
     }
 
     final owner = json['owner'];

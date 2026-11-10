@@ -11,6 +11,7 @@ import {
   Bed, 
   Bath, 
   Maximize2, 
+  Minimize2,
   Car, 
   Gauge, 
   Fuel, 
@@ -29,7 +30,13 @@ import {
   Phone,
   PhoneCall,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  ChevronLeft,
+  ChevronRight,
+  Camera,
+  X,
+  Expand,
+  Shrink
 } from 'lucide-react';
 
 import { Navbar } from '@/components/Navbar';
@@ -39,6 +46,7 @@ import { BookingModal } from '@/components/BookingModal';
 import { Listing } from '@/lib/types';
 import { api } from '@/lib/api';
 import { isWishlistSaved, toggleWishlistId } from '@/lib/wishlist';
+import { getAllListingImages, getFallbackImage } from '@/lib/media';
 
 export default function ListingDetailPage() {
   const params = useParams();
@@ -48,6 +56,8 @@ export default function ListingDetailPage() {
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [fitMode, setFitMode] = useState<'cover' | 'contain'>('cover');
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -205,9 +215,18 @@ export default function ListingDetailPage() {
     }
   };
 
-  const images = listing.images && listing.images.length > 0 
-    ? listing.images.map(img => img.url)
-    : ['https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200'];
+  const imagesList = getAllListingImages(listing);
+  const activeImage = imagesList[activeImageIndex] || imagesList[0];
+
+  const handlePrevImage = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setActiveImageIndex(prev => (prev === 0 ? imagesList.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setActiveImageIndex(prev => (prev === imagesList.length - 1 ? 0 : prev + 1));
+  };
 
   const displayPhone = listing.owner?.phone_number || '+234 803 123 4567';
   const cleanPhone = displayPhone.replace(/[^0-9]/g, '');
@@ -224,8 +243,8 @@ export default function ListingDetailPage() {
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         
-        {/* Navigation Breadcrumb */}
-        <div className="flex items-center justify-between mb-6">
+        {/* Navigation Breadcrumb & Actions Bar */}
+        <div className="flex items-center justify-between mb-4">
           <Link href="/" className="inline-flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-white transition-colors">
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Marketplace</span>
@@ -262,90 +281,288 @@ export default function ListingDetailPage() {
           </div>
         </div>
 
-        {/* 1. High-Resolution Gallery Hero */}
-        <section className="mb-10 space-y-3">
-          <div className="relative aspect-[16/9] md:aspect-[21/9] rounded-3xl overflow-hidden bg-gray-950 border border-gray-800 shadow-2xl">
-            <img
-              src={images[activeImageIndex]}
-              alt={listing.title}
-              className="w-full h-full object-cover transition-all duration-300"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
-
-            {/* Badges on image */}
-            <div className="absolute top-4 left-4 flex gap-2">
-              <span className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider backdrop-blur-md shadow-md ${
+        {/* Dedicated Property Header (Unobscured and Crystal Clear) */}
+        <div className="mb-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 pb-4 border-b border-gray-800/80">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${
                 listing.transaction_type === 'SALE'
-                  ? 'bg-amber-500/90 text-white'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                   : listing.transaction_type === 'LEASE'
-                  ? 'bg-purple-600/90 text-white'
-                  : 'bg-brand-600/90 text-white'
+                  ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30'
+                  : 'bg-brand-600/20 text-brand-300 border border-brand-500/30'
               }`}>
                 {listing.transaction_type}
               </span>
-              <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-black/60 text-gray-300 border border-white/10 uppercase tracking-wider backdrop-blur-md">
+              <span className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-gray-800 text-gray-300 border border-gray-700 uppercase tracking-wider">
                 {listing.asset_category}
               </span>
               {listing.is_verified_asset && (
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-950/90 text-emerald-300 border border-emerald-500/40 backdrop-blur-md">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                   Verified Asset
                 </span>
               )}
             </div>
 
-            {/* Price Pill Floating */}
-            <div className="absolute bottom-6 left-6 right-6 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 text-xs text-brand-300 mb-1">
-                  <MapPin className="w-4 h-4 text-brand-400 shrink-0" />
-                  <span>{listing.neighbourhood ? `${listing.neighbourhood}, ` : ''}{listing.city}, {listing.state}</span>
-                </div>
-                <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
-                  {listing.title}
-                </h1>
-              </div>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-tight">
+              {listing.title}
+            </h1>
 
-              <div className="p-4 rounded-2xl bg-black/80 backdrop-blur-md border border-white/10 shrink-0">
-                <span className="text-xs text-gray-400 block font-medium">
-                  {listing.transaction_type === 'SALE' ? 'Asking Price' : 'Rental Rate'}
-                </span>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl sm:text-3xl font-extrabold text-white">
-                    {listing.currency} {Number(listing.price).toLocaleString()}
-                  </span>
-                  {isRental && (
-                    <span className="text-xs font-bold text-brand-400">
-                      {formatRentalPeriod(listing.rental_period)}
-                    </span>
-                  )}
-                </div>
-                {listing.is_negotiable && (
-                  <span className="text-[11px] text-gray-400 uppercase tracking-wider block mt-0.5">
-                    Price Negotiable
-                  </span>
-                )}
-              </div>
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
+              <MapPin className="w-4 h-4 text-brand-400 shrink-0" />
+              <span>{listing.neighbourhood ? `${listing.neighbourhood}, ` : ''}{listing.city}, {listing.state}</span>
             </div>
           </div>
 
+          {/* Asking Price Card */}
+          <div className="p-4 rounded-2xl bg-gray-900/90 border border-gray-800 shadow-xl shrink-0 self-start lg:self-auto min-w-[220px]">
+            <span className="text-[11px] text-gray-400 block font-medium uppercase tracking-wider">
+              {listing.transaction_type === 'SALE' ? 'Asking Price' : 'Rental Rate'}
+            </span>
+            <div className="flex items-baseline gap-1.5 mt-0.5">
+              <span className="text-2xl sm:text-3xl font-extrabold text-white">
+                {listing.currency} {Number(listing.price).toLocaleString()}
+              </span>
+              {isRental && (
+                <span className="text-xs font-bold text-brand-400">
+                  {formatRentalPeriod(listing.rental_period)}
+                </span>
+              )}
+            </div>
+            {listing.is_negotiable && (
+              <span className="text-[11px] text-emerald-400 font-semibold tracking-wide block mt-1">
+                ✓ Price Negotiable
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* 1. High-Resolution Gallery Hero Showcase */}
+        <section className="mb-10 space-y-3">
+          <div className="relative aspect-[16/10] sm:aspect-[16/9] max-h-[560px] w-full rounded-3xl overflow-hidden bg-gray-950 border border-gray-800 shadow-2xl flex items-center justify-center group">
+            
+            {/* Ambient Blurred Backdrop for Seamless Edge-to-Edge Fill */}
+            <img
+              src={activeImage.url}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover blur-2xl scale-125 opacity-25 pointer-events-none"
+            />
+
+            {/* Crisp Centered Photo (Fitted and Rendered without Distortion) */}
+            <img
+              src={activeImage.url}
+              alt={activeImage.caption || listing.title}
+              onError={(e) => {
+                e.currentTarget.src = getFallbackImage(listing.asset_category);
+              }}
+              onClick={() => setLightboxOpen(true)}
+              className={`relative z-10 transition-all duration-300 cursor-pointer ${
+                fitMode === 'cover' 
+                  ? 'w-full h-full object-cover object-center' 
+                  : 'max-h-full max-w-full object-contain'
+              }`}
+            />
+
+            {/* Overlay Navigation Arrows */}
+            {imagesList.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={handlePrevImage}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/70 hover:bg-black/95 text-white border border-white/10 flex items-center justify-center backdrop-blur-md shadow-xl opacity-80 group-hover:opacity-100 hover:scale-105 transition-all"
+                  title="Previous Photo"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextImage}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/70 hover:bg-black/95 text-white border border-white/10 flex items-center justify-center backdrop-blur-md shadow-xl opacity-80 group-hover:opacity-100 hover:scale-105 transition-all"
+                  title="Next Photo"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </>
+            )}
+
+            {/* Top-Right Gallery Tools: Viewport Fit Toggle & Lightbox Expand */}
+            <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFitMode(prev => prev === 'cover' ? 'contain' : 'cover');
+                }}
+                className="px-3 py-1.5 rounded-xl bg-black/75 hover:bg-black/95 text-xs text-gray-200 border border-white/15 backdrop-blur-md flex items-center gap-1.5 shadow-lg transition-all"
+                title={fitMode === 'cover' ? 'Show Whole Photo (Uncropped)' : 'Fill Card Frame'}
+              >
+                {fitMode === 'cover' ? (
+                  <>
+                    <Shrink className="w-3.5 h-3.5 text-brand-400" />
+                    <span className="hidden sm:inline">Fit to View</span>
+                  </>
+                ) : (
+                  <>
+                    <Expand className="w-3.5 h-3.5 text-brand-400" />
+                    <span className="hidden sm:inline">Fill Frame</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxOpen(true);
+                }}
+                className="p-2 rounded-xl bg-black/75 hover:bg-black/95 text-gray-200 border border-white/15 backdrop-blur-md flex items-center justify-center shadow-lg transition-all"
+                title="Fullscreen Lightbox"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Bottom Photo Metadata: Caption & Photo Counter */}
+            <div className="absolute bottom-4 inset-x-4 z-20 flex items-center justify-between gap-3 pointer-events-none">
+              <div className="pointer-events-auto">
+                {activeImage.caption && (
+                  <span className="px-3 py-1 rounded-xl bg-black/80 backdrop-blur-md text-xs text-gray-200 border border-white/10 shadow-md">
+                    {activeImage.caption}
+                  </span>
+                )}
+              </div>
+
+              <div className="pointer-events-auto">
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/80 backdrop-blur-md text-xs font-semibold text-white border border-white/10 shadow-md">
+                  <Camera className="w-3.5 h-3.5 text-brand-400" />
+                  <span>{activeImageIndex + 1} / {imagesList.length}</span>
+                </span>
+              </div>
+            </div>
+
+          </div>
+
           {/* Thumbnail Strip */}
-          {images.length > 1 && (
+          {imagesList.length > 1 && (
             <div className="flex gap-3 overflow-x-auto py-2 no-scrollbar">
-              {images.map((img, i) => (
+              {imagesList.map((img, i) => (
                 <button
                   key={i}
+                  type="button"
                   onClick={() => setActiveImageIndex(i)}
-                  className={`relative aspect-[16/10] w-28 rounded-xl overflow-hidden border-2 transition-all shrink-0 ${
-                    activeImageIndex === i ? 'border-brand-500 scale-105' : 'border-gray-800 opacity-60 hover:opacity-100'
+                  className={`relative aspect-[16/10] w-28 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-gray-950 ${
+                    activeImageIndex === i 
+                      ? 'border-brand-500 ring-2 ring-brand-500/40 scale-105 shadow-lg' 
+                      : 'border-gray-800 opacity-60 hover:opacity-100 hover:border-gray-700'
                   }`}
                 >
-                  <img src={img} alt="thumbnail" className="w-full h-full object-cover" />
+                  <img 
+                    src={img.url} 
+                    alt={img.caption || `Thumbnail ${i + 1}`} 
+                    onError={(e) => {
+                      e.currentTarget.src = getFallbackImage(listing.asset_category);
+                    }}
+                    className="w-full h-full object-cover object-center" 
+                  />
+                  {img.is_cover && (
+                    <span className="absolute bottom-1 left-1 px-1.5 py-0.2 rounded text-[9px] bg-brand-600 text-white font-bold">
+                      Cover
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
           )}
         </section>
+
+        {/* Fullscreen Lightbox Modal */}
+        {lightboxOpen && (
+          <div 
+            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 sm:p-6"
+            onClick={() => setLightboxOpen(false)}
+          >
+            {/* Lightbox Top Bar */}
+            <div className="flex items-center justify-between text-white z-10" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-3">
+                <span className="text-xs sm:text-sm font-semibold text-gray-400">
+                  Photo {activeImageIndex + 1} of {imagesList.length}
+                </span>
+                {activeImage.caption && (
+                  <span className="text-xs sm:text-sm text-gray-200 border-l border-gray-700 pl-3">
+                    {activeImage.caption}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(false)}
+                className="p-2 rounded-xl bg-gray-900 border border-gray-800 text-gray-400 hover:text-white transition-colors"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Lightbox Centered Image */}
+            <div className="relative flex-1 flex items-center justify-center p-2 sm:p-8" onClick={(e) => e.stopPropagation()}>
+              {imagesList.length > 1 && (
+                <button
+                  type="button"
+                  onClick={handlePrevImage}
+                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/80 hover:bg-brand-600 text-white border border-white/20 transition-all z-20"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+              )}
+
+              <img
+                src={activeImage.url}
+                alt={activeImage.caption || listing.title}
+                onError={(e) => {
+                  e.currentTarget.src = getFallbackImage(listing.asset_category);
+                }}
+                className="max-h-[80vh] max-w-full object-contain rounded-2xl shadow-2xl"
+              />
+
+              {imagesList.length > 1 && (
+                <button
+                  type="button"
+                  onClick={handleNextImage}
+                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/80 hover:bg-brand-600 text-white border border-white/20 transition-all z-20"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              )}
+            </div>
+
+            {/* Lightbox Bottom Thumbnails */}
+            {imagesList.length > 1 && (
+              <div className="flex justify-center gap-2 overflow-x-auto py-2 z-10" onClick={(e) => e.stopPropagation()}>
+                {imagesList.map((img, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setActiveImageIndex(i)}
+                    className={`relative aspect-[16/10] w-16 sm:w-20 rounded-lg overflow-hidden border-2 transition-all shrink-0 ${
+                      activeImageIndex === i ? 'border-brand-500 scale-105' : 'border-gray-800 opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img 
+                      src={img.url} 
+                      alt="" 
+                      onError={(e) => {
+                        e.currentTarget.src = getFallbackImage(listing.asset_category);
+                      }}
+                      className="w-full h-full object-cover" 
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 2. Main Details & Action Forms Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

@@ -692,7 +692,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildListingCard(ListingModel item) {
     final coverImage = item.imageUrls.isNotEmpty 
         ? item.imageUrls.first 
-        : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600';
+        : ApiConstants.resolveImageUrl(null, category: item.assetCategory);
 
     return GestureDetector(
       onTap: () {
@@ -714,18 +714,40 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image with badges
+            // Image with badges and fitted aspect framing
             Stack(
               children: [
                 Image.network(
                   coverImage,
-                  height: 180,
+                  height: 195,
                   width: double.infinity,
                   fit: BoxFit.cover,
+                  alignment: Alignment.center,
                   errorBuilder: (ctx, err, stack) => Container(
-                    height: 180,
-                    color: Colors.black26,
-                    child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey)),
+                    height: 195,
+                    color: const Color(0xFF1F2937),
+                    child: const Center(
+                      child: Icon(Icons.broken_image_outlined, color: Colors.grey, size: 36),
+                    ),
+                  ),
+                ),
+                // Soft bottom gradient
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 40,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.6),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
                   ),
                 ),
                 Positioned(
@@ -745,6 +767,30 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+                if (item.imageUrls.length > 1)
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.75),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.camera_alt_outlined, color: Color(0xFF10B981), size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${item.imageUrls.length}',
+                            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 Positioned(
                   top: 8,
                   right: 8,

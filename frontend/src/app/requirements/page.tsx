@@ -25,6 +25,7 @@ import { Footer } from '@/components/Footer';
 import { AIAssistantModal } from '@/components/AIAssistantModal';
 import { AIMatch, Requirement } from '@/lib/types';
 import { api } from '@/lib/api';
+import { getCoverImageUrl, getFallbackImage } from '@/lib/media';
 
 export default function RequirementsDashboardPage() {
   const [aiModalOpen, setAiModalOpen] = useState(false);
@@ -120,9 +121,7 @@ export default function RequirementsDashboardPage() {
               const listing = item.listing;
               if (!listing) return null;
               const isRental = listing.transaction_type === 'RENT' || listing.transaction_type === 'LEASE';
-              const coverImage = listing.images && listing.images.length > 0
-                ? listing.images[0].url
-                : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600';
+              const coverImage = getCoverImageUrl(listing);
 
               const score = Math.round(item.compatibility_score);
               const breakdown = item.score_breakdown || {};
@@ -171,8 +170,21 @@ export default function RequirementsDashboardPage() {
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                     
                     {/* Image Preview */}
-                    <div className="md:col-span-3 aspect-[16/10] rounded-2xl overflow-hidden bg-gray-950 border border-gray-800 shrink-0">
-                      <img src={coverImage} alt={listing.title} className="w-full h-full object-cover" />
+                    <div className="md:col-span-3 aspect-[16/10] rounded-2xl overflow-hidden bg-gray-950 border border-gray-800 shrink-0 relative flex items-center justify-center">
+                      <img
+                        src={coverImage}
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-20 pointer-events-none"
+                      />
+                      <img
+                        src={coverImage}
+                        alt={listing.title}
+                        onError={(e) => {
+                          e.currentTarget.src = getFallbackImage(listing.asset_category);
+                        }}
+                        className="relative w-full h-full object-cover object-center"
+                      />
                     </div>
 
                     {/* Asset Details */}

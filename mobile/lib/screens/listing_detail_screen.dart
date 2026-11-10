@@ -189,10 +189,11 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                       return Image.network(
                         images[idx],
                         fit: BoxFit.cover,
+                        alignment: Alignment.center,
                         errorBuilder: (ctx, err, stack) => Container(
                           color: const Color(0xFF1F2937),
                           child: const Center(
-                            child: Icon(Icons.image_not_supported, color: Colors.grey, size: 48),
+                            child: Icon(Icons.broken_image_outlined, color: Colors.grey, size: 48),
                           ),
                         ),
                       );
