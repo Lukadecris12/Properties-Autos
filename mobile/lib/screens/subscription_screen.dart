@@ -516,7 +516,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                                 children: [
                                   const Text('CURRENT MEMBERSHIP', style: TextStyle(color: Color(0xFF34D399), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                                   const SizedBox(height: 2),
-                                  Text(_userUsage!.planName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.extrabold)),
+                                  Text(_userUsage!.planName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
                                 ],
                               ),
                               Container(
@@ -731,7 +731,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                             crossAxisAlignment: CrossAxisAlignment.baseline,
                             textBaseline: TextBaseline.alphabetic,
                             children: [
-                              Text(formattedPrice, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.extrabold)),
+                              Text(formattedPrice, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800)),
                               if (plan.priceNgn > 0)
                                 Text(' / ${_isAnnual ? 'year' : 'month'}', style: const TextStyle(color: Colors.grey, fontSize: 11)),
                             ],
