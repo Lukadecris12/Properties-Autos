@@ -410,8 +410,8 @@ class ApiClient {
 
   // --- Contact & Customer Support ---
   async submitSupportTicket(data: {
-    full_name: string;
-    email: string;
+    full_name?: string;
+    email?: string;
     phone_number?: string;
     category: string;
     subject: string;

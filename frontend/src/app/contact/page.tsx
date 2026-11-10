@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Mail, 
@@ -14,13 +14,15 @@ import {
   ShieldCheck, 
   HelpCircle,
   ArrowRight,
-  Headphones
+  Headphones,
+  UserCheck
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { api } from '@/lib/api';
 
 export default function ContactSupportPage() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -32,25 +34,60 @@ export default function ContactSupportPage() {
   const [successTicket, setSuccessTicket] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState('');
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const me = await api.getMe();
+        if (me && me.data) {
+          setCurrentUser(me.data);
+          return;
+        }
+      } catch (_) {
+        const cached = localStorage.getItem('propertyhub_user');
+        if (cached) {
+          try {
+            setCurrentUser(JSON.parse(cached));
+          } catch (_) {}
+        }
+      }
+    };
+    fetchUser();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!fullName.trim() || !email.trim() || !subject.trim() || !message.trim()) {
-      setErrorMsg('Please complete all required fields.');
+    if (!currentUser && (!fullName.trim() || !email.trim())) {
+      setErrorMsg('Please enter your full name and email address.');
+      return;
+    }
+
+    if (!subject.trim() || !message.trim()) {
+      setErrorMsg('Please provide a subject and message details.');
       return;
     }
 
     setSubmitting(true);
     try {
-      const res = await api.submitSupportTicket({
-        full_name: fullName.trim(),
-        email: email.trim(),
-        phone_number: phone.trim() || undefined,
+      const payload: any = {
         category,
         subject: subject.trim(),
         message: message.trim(),
-      });
+      };
+
+      if (currentUser) {
+        const derivedName = `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || currentUser.company_name || currentUser.email;
+        payload.full_name = derivedName;
+        payload.email = currentUser.email;
+        if (currentUser.phone_number) payload.phone_number = currentUser.phone_number;
+      } else {
+        payload.full_name = fullName.trim();
+        payload.email = email.trim();
+        if (phone.trim()) payload.phone_number = phone.trim();
+      }
+
+      const res = await api.submitSupportTicket(payload);
 
       setSuccessTicket(res.data);
       setFullName('');
@@ -185,67 +222,92 @@ export default function ContactSupportPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                      Full Name <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="e.g. Babatunde Johnson"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-gray-900 border border-gray-800 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-white text-xs outline-none transition-all"
-                    />
+                {/* Authenticated user profile auto-link badge */}
+                {currentUser ? (
+                  <div className="p-4 rounded-2xl bg-brand-950/40 border border-brand-500/30 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-brand-500/20 border border-brand-500/40 flex items-center justify-center text-brand-300 font-bold text-sm">
+                        {(currentUser.first_name || currentUser.company_name || 'U')[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white">
+                            {currentUser.first_name ? `${currentUser.first_name} ${currentUser.last_name || ''}` : (currentUser.company_name || 'Valued User')}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-semibold border border-emerald-500/30">
+                            Signed In
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {currentUser.email} {currentUser.phone_number ? `• ${currentUser.phone_number}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] text-brand-400 hidden sm:inline-block">Profile auto-linked</span>
                   </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                          Full Name <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          placeholder="e.g. Babatunde Johnson"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-gray-900 border border-gray-800 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-white text-xs outline-none transition-all"
+                        />
+                      </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                      Email Address <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@company.com"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-gray-900 border border-gray-800 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-white text-xs outline-none transition-all"
-                    />
-                  </div>
-                </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                          Email Address <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="name@company.com"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-gray-900 border border-gray-800 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-white text-xs outline-none transition-all"
+                        />
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                      Phone Number (WhatsApp)
-                    </label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+234 803 000 0000"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-gray-900 border border-gray-800 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-white text-xs outline-none transition-all"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                        Phone Number (WhatsApp)
+                      </label>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="+234 803 000 0000"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-gray-900 border border-gray-800 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-white text-xs outline-none transition-all"
+                      />
+                    </div>
+                  </>
+                )}
 
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                      Inquiry Category <span className="text-red-400">*</span>
-                    </label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-gray-900 border border-gray-800 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-white text-xs outline-none transition-all"
-                    >
-                      <option value="GENERAL_INQUIRY">General Inquiry</option>
-                      <option value="LISTING_ASSISTANCE">Listing & Publishing Assistance</option>
-                      <option value="TITLE_DOCUMENTATION">Title Verification & Legal Due Diligence</option>
-                      <option value="SUBSCRIPTION_MEMBERSHIP">Subscriptions & Corporate Plans</option>
-                      <option value="TECHNICAL_SUPPORT">Technical & Account Support</option>
-                      <option value="PARTNERSHIP">Developer & Dealership Partnership</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                    Inquiry Category <span className="text-red-400">*</span>
+                  </label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-gray-900 border border-gray-800 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-white text-xs outline-none transition-all"
+                  >
+                    <option value="GENERAL_INQUIRY">General Inquiry</option>
+                    <option value="LISTING_ASSISTANCE">Listing & Publishing Assistance</option>
+                    <option value="TITLE_DOCUMENTATION">Title Verification & Legal Due Diligence</option>
+                    <option value="SUBSCRIPTION_MEMBERSHIP">Subscriptions & Corporate Plans</option>
+                    <option value="TECHNICAL_SUPPORT">Technical & Account Support</option>
+                    <option value="PARTNERSHIP">Developer & Dealership Partnership</option>
+                  </select>
                 </div>
 
                 <div>
@@ -303,16 +365,21 @@ export default function ContactSupportPage() {
                 Properties & Autos operates strictly as an asset listing and discovery directory. 
                 All payments, statutory documentation signing, and legal title conveyancing must be conducted directly and offline at the developer or dealership registered corporate premises.
               </p>
-              <div className="p-3.5 rounded-2xl bg-gray-900 border border-gray-800 text-[11px] text-gray-300 space-y-1.5">
-                <div className="font-semibold text-white">Need emergency assistance?</div>
-                <div>Contact our security hotline immediately at <strong>+234 800 000 7000</strong>.</div>
-              </div>
             </div>
 
             <div className="glass-panel p-6 rounded-3xl border border-gray-800 space-y-4">
-              <div className="flex items-center gap-2 text-sm font-bold text-white">
-                <HelpCircle className="w-5 h-5 text-gold-400" />
-                <span>Frequently Asked Questions</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-bold text-white">
+                  <HelpCircle className="w-5 h-5 text-gold-400" />
+                  <span>Frequently Asked Questions</span>
+                </div>
+                <Link 
+                  href="/faq" 
+                  className="text-xs font-semibold text-brand-400 hover:text-brand-300 inline-flex items-center gap-1"
+                >
+                  <span>View All</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
 
               <div className="space-y-3 text-xs">
@@ -330,6 +397,16 @@ export default function ContactSupportPage() {
                   <div className="font-bold text-white">How long does support take to reply?</div>
                   <div className="text-gray-400">All support tickets submitted via this form are responded to within 2 to 4 business hours.</div>
                 </div>
+              </div>
+
+              <div className="pt-2">
+                <Link
+                  href="/faq"
+                  className="w-full py-3 px-4 rounded-2xl bg-gray-900 hover:bg-gray-850 border border-gray-700/60 text-xs font-bold text-brand-400 hover:text-brand-300 flex items-center justify-center gap-2 transition-all"
+                >
+                  <span>Browse Full FAQ Knowledgebase</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
             </div>
 

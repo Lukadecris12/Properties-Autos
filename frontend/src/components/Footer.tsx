@@ -74,6 +74,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2">
               <li><Link href="/pricing" className="hover:text-white transition-colors text-amber-400 font-semibold">Pricing &amp; Memberships</Link></li>
               <li><Link href="/contact" className="hover:text-white transition-colors text-brand-400 font-semibold">Contact &amp; Support Desk</Link></li>
+              <li><Link href="/faq" className="hover:text-white transition-colors text-emerald-400 font-semibold">Frequently Asked Questions (FAQ)</Link></li>
               <li><Link href="/verification" className="hover:text-white transition-colors">Identity Verification</Link></li>
               <li><Link href="/verification" className="hover:text-white transition-colors">Business Verification</Link></li>
               <li><Link href="/verification" className="hover:text-white transition-colors">Title Document Reviews</Link></li>

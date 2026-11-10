@@ -26,11 +26,30 @@ async def submit_support_ticket(
     db: AsyncSession = Depends(get_db)
 ):
     """Submit a contact and support ticket to platform administrators."""
+    resolved_full_name = ticket_in.full_name
+    resolved_email = ticket_in.email
+    resolved_phone = ticket_in.phone_number
+
+    if current_user:
+        if not resolved_full_name:
+            user_name = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip()
+            resolved_full_name = user_name or current_user.company_name or current_user.email
+        if not resolved_email:
+            resolved_email = current_user.email
+        if not resolved_phone:
+            resolved_phone = current_user.phone_number
+
+    if not resolved_full_name or not resolved_email:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Full name and email address are required for guest inquiries."
+        )
+
     ticket = SupportTicket(
         user_id=current_user.id if current_user else None,
-        full_name=ticket_in.full_name,
-        email=ticket_in.email,
-        phone_number=ticket_in.phone_number,
+        full_name=resolved_full_name,
+        email=resolved_email,
+        phone_number=resolved_phone,
         category=ticket_in.category,
         subject=ticket_in.subject,
         message=ticket_in.message,

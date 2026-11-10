@@ -6,12 +6,28 @@ import '../models/listing_model.dart';
 class ApiService {
   final http.Client client;
   static String? _authToken;
+  static bool _isLoggedIn = true;
+  static Map<String, dynamic>? _currentUser = {
+    'name': 'Senator / Investor',
+    'email': 'investor@properties-autos.ng',
+    'phone': '+234 803 123 4567',
+    'role': 'BUYER',
+  };
 
   ApiService({http.Client? client}) : client = client ?? http.Client();
 
   static void setToken(String? token) {
     _authToken = token;
   }
+
+  static bool get isLoggedIn => _isLoggedIn;
+
+  static void setLoggedIn(bool loggedIn, [Map<String, dynamic>? user]) {
+    _isLoggedIn = loggedIn;
+    if (user != null) _currentUser = user;
+  }
+
+  static Map<String, dynamic>? get currentUser => _currentUser;
 
   Future<String?> getToken() async {
     return _authToken;

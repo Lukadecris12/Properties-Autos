@@ -3,8 +3,8 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr
 
 class SupportTicketCreate(BaseModel):
-    full_name: str
-    email: EmailStr
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
     phone_number: Optional[str] = None
     category: str = "GENERAL_INQUIRY"
     subject: str

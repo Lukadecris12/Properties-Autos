@@ -8,6 +8,7 @@ import 'agents_screen.dart';
 import 'saved_listings_screen.dart';
 import 'contact_support_screen.dart';
 import 'subscription_screen.dart';
+import 'faq_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Function(int targetTab)? onNavigateTab;
@@ -330,6 +331,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const ContactSupportScreen()),
+                      );
+                    },
+                  ),
+                  _buildDivider(),
+                  _buildMenuItem(
+                    icon: Icons.help_outline,
+                    iconColor: const Color(0xFFF59E0B),
+                    title: 'Frequently Asked Questions (FAQ)',
+                    subtitle: 'Offline safety, titles, verification & subscription guide',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const FaqScreen()),
                       );
                     },
                   ),

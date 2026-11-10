@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../core/constants.dart';
 import '../services/api_service.dart';
+import 'faq_screen.dart';
 
 class ContactSupportScreen extends StatefulWidget {
   const ContactSupportScreen({Key? key}) : super(key: key);
@@ -46,10 +47,11 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
         if (token != null) 'Authorization': 'Bearer $token',
       };
 
+      final user = ApiService.currentUser;
       final body = json.encode({
-        'full_name': _nameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'phone_number': _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+        'full_name': ApiService.isLoggedIn ? (user?['name'] ?? 'Signed In User') : _nameController.text.trim(),
+        'email': ApiService.isLoggedIn ? (user?['email'] ?? 'investor@properties-autos.ng') : _emailController.text.trim(),
+        'phone_number': ApiService.isLoggedIn ? (user?['phone']) : (_phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null),
         'category': _category,
         'subject': _subjectController.text.trim(),
         'message': _messageController.text.trim(),
@@ -105,6 +107,18 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          TextButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const FaqScreen()),
+              );
+            },
+            icon: const Icon(Icons.help_outline, color: Color(0xFFF59E0B), size: 16),
+            label: const Text('FAQ', style: TextStyle(color: Color(0xFFF59E0B), fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -220,46 +234,96 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
               key: _formKey,
               child: Column(
                 children: [
-                  TextFormField(
-                    controller: _nameController,
-                    validator: (v) => v == null || v.isEmpty ? 'Please enter your name' : null,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                    decoration: InputDecoration(
-                      labelText: 'Full Name *',
-                      labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
-                      filled: true,
-                      fillColor: const Color(0xFF111827),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1F2937))),
+                  if (ApiService.isLoggedIn) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF111827),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: const Color(0xFF10B981).withOpacity(0.2),
+                            child: const Icon(Icons.person, color: Color(0xFF10B981), size: 18),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      ApiService.currentUser?['name'] ?? 'Signed In User',
+                                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF10B981).withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Text('Signed In', style: TextStyle(color: Color(0xFF10B981), fontSize: 9, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${ApiService.currentUser?['email'] ?? ''} • ${ApiService.currentUser?['phone'] ?? ''}',
+                                  style: const TextStyle(color: Colors.grey, fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (v) => v == null || !v.contains('@') ? 'Valid email required' : null,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                    decoration: InputDecoration(
-                      labelText: 'Email Address *',
-                      labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
-                      filled: true,
-                      fillColor: const Color(0xFF111827),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1F2937))),
+                  ] else ...[
+                    TextFormField(
+                      controller: _nameController,
+                      validator: (v) => v == null || v.isEmpty ? 'Please enter your name' : null,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      decoration: InputDecoration(
+                        labelText: 'Full Name *',
+                        labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                        filled: true,
+                        fillColor: const Color(0xFF111827),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1F2937))),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                    decoration: InputDecoration(
-                      labelText: 'Phone Number (Optional)',
-                      labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
-                      filled: true,
-                      fillColor: const Color(0xFF111827),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1F2937))),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (v) => v == null || !v.contains('@') ? 'Valid email required' : null,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      decoration: InputDecoration(
+                        labelText: 'Email Address *',
+                        labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                        filled: true,
+                        fillColor: const Color(0xFF111827),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1F2937))),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      decoration: InputDecoration(
+                        labelText: 'Phone Number (Optional)',
+                        labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                        filled: true,
+                        fillColor: const Color(0xFF111827),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1F2937))),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
                   // Category Dropdown
                   Container(
