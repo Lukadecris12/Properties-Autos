@@ -24,7 +24,8 @@ import {
   User as UserIcon,
   Award,
   SlidersHorizontal,
-  Headphones
+  Headphones,
+  Crown
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AssetCategory } from '@/lib/types';
@@ -257,6 +258,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Heart className="w-4 h-4 text-rose-500" />
               <span>Saved</span>
             </Link>
+            <Link 
+              href="/pricing" 
+              className="flex items-center gap-1.5 hover:text-brand-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
+            >
+              <Crown className="w-4 h-4 text-amber-400" />
+              <span>Plans</span>
+            </Link>
+            <Link 
+              href="/contact" 
+              className="flex items-center gap-1.5 hover:text-brand-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
+            >
+              <Headphones className="w-4 h-4 text-brand-400" />
+              <span>Support</span>
+            </Link>
             {currentUser?.is_superuser && (
               <Link 
                 href="/admin" 
@@ -426,7 +441,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <Headphones className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
                         <span className="font-semibold">24/7 VIP Concierge Desk</span>
                       </a>
-                      {currentUser?.is_superuser && (
+                      <Link 
+              href="/pricing" 
+              className="flex items-center gap-1.5 hover:text-brand-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
+            >
+              <Crown className="w-4 h-4 text-amber-400" />
+              <span>Plans</span>
+            </Link>
+            <Link 
+              href="/contact" 
+              className="flex items-center gap-1.5 hover:text-brand-400 transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-800/50"
+            >
+              <Headphones className="w-4 h-4 text-brand-400" />
+              <span>Support</span>
+            </Link>
+            {currentUser?.is_superuser && (
                         <Link
                           href="/admin"
                           onClick={() => setProfileDropdownOpen(false)}
@@ -561,6 +590,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <MessageSquare className="w-4 h-4 text-brand-400" />
               <span>Direct Messages Inbox</span>
+            </Link>
+            <Link
+              href="/pricing"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 p-2.5 rounded-xl bg-gray-900 text-xs font-medium text-gray-200 border border-gray-800"
+            >
+              <Crown className="w-4 h-4 text-amber-400" />
+              <span>Membership Plans & Subscriptions</span>
+            </Link>
+            <Link
+              href="/contact"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 p-2.5 rounded-xl bg-gray-900 text-xs font-medium text-gray-200 border border-gray-800"
+            >
+              <Headphones className="w-4 h-4 text-brand-400" />
+              <span>Contact & Client Support Desk</span>
             </Link>
             <Link
               href="/saved"

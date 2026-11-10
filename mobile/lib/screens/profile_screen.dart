@@ -6,6 +6,8 @@ import 'welcome_screen.dart';
 import 'messages_screen.dart';
 import 'agents_screen.dart';
 import 'saved_listings_screen.dart';
+import 'contact_support_screen.dart';
+import 'subscription_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Function(int targetTab)? onNavigateTab;
@@ -307,13 +309,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   _buildDivider(),
                   _buildMenuItem(
+                    icon: Icons.card_membership,
+                    iconColor: const Color(0xFFF59E0B),
+                    title: 'Subscription Plans & Memberships',
+                    subtitle: 'Starter, Agent Pro, Corporate & VIP Concierge tiers',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SubscriptionScreen()),
+                      );
+                    },
+                  ),
+                  _buildDivider(),
+                  _buildMenuItem(
                     icon: Icons.support_agent,
                     iconColor: const Color(0xFFA78BFA),
-                    title: '24/7 VIP Concierge & WhatsApp Support',
-                    subtitle: 'Instant assistance for high-value acquisitions',
+                    title: 'Contact & Support Desk',
+                    subtitle: 'Submit inquiry form directly to Admin or call hotline',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Connecting to Properties & Autos VIP Concierge Desk')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ContactSupportScreen()),
                       );
                     },
                   ),

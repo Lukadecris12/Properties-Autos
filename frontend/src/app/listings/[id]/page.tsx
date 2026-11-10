@@ -34,9 +34,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Camera,
-  X,
-  Expand,
-  Shrink
+  X
 } from 'lucide-react';
 
 import { Navbar } from '@/components/Navbar';
@@ -56,7 +54,6 @@ export default function ListingDetailPage() {
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [fitMode, setFitMode] = useState<'cover' | 'contain'>('cover');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
@@ -115,7 +112,7 @@ export default function ListingDetailPage() {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res = await fetch('http://localhost:8000/api/v1/inspections/', {
+      const res = await fetch('/api/v1/inspections/', {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -150,7 +147,7 @@ export default function ListingDetailPage() {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res = await fetch('http://localhost:8000/api/v1/messages/send', {
+      const res = await fetch('/api/v1/messages/send', {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -350,7 +347,7 @@ export default function ListingDetailPage() {
               className="absolute inset-0 w-full h-full object-cover blur-2xl scale-125 opacity-25 pointer-events-none"
             />
 
-            {/* Crisp Centered Photo (Fitted and Rendered without Distortion) */}
+            {/* Crisp Centered Photo (Automatically Fitted and Centered) */}
             <img
               src={activeImage.url}
               alt={activeImage.caption || listing.title}
@@ -358,11 +355,7 @@ export default function ListingDetailPage() {
                 e.currentTarget.src = getFallbackImage(listing.asset_category);
               }}
               onClick={() => setLightboxOpen(true)}
-              className={`relative z-10 transition-all duration-300 cursor-pointer ${
-                fitMode === 'cover' 
-                  ? 'w-full h-full object-cover object-center' 
-                  : 'max-h-full max-w-full object-contain'
-              }`}
+              className="relative z-10 w-full h-full object-cover object-center transition-all duration-300 cursor-pointer"
             />
 
             {/* Overlay Navigation Arrows */}
@@ -387,37 +380,15 @@ export default function ListingDetailPage() {
               </>
             )}
 
-            {/* Top-Right Gallery Tools: Viewport Fit Toggle & Lightbox Expand */}
+            {/* Top-Right Gallery Tool: Lightbox Expand */}
             <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setFitMode(prev => prev === 'cover' ? 'contain' : 'cover');
-                }}
-                className="px-3 py-1.5 rounded-xl bg-black/75 hover:bg-black/95 text-xs text-gray-200 border border-white/15 backdrop-blur-md flex items-center gap-1.5 shadow-lg transition-all"
-                title={fitMode === 'cover' ? 'Show Whole Photo (Uncropped)' : 'Fill Card Frame'}
-              >
-                {fitMode === 'cover' ? (
-                  <>
-                    <Shrink className="w-3.5 h-3.5 text-brand-400" />
-                    <span className="hidden sm:inline">Fit to View</span>
-                  </>
-                ) : (
-                  <>
-                    <Expand className="w-3.5 h-3.5 text-brand-400" />
-                    <span className="hidden sm:inline">Fill Frame</span>
-                  </>
-                )}
-              </button>
-
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   setLightboxOpen(true);
                 }}
-                className="p-2 rounded-xl bg-black/75 hover:bg-black/95 text-gray-200 border border-white/15 backdrop-blur-md flex items-center justify-center shadow-lg transition-all"
+                className="p-2.5 rounded-xl bg-black/75 hover:bg-black/95 text-gray-200 border border-white/15 backdrop-blur-md flex items-center justify-center shadow-lg hover:scale-105 transition-all"
                 title="Fullscreen Lightbox"
               >
                 <Maximize2 className="w-4 h-4" />

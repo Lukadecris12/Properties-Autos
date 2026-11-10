@@ -43,7 +43,7 @@ export default function RequirementsDashboardPage() {
       // In development, ensure seeker token is used if none present
       let token = typeof window !== 'undefined' ? localStorage.getItem('propertyhub_token') : null;
       if (!token) {
-        const authRes = await fetch('http://localhost:8000/api/v1/auth/login', {
+        const authRes = await fetch('/api/v1/auth/login', {
           method: 'POST',
           body: new URLSearchParams({
             username: 'seeker@gmail.com',
@@ -70,7 +70,7 @@ export default function RequirementsDashboardPage() {
   const handleDismissMatch = async (matchId: number) => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('propertyhub_token') : null;
-      await fetch(`http://localhost:8000/api/v1/matching/${matchId}/dismiss`, {
+      await fetch(`/api/v1/matching/${matchId}/dismiss`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       });

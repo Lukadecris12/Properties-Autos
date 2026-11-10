@@ -103,7 +103,7 @@ export default function NewRequirementPage() {
       let headers: Record<string, string> = { 'Content-Type': 'application/json' };
 
       if (!token) {
-        const authRes = await fetch('http://localhost:8000/api/v1/auth/login', {
+        const authRes = await fetch('/api/v1/auth/login', {
           method: 'POST',
           body: new URLSearchParams({
             username: 'seeker@gmail.com',
@@ -119,7 +119,7 @@ export default function NewRequirementPage() {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch('http://localhost:8000/api/v1/requirements/', {
+      const res = await fetch('/api/v1/requirements/', {
         method: 'POST',
         headers,
         body: JSON.stringify(payload)

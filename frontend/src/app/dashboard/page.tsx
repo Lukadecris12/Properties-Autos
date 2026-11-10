@@ -57,7 +57,7 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      // In development, ensure we have an active token
+      // Retrieve the user's authenticated token
       let token = typeof window !== 'undefined' ? localStorage.getItem('propertyhub_token') : null;
       if (!token) {
         const loginUsername = (activeMode === 'seller' || activeMode === 'landlord') 
@@ -72,7 +72,7 @@ export default function DashboardPage() {
           ? 'DealerPass123!'
           : 'SeekerPass123!';
 
-        const authRes = await fetch('http://localhost:8000/api/v1/auth/login', {
+        const authRes = await fetch('/api/v1/auth/login', {
           method: 'POST',
           body: new URLSearchParams({ username: loginUsername, password: loginPassword })
         });
@@ -83,44 +83,47 @@ export default function DashboardPage() {
         }
       }
 
-      const headers = { 'Authorization': `Bearer ${token}` };
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
       // 1. Fetch User Profile
-      const meRes = await fetch('http://localhost:8000/api/v1/auth/me', { headers });
+      const meRes = await fetch('/api/v1/auth/me', { headers });
       if (meRes.ok) {
         const meData = await meRes.json();
         setCurrentUser(meData.data);
       }
 
       // 2. Fetch User's Listings
-      const listRes = await fetch('http://localhost:8000/api/v1/listings/user/my-listings', { headers });
+      const listRes = await fetch('/api/v1/listings/user/my-listings', { headers });
       if (listRes.ok) {
         const listData = await listRes.json();
         setMyListings(listData.data || []);
       }
 
       // 3. Fetch Bookings
-      const bookRes = await fetch('http://localhost:8000/api/v1/bookings/my-bookings', { headers });
+      const bookRes = await fetch('/api/v1/bookings/my-bookings', { headers });
       if (bookRes.ok) {
         const bookData = await bookRes.json();
         setMyBookings(bookData.data || []);
       }
 
       // 4. Fetch Inspections
-      const inspRes = await fetch('http://localhost:8000/api/v1/inspections/my-inspections', { headers });
+      const inspRes = await fetch('/api/v1/inspections/my-inspections', { headers });
       if (inspRes.ok) {
         const inspData = await inspRes.json();
         setMyInspections(inspData.data || []);
       }
 
       // 5. Fetch AI Matches
-      const matchRes = await api.getMyMatches();
-      if (matchRes.data) {
-        setMyMatches(matchRes.data);
-      }
+      try {
+        const matchRes = await api.getMyMatches();
+        if (matchRes.data) {
+          setMyMatches(matchRes.data);
+        }
+      } catch (_) {}
 
       // 6. Fetch Verification Docs
-      const docRes = await fetch('http://localhost:8000/api/v1/verification/my-documents', { headers });
+      const docRes = await fetch('/api/v1/verification/my-documents', { headers });
       if (docRes.ok) {
         const dData = await docRes.json();
         setMyDocs(dData.data || []);
@@ -145,7 +148,7 @@ export default function DashboardPage() {
     setDocUploading(true);
     try {
       const token = localStorage.getItem('propertyhub_token');
-      const res = await fetch('http://localhost:8000/api/v1/verification/documents', {
+      const res = await fetch('/api/v1/verification/documents', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

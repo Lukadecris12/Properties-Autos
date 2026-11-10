@@ -69,9 +69,18 @@ async def create_listing(
         videos=listing_in.videos,
         virtual_tour_url=listing_in.virtual_tour_url,
         available_from=listing_in.available_from,
-        published_at=datetime.now(timezone.utc) if listing_in.status == ListingStatus.PUBLISHED else None
+        published_at=datetime.now(timezone.utc)
     )
     db.add(listing)
+
+    # Automatically grant seller role to lister so they appear in Directory & Seller dashboard
+    current_roles = [r.lower() for r in (current_user.roles or [])]
+    if "seller" not in current_roles and "agent" not in current_roles and "developer" not in current_roles and "dealer" not in current_roles:
+        updated_roles = list(current_user.roles or [])
+        updated_roles.append("seller")
+        current_user.roles = updated_roles
+        db.add(current_user)
+
     await db.commit()
     await db.refresh(listing)
 
@@ -137,7 +146,7 @@ async def list_listings(
     if user_id is not None:
         query = query.where(Listing.user_id == user_id)
 
-    query = query.options(selectinload(Listing.owner)).order_by(desc(Listing.is_featured), desc(Listing.created_at))
+    query = query.options(selectinload(Listing.owner)).order_by(desc(Listing.created_at))
 
     result = await db.execute(query)
     all_items = list(result.scalars().all())

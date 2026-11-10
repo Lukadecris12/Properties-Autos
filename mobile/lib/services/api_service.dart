@@ -737,6 +737,99 @@ class ApiService {
     }).toList();
   }
 
+  Future<ListingModel?> createListing({
+    required String title,
+    required String transactionType,
+    required String assetCategory,
+    required double price,
+    required String description,
+    required String state,
+    required String city,
+    String? rentalPeriod,
+    List<String>? photos,
+    Map<String, dynamic>? attributes,
+  }) async {
+    try {
+      final token = await getToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final imagesList = (photos != null && photos.isNotEmpty)
+          ? photos.asMap().entries.map((entry) => {
+              'url': entry.value,
+              'caption': entry.key == 0 ? 'Primary Photo' : 'Photo ${entry.key + 1}',
+              'is_cover': entry.key == 0,
+            }).toList()
+          : [];
+
+      final body = json.encode({
+        'title': title,
+        'transaction_type': transactionType,
+        'asset_category': assetCategory,
+        'price': price,
+        'currency': 'NGN',
+        'is_negotiable': true,
+        'rental_period': (transactionType == 'RENT' || transactionType == 'LEASE') ? (rentalPeriod ?? 'per_year') : null,
+        'description': description,
+        'country': 'Nigeria',
+        'state': state,
+        'city': city,
+        'status': 'PUBLISHED',
+        'images': imagesList,
+        'attributes': attributes ?? {},
+      });
+
+      final uri = Uri.parse(ApiConstants.listingsEndpoint);
+      final response = await client.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final itemJson = data['data'] ?? data;
+        final newListing = ListingModel.fromJson(itemJson);
+        _seedFallbackListings.insert(0, newListing);
+        return newListing;
+      }
+    } catch (_) {
+      final localListing = ListingModel(
+        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        title: title,
+        description: description,
+        transactionType: transactionType,
+        assetCategory: assetCategory,
+        price: price,
+        currency: 'NGN',
+        rentalPeriod: rentalPeriod,
+        state: state,
+        city: city,
+        isVerified: true,
+        imageUrls: photos ?? [],
+        attributes: attributes ?? {},
+      );
+      _seedFallbackListings.insert(0, localListing);
+      return localListing;
+    }
+    return null;
+  }
+
+  Future<List<ListingModel>> fetchMyListings() async {
+    try {
+      final token = await getToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+      final uri = Uri.parse('${ApiConstants.listingsEndpoint}/user/my-listings');
+      final res = await client.get(uri, headers: headers).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body);
+        final List items = data['data'] ?? [];
+        return items.map((i) => ListingModel.fromJson(i)).toList();
+      }
+    } catch (_) {}
+    return _seedFallbackListings.take(5).toList();
+  }
+
   Future<Map<String, dynamic>> postRequirement({
     required String title,
     required String transactionType,

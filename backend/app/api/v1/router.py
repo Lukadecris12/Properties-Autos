@@ -13,7 +13,8 @@ from app.api.v1.endpoints import (
     ai_assistant,
     investments,
     admin,
-    media
+    media,
+    support
 )
 
 api_router = APIRouter()
@@ -21,6 +22,7 @@ api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication & User Accounts"])
 api_router.include_router(listings.router, prefix="/listings", tags=["Listings (Sale, Rent, Lease)"])
 api_router.include_router(media.router, prefix="/media", tags=["Media & File Uploads"])
+api_router.include_router(support.router, prefix="/support", tags=["Contact & Customer Support"])
 api_router.include_router(requirements.router, prefix="/requirements", tags=["Marketplace Requirements"])
 api_router.include_router(investments.router, prefix="/investments", tags=["Property Investment (Developers)"])
 api_router.include_router(admin.router, prefix="/admin", tags=["Admin Dashboard & System Audit"])

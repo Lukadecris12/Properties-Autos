@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class PostListingScreen extends StatefulWidget {
   const PostListingScreen({Key? key}) : super(key: key);
@@ -21,6 +22,7 @@ class _PostListingScreenState extends State<PostListingScreen> {
   final _imageUrlController = TextEditingController();
   final List<String> _photos = [];
   bool _submitting = false;
+  final ApiService _apiService = ApiService();
 
   void _addPhoto() {
     final url = _imageUrlController.text.trim();
@@ -55,7 +57,23 @@ class _PostListingScreenState extends State<PostListingScreen> {
     }
 
     setState(() => _submitting = true);
-    await Future.delayed(const Duration(seconds: 1)); // simulated post
+    final cleanPrice = double.tryParse(price.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
+    final cat = _assetType == 'AUTO' ? 'VEHICLE' : _category;
+
+    await _apiService.createListing(
+      title: title,
+      transactionType: _transactionType,
+      assetCategory: cat,
+      price: cleanPrice,
+      description: _descController.text.trim().isNotEmpty ? _descController.text.trim() : title,
+      state: _stateController.text.trim().isNotEmpty ? _stateController.text.trim() : 'Lagos',
+      city: _cityController.text.trim().isNotEmpty ? _cityController.text.trim() : 'Lekki',
+      rentalPeriod: _transactionType == 'RENT' ? 'per_year' : null,
+      photos: _photos,
+      attributes: {
+        'specs': _specsController.text.trim(),
+      },
+    );
 
     if (mounted) {
       setState(() => _submitting = false);

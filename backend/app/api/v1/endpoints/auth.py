@@ -18,6 +18,7 @@ import secrets
 from datetime import datetime, timezone, timedelta
 from app.core.dependencies import get_current_user
 from app.models.user import User
+from app.models.listing import Listing
 from app.models.otp import OTPVerification
 from app.services.email_service import generate_otp_code, send_verification_otp_email
 from app.schemas.onboarding import (
@@ -407,17 +408,29 @@ async def list_agents_and_developers(
     role: Optional[str] = Query(None, description="Filter by agent or developer"),
     db: AsyncSession = Depends(get_db)
 ):
+    # Find user IDs that have at least one listing
+    listing_users_stmt = select(Listing.user_id).distinct()
+    listing_user_ids = set((await db.execute(listing_users_stmt)).scalars().all())
+
     stmt = select(User).where(User.is_active == True)
     result = await db.execute(stmt)
     users = result.scalars().all()
     
-    # Filter users who have 'agent', 'developer', 'seller', or 'dealer' in roles or active_mode
+    # Filter users who have active listings, or 'agent', 'developer', 'seller', 'dealer' in roles
     matching_users = []
     target_roles = [role.lower()] if role else ["agent", "developer", "seller", "dealer"]
     
     for u in users:
         user_roles = [r.lower() for r in (u.roles or [])]
-        if any(tr in user_roles or tr == u.active_mode.lower() for tr in target_roles) or u.is_business_verified:
-            matching_users.append(u)
+        has_role_match = any(tr in user_roles or tr == u.active_mode.lower() for tr in target_roles)
+        has_listings = u.id in listing_user_ids
+        
+        if role:
+            # If specific role requested, match role or lister
+            if has_role_match or (role.lower() in ["agent", "seller"] and has_listings):
+                matching_users.append(u)
+        else:
+            if has_role_match or has_listings or u.is_business_verified:
+                matching_users.append(u)
             
     return ResponseModel(data=matching_users)

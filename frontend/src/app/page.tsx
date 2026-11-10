@@ -45,7 +45,7 @@ export default function HomePage() {
       const res = await api.getListings({
         transaction_type: tx,
         asset_category: cat,
-        page_size: 12,
+        page_size: 50,
       });
       setListings(res.items || []);
     } catch (err) {
@@ -97,7 +97,7 @@ export default function HomePage() {
         year: params.year,
         bedrooms: params.bedrooms,
         keyword: params.keyword,
-        page_size: 12,
+        page_size: 50,
       });
       setListings(res.items || []);
     } catch (err) {

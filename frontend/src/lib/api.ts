@@ -82,6 +82,17 @@ class ApiClient {
     return res.json();
   }
 
+  async getMyListings(): Promise<{ data: Listing[] }> {
+    const res = await fetch(`${API_BASE_URL}/listings/user/my-listings`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to fetch my listings');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
   async naturalLanguageSearch(query: string) {
     const res = await fetch(`${API_BASE_URL}/search/natural-language`, {
       method: 'POST',
@@ -392,6 +403,57 @@ class ApiClient {
     });
     if (!res.ok) {
       const errMsg = await this.parseErrorResponse(res, 'Failed to upload image(s)');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
+  // --- Contact & Customer Support ---
+  async submitSupportTicket(data: {
+    full_name: string;
+    email: string;
+    phone_number?: string;
+    category: string;
+    subject: string;
+    message: string;
+  }) {
+    const res = await fetch(`${API_BASE_URL}/support/`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to submit contact ticket');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
+  async getAdminSupportTickets(status?: string, search?: string) {
+    const query = new URLSearchParams();
+    if (status && status !== 'all') query.append('status', status);
+    if (search) query.append('search', search);
+
+    const qs = query.toString();
+    const url = qs ? `${API_BASE_URL}/support/?${qs}` : `${API_BASE_URL}/support/`;
+    const res = await fetch(url, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to fetch support tickets');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
+  async updateAdminSupportTicket(ticketId: number, data: { status?: string; admin_response?: string }) {
+    const res = await fetch(`${API_BASE_URL}/support/${ticketId}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to update support ticket');
       throw new Error(errMsg);
     }
     return res.json();

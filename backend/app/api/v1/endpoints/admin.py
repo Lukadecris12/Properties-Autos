@@ -22,7 +22,7 @@ async def ensure_admin_exists(db: AsyncSession):
     if not admin:
         admin_user = User(
             email="admin@propertyhub.com",
-            hashed_password=get_password_hash("Admin@PropertyHub2026"),
+            hashed_password=get_password_hash("AdminPass123!"),
             first_name="Platform",
             last_name="Administrator",
             company_name="PropertyHub Corporate HQ",
