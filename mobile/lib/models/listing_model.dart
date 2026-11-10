@@ -15,6 +15,8 @@ class ListingModel {
   final String? neighbourhood;
   final bool isVerified;
   final bool isFeatured;
+  final bool isBoosted;
+  final DateTime? boostedUntil;
   final List<String> imageUrls;
   final Map<String, dynamic> attributes;
   final String? ownerName;
@@ -37,6 +39,8 @@ class ListingModel {
     this.neighbourhood,
     required this.isVerified,
     required this.isFeatured,
+    this.isBoosted = false,
+    this.boostedUntil,
     required this.imageUrls,
     required this.attributes,
     this.ownerName,
@@ -93,6 +97,8 @@ class ListingModel {
       neighbourhood: json['neighbourhood'],
       isVerified: json['is_verified_asset'] ?? false,
       isFeatured: json['is_featured'] ?? false,
+      isBoosted: json['is_boosted'] ?? false,
+      boostedUntil: json['boosted_until'] != null ? DateTime.tryParse(json['boosted_until']) : null,
       imageUrls: images,
       attributes: json['attributes'] ?? {},
       ownerName: (oName != null && oName.isNotEmpty) ? oName : 'Properties & Autos Partner',

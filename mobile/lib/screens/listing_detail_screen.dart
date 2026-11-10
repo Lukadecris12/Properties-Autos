@@ -276,6 +276,42 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                         ),
                       ),
                       const Spacer(),
+                      if (item.isFeatured)
+                        Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade900.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.amber.shade400),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.star, color: Colors.amber, size: 14),
+                              SizedBox(width: 4),
+                              Text('Featured', style: TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      if (item.isBoosted)
+                        Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E3A8A).withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFF60A5FA)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.rocket_launch, color: Color(0xFF93C5FD), size: 14),
+                              SizedBox(width: 4),
+                              Text('Boosted (72h)', style: TextStyle(color: Color(0xFF93C5FD), fontSize: 11, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
                       if (item.isVerified)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

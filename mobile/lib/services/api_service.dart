@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../core/constants.dart';
 import '../models/listing_model.dart';
+import '../models/subscription_model.dart';
 
 class ApiService {
   final http.Client client;
@@ -1258,5 +1259,359 @@ class ApiService {
       }
     } catch (_) {}
     return _seedFallbackListings.where((item) => _savedListingIds.contains(item.id)).toList();
+  }
+
+  // ==========================================
+  // --- Subscription, Quotas & Boost Engine ---
+  // ==========================================
+
+  Future<List<SubscriptionPlanModel>> fetchSubscriptionPlans({String? tier}) async {
+    try {
+      final url = tier != null && tier.isNotEmpty
+          ? '${ApiConstants.subscriptionsEndpoint}/plans?tier=${Uri.encodeComponent(tier)}'
+          : '${ApiConstants.subscriptionsEndpoint}/plans';
+      final response = await client.get(Uri.parse(url)).timeout(const Duration(seconds: 6));
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        final List items = decoded['data'] ?? [];
+        if (items.isNotEmpty) {
+          return items.map((p) => SubscriptionPlanModel.fromJson(p)).toList();
+        }
+      }
+    } catch (_) {}
+
+    // Offline fallback plans matching backend catalogue
+    return _buildSeedPlans(tier);
+  }
+
+  Future<UserSubscriptionUsageModel> fetchMySubscriptionUsage() async {
+    try {
+      final token = await getToken();
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (token != null) headers['Authorization'] = 'Bearer $token';
+
+      final response = await client
+          .get(Uri.parse('${ApiConstants.subscriptionsEndpoint}/my-subscription'), headers: headers)
+          .timeout(const Duration(seconds: 6));
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        if (decoded['data'] != null) {
+          return UserSubscriptionUsageModel.fromJson(decoded['data']);
+        }
+      }
+    } catch (_) {}
+
+    // Default fallback usage
+    return UserSubscriptionUsageModel(
+      planId: 1,
+      planSlug: 'free',
+      planName: 'Free Plan',
+      tierCategory: 'FREE',
+      priceNgn: 0,
+      status: 'ACTIVE',
+      currentPeriodStart: DateTime.now(),
+      currentPeriodEnd: DateTime.now().add(const Duration(days: 30)),
+      autoRenew: false,
+      listingAllowance: 1,
+      activeListingsCount: 0,
+      remainingListings: 1,
+      excessListingsCount: 0,
+      featuredAllowance: 0,
+      usedFeaturedCount: 0,
+      remainingFeatured: 0,
+      monthlyBoostAllowance: 0,
+      remainingBoostCredits: 0,
+      usedBoostCredits: 0,
+      activeBoostsCount: 0,
+      activeBoosts: [],
+    );
+  }
+
+  Future<Map<String, dynamic>> subscribeToPlan(String planSlug, {String paymentMethod = 'PAYSTACK'}) async {
+    final token = await getToken();
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null) headers['Authorization'] = 'Bearer $token';
+
+    final response = await client.post(
+      Uri.parse('${ApiConstants.subscriptionsEndpoint}/subscribe'),
+      headers: headers,
+      body: json.encode({'plan_slug': planSlug, 'payment_method': paymentMethod}),
+    );
+    final decoded = json.decode(response.body);
+    if (response.statusCode == 200 && decoded['data'] != null) {
+      return decoded['data'];
+    }
+    throw Exception(decoded['detail'] ?? decoded['message'] ?? 'Failed to initiate subscription');
+  }
+
+  Future<UserSubscriptionUsageModel> verifySubscriptionPayment(String reference, String planSlug, {String provider = 'PAYSTACK'}) async {
+    final token = await getToken();
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null) headers['Authorization'] = 'Bearer $token';
+
+    final response = await client.post(
+      Uri.parse('${ApiConstants.subscriptionsEndpoint}/verify-payment'),
+      headers: headers,
+      body: json.encode({'reference': reference, 'plan_slug': planSlug, 'provider': provider}),
+    );
+    final decoded = json.decode(response.body);
+    if (response.statusCode == 200 && decoded['data'] != null) {
+      return UserSubscriptionUsageModel.fromJson(decoded['data']);
+    }
+    throw Exception(decoded['detail'] ?? decoded['message'] ?? 'Payment verification failed');
+  }
+
+  Future<Map<String, dynamic>> boostListing(int listingId, {int? durationHours}) async {
+    final token = await getToken();
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null) headers['Authorization'] = 'Bearer $token';
+
+    final response = await client.post(
+      Uri.parse('${ApiConstants.subscriptionsEndpoint}/listings/$listingId/boost'),
+      headers: headers,
+      body: json.encode({'duration_hours': durationHours}),
+    );
+    final decoded = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return decoded['data'] ?? {'message': decoded['message'] ?? 'Listing boosted successfully'};
+    }
+    throw Exception(decoded['detail'] ?? 'Boost failed');
+  }
+
+  Future<Map<String, dynamic>> toggleFeaturedListing(int listingId, bool makeFeatured) async {
+    final token = await getToken();
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null) headers['Authorization'] = 'Bearer $token';
+
+    final response = await client.post(
+      Uri.parse('${ApiConstants.subscriptionsEndpoint}/listings/$listingId/feature'),
+      headers: headers,
+      body: json.encode({'make_featured': makeFeatured}),
+    );
+    final decoded = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return decoded['data'] ?? {};
+    }
+    throw Exception(decoded['detail'] ?? 'Toggle featured failed');
+  }
+
+  Future<List<ListingBoostModel>> fetchMyBoosts() async {
+    try {
+      final token = await getToken();
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (token != null) headers['Authorization'] = 'Bearer $token';
+
+      final response = await client
+          .get(Uri.parse('${ApiConstants.subscriptionsEndpoint}/my-boosts'), headers: headers)
+          .timeout(const Duration(seconds: 6));
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        final List items = decoded['data'] ?? [];
+        return items.map((b) => ListingBoostModel.fromJson(b)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static List<SubscriptionPlanModel> _buildSeedPlans(String? tierFilter) {
+    final List<SubscriptionPlanModel> all = [
+      // Standard
+      SubscriptionPlanModel(
+        id: 1,
+        slug: 'free',
+        name: 'Free Plan',
+        tierCategory: 'FREE',
+        priceNgn: 0,
+        listingAllowance: 1,
+        featuredAllowance: 0,
+        boostAllowance: 0,
+        durationDays: 30,
+        displayOrder: 1,
+        badge: 'Starter',
+        tagline: 'Free basic access for individual property & vehicle listers',
+        features: [
+          '1 active published listing',
+          'Standard search & AI discovery matching',
+          'Direct contact & inquiry messaging',
+          'Helpdesk customer support',
+          'Up to 5 photos per listing',
+        ],
+      ),
+      SubscriptionPlanModel(
+        id: 2,
+        slug: 'explorer',
+        name: 'Explorer',
+        tierCategory: 'ENTRY',
+        priceNgn: 4200,
+        listingAllowance: 5,
+        featuredAllowance: 1,
+        boostAllowance: 0,
+        durationDays: 30,
+        displayOrder: 2,
+        badge: 'Entry',
+        tagline: 'Ideal for active individual sellers and private vehicle owners',
+        features: [
+          'Up to 5 active published listings',
+          '1 featured listing placement',
+          'Standard search ranking',
+          'WhatsApp & call inquiries',
+          'Monthly recurring renewal',
+        ],
+      ),
+      SubscriptionPlanModel(
+        id: 3,
+        slug: 'starter',
+        name: 'Starter',
+        tierCategory: 'ENTRY',
+        priceNgn: 6300,
+        listingAllowance: 10,
+        featuredAllowance: 3,
+        boostAllowance: 1,
+        durationDays: 30,
+        displayOrder: 3,
+        badge: 'Popular Entry',
+        tagline: 'For rising property agents and boutique car dealers',
+        features: [
+          'Up to 10 active published listings',
+          '3 featured listing placements',
+          '1 promotional search boost credit per month (72h duration)',
+          'Priority buyer match notifications',
+          'Standard analytics',
+        ],
+      ),
+      SubscriptionPlanModel(
+        id: 4,
+        slug: 'growth',
+        name: 'Growth',
+        tierCategory: 'GROWTH',
+        priceNgn: 11200,
+        listingAllowance: 40,
+        featuredAllowance: 10,
+        boostAllowance: 5,
+        durationDays: 30,
+        displayOrder: 4,
+        badge: 'Best Value',
+        tagline: 'Powering high-volume real estate brokers and automotive merchants',
+        features: [
+          'Up to 40 active published listings',
+          '10 featured listing placements',
+          '5 promotional search boost credits per month (72h duration)',
+          'Official Verified Partner badge eligible',
+          'Priority client concierge support',
+        ],
+      ),
+      // Business representative plans
+      SubscriptionPlanModel(
+        id: 10,
+        slug: 'business-100',
+        name: 'Business 100',
+        tierCategory: 'BUSINESS',
+        priceNgn: 14560,
+        listingAllowance: 100,
+        featuredAllowance: 20,
+        boostAllowance: 10,
+        durationDays: 30,
+        displayOrder: 10,
+        badge: 'Business',
+        tagline: 'Enterprise-grade throughput with 100 active listings & 10 monthly boosts',
+        features: [
+          'Up to 100 active listings capacity',
+          '20 featured listing slots',
+          '10 search boost credits per month (72h)',
+          'Dedicated Agency Storefront in Directory',
+          'Direct lead routing & priority support',
+        ],
+      ),
+      SubscriptionPlanModel(
+        id: 15,
+        slug: 'business-500',
+        name: 'Business 500',
+        tierCategory: 'BUSINESS',
+        priceNgn: 41440,
+        listingAllowance: 500,
+        featuredAllowance: 100,
+        boostAllowance: 50,
+        durationDays: 30,
+        displayOrder: 15,
+        badge: 'High Throughput',
+        tagline: 'High-volume agency operations with 500 listings & 50 monthly boosts',
+        features: [
+          'Up to 500 active listings capacity',
+          '100 featured listing slots',
+          '50 search boost credits per month (72h)',
+          'Dedicated Agency Storefront in Directory',
+          'Custom analytics & dedicated concierge',
+        ],
+      ),
+      SubscriptionPlanModel(
+        id: 20,
+        slug: 'business-1000',
+        name: 'Business 1,000',
+        tierCategory: 'BUSINESS',
+        priceNgn: 75040,
+        listingAllowance: 1000,
+        featuredAllowance: 200,
+        boostAllowance: 100,
+        durationDays: 30,
+        displayOrder: 20,
+        badge: 'Mega Agency',
+        tagline: 'For nationwide property syndicates and auto auction groups',
+        features: [
+          'Up to 1,000 active listings capacity',
+          '200 featured listing slots',
+          '100 search boost credits per month (72h)',
+          'Dedicated Agency Storefront in Directory',
+          'Full team multi-login capabilities',
+        ],
+      ),
+      // Enterprise representative plans
+      SubscriptionPlanModel(
+        id: 30,
+        slug: 'enterprise-2750',
+        name: 'Enterprise 2,750',
+        tierCategory: 'ENTERPRISE',
+        priceNgn: 192640,
+        listingAllowance: 2750,
+        featuredAllowance: 550,
+        boostAllowance: 275,
+        durationDays: 30,
+        displayOrder: 30,
+        badge: 'Enterprise Elite',
+        tagline: 'Master developer & dealership nationwide portfolio (2,750 slots)',
+        features: [
+          'Up to 2,750 active listings capacity',
+          '550 featured listing slots',
+          '275 boost credits per month (72h)',
+          'Full developer API & feed syndication access',
+          'Executive VIP Account Director & title verification priority',
+        ],
+      ),
+      SubscriptionPlanModel(
+        id: 35,
+        slug: 'enterprise-6000',
+        name: 'Enterprise 6,000',
+        tierCategory: 'ENTERPRISE',
+        priceNgn: 411040,
+        listingAllowance: 6000,
+        featuredAllowance: 1200,
+        boostAllowance: 600,
+        durationDays: 30,
+        displayOrder: 35,
+        badge: 'Enterprise Titanium',
+        tagline: 'Unlimited institutional property developer and auto franchise network',
+        features: [
+          'Up to 6,000 active listings capacity',
+          '1,200 featured listing slots',
+          '600 boost credits per month (72h)',
+          'Full developer API & feed syndication access',
+          'Executive VIP Account Director & title verification priority',
+        ],
+      ),
+    ];
+
+    if (tierFilter != null && tierFilter.isNotEmpty && tierFilter != 'ALL') {
+      return all.where((p) => p.tierCategory.toUpperCase() == tierFilter.toUpperCase()).toList();
+    }
+    return all;
   }
 }

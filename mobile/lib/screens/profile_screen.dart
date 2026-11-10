@@ -312,8 +312,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildMenuItem(
                     icon: Icons.card_membership,
                     iconColor: const Color(0xFFF59E0B),
-                    title: 'Subscription Plans & Memberships',
-                    subtitle: 'Starter, Agent Pro, Corporate & VIP Concierge tiers',
+                    title: 'Subscription Plans & Boost Engine',
+                    subtitle: 'Standard, Business (100–2.5k) & Enterprise tiers with 72h boosts',
                     onTap: () {
                       Navigator.push(
                         context,

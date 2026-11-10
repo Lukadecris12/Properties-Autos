@@ -798,6 +798,42 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (item.isFeatured)
+                        Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade900.withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.amber.shade400),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.star, color: Colors.amber, size: 12),
+                              SizedBox(width: 3),
+                              Text('Featured', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      if (item.isBoosted)
+                        Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E3A8A).withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFF60A5FA)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.rocket_launch, color: Color(0xFF93C5FD), size: 12),
+                              SizedBox(width: 3),
+                              Text('Boosted', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
                       if (item.isVerified)
                         Container(
                           margin: const EdgeInsets.only(right: 6),

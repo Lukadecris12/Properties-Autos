@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import 'subscription_screen.dart';
 
 class PostListingScreen extends StatefulWidget {
   const PostListingScreen({Key? key}) : super(key: key);
@@ -57,6 +58,45 @@ class _PostListingScreenState extends State<PostListingScreen> {
     }
 
     setState(() => _submitting = true);
+
+    // Subscription Quota Enforcement Check
+    final usage = await _apiService.fetchMySubscriptionUsage();
+    if (usage.listingAllowance > 0 && usage.activeListingsCount >= usage.listingAllowance) {
+      if (mounted) {
+        setState(() => _submitting = false);
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF111827),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Color(0xFF1F2937))),
+            title: Row(
+              children: const [
+                Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 24),
+                SizedBox(width: 8),
+                Text('Listing Quota Reached', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: Text(
+              'You have published ${usage.activeListingsCount} of ${usage.listingAllowance} allowed listings on the ${usage.planName} tier. Upgrade your subscription to publish additional properties and vehicles.',
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.grey))),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
+                },
+                child: const Text('Upgrade Plan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+
     final cleanPrice = double.tryParse(price.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
     final cat = _assetType == 'AUTO' ? 'VEHICLE' : _category;
 
