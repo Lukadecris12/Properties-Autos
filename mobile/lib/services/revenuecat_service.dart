@@ -18,7 +18,7 @@ class RevenueCatService {
     try {
       String apiKey = '';
       if (kIsWeb) {
-        debugPrint('[RevenueCat] In-App Purchases are not supported on Web. Use Paystack.');
+        debugPrint('[RevenueCat] In-App Purchases are not supported on Web platform.');
         return;
       } else if (Platform.isAndroid) {
         apiKey = RevenueCatConstants.apiKeyAndroid;

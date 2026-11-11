@@ -1327,7 +1327,7 @@ class ApiService {
     );
   }
 
-  Future<Map<String, dynamic>> subscribeToPlan(String planSlug, {String paymentMethod = 'PAYSTACK'}) async {
+  Future<Map<String, dynamic>> subscribeToPlan(String planSlug, {String paymentMethod = 'REVENUECAT'}) async {
     final token = await getToken();
     final headers = <String, String>{'Content-Type': 'application/json'};
     if (token != null) headers['Authorization'] = 'Bearer $token';
@@ -1344,7 +1344,7 @@ class ApiService {
     throw Exception(decoded['detail'] ?? decoded['message'] ?? 'Failed to initiate subscription');
   }
 
-  Future<UserSubscriptionUsageModel> verifySubscriptionPayment(String reference, String planSlug, {String provider = 'PAYSTACK'}) async {
+  Future<UserSubscriptionUsageModel> verifySubscriptionPayment(String reference, String planSlug, {String provider = 'REVENUECAT'}) async {
     final token = await getToken();
     final headers = <String, String>{'Content-Type': 'application/json'};
     if (token != null) headers['Authorization'] = 'Bearer $token';

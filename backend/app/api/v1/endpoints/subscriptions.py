@@ -232,6 +232,47 @@ async def paystack_subscription_webhook(
 
     return {"status": "success"}
 
+@router.post("/revenuecat-webhook")
+async def revenuecat_subscription_webhook(
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    RevenueCat Webhook listener for Google Play & Apple App Store In-App Purchases.
+    Receives INITIAL_PURCHASE, RENEWAL, PRODUCT_CHANGE and automatically synchronizes quotas.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    event = body.get("event", {})
+    event_type = event.get("type")
+    app_user_id = event.get("app_user_id")
+    product_id = event.get("product_id", "")
+    transaction_id = event.get("transaction_id", f"RC-{int(datetime.now(timezone.utc).timestamp())}")
+    price_in_purchased = event.get("price_in_purchased_currency", 0.0)
+
+    # Resolve plan slug from product_id (e.g. 'propertyhub_business_500' -> 'business-500')
+    clean_slug = product_id.replace("propertyhub_", "").replace("_", "-").lower()
+
+    if event_type in ("INITIAL_PURCHASE", "RENEWAL", "PRODUCT_CHANGE", "UNCANCELLATION"):
+        try:
+            user_id_int = int(app_user_id)
+            await SubscriptionService.activate_subscription(
+                db=db,
+                user_id=user_id_int,
+                plan_slug=clean_slug,
+                provider="REVENUECAT",
+                reference=transaction_id,
+                amount_ngn=float(price_in_purchased)
+            )
+        except (ValueError, TypeError):
+            # Non-integer user id (e.g. anonymous revenuecat alias), ignore or log
+            pass
+
+    return {"status": "success", "event": event_type}
+
 @router.post("/listings/{listing_id}/feature")
 async def toggle_listing_featured(
     listing_id: int,

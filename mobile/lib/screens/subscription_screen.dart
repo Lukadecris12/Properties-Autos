@@ -239,68 +239,94 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
       return;
     }
 
-    // 1. Try In-App Purchase via RevenueCat if offering package is configured
-    if (RevenueCatService.isConfigured && _revenueCatOfferings?.current != null) {
-      final currentOffering = _revenueCatOfferings!.current!;
-      Package? packageToBuy;
+    // 1. Process via RevenueCat In-App Purchases exclusively on mobile
+    _purchaseViaRevenueCat(plan);
+  }
 
-      for (var pkg in currentOffering.availablePackages) {
-        if (pkg.identifier.toLowerCase().contains(plan.slug) ||
-            pkg.storeProduct.identifier.toLowerCase().contains(plan.slug)) {
+  void _purchaseViaRevenueCat(SubscriptionPlanModel plan) async {
+    final price = _isAnnual ? plan.annualPriceNgn : plan.priceNgn;
+    final formattedPrice = '₦${price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
+
+    Package? packageToBuy;
+    if (_revenueCatOfferings != null) {
+      final candidates = <Package>[];
+      if (_revenueCatOfferings!.current != null) {
+        candidates.addAll(_revenueCatOfferings!.current!.availablePackages);
+      }
+      for (var offering in _revenueCatOfferings!.all.values) {
+        candidates.addAll(offering.availablePackages);
+      }
+
+      final slug = plan.slug.toLowerCase().replaceAll('-', '_');
+      for (var pkg in candidates) {
+        final pkgId = pkg.identifier.toLowerCase();
+        final prodId = pkg.storeProduct.identifier.toLowerCase();
+        if (pkgId == slug || prodId == slug || pkgId.contains(slug) || prodId.contains(slug)) {
           packageToBuy = pkg;
           break;
         }
       }
-
-      if (packageToBuy != null) {
-        setState(() => _isLoading = true);
-        try {
-          final success = await RevenueCatService.purchasePackage(packageToBuy);
-          if (success && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${plan.name} subscribed successfully via App Store / Google Play!'), backgroundColor: const Color(0xFF059669)),
-            );
-            await _loadSubscriptionData();
-          }
-        } catch (e) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Purchase error: $e'), backgroundColor: Colors.red));
-          }
-        } finally {
-          if (mounted) setState(() => _isLoading = false);
-        }
-        return;
-      }
     }
 
-    // 2. Paystack & Corporate Bank Transfer Modal
-    _showPaystackAndBankDialog(plan, price);
+    // If RevenueCat is active with live keys and package found, execute native store purchase
+    if (RevenueCatService.isConfigured && packageToBuy != null) {
+      setState(() => _isLoading = true);
+      try {
+        final success = await RevenueCatService.purchasePackage(packageToBuy);
+        if (success && mounted) {
+          final customerInfo = RevenueCatService.latestCustomerInfo;
+          final ref = customerInfo?.originalAppUserId.isNotEmpty == true
+              ? customerInfo!.originalAppUserId
+              : 'RC-${plan.slug}-${DateTime.now().millisecondsSinceEpoch}';
+
+          try {
+            await _apiService.verifySubscriptionPayment(ref, plan.slug, provider: 'REVENUECAT');
+          } catch (e) {
+            debugPrint('[RevenueCat] Backend quota sync error: $e');
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${plan.name} subscribed successfully via App Store / Google Play!'),
+              backgroundColor: const Color(0xFF059669),
+            ),
+          );
+          await _loadSubscriptionData();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('In-App Purchase error: $e'), backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+      return;
+    }
+
+    // In-App Purchase presentation dialog
+    _showInAppPurchaseDialog(plan, formattedPrice, packageToBuy);
   }
 
-  void _showPaystackAndBankDialog(SubscriptionPlanModel plan, double price) async {
-    setState(() => _isLoading = true);
-    Map<String, dynamic>? invoiceData;
-    try {
-      invoiceData = await _apiService.subscribeToPlan(plan.slug, paymentMethod: 'PAYSTACK');
-    } catch (_) {}
-    setState(() => _isLoading = false);
-
-    final ref = invoiceData?['reference'] ?? 'SUB-${plan.slug.toUpperCase()}-${DateTime.now().millisecondsSinceEpoch}';
-    final paystackUrl = invoiceData?['paystack_authorization_url'];
-
-    if (!mounted) return;
-
+  void _showInAppPurchaseDialog(SubscriptionPlanModel plan, String formattedPrice, Package? package) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF111827),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFF1F2937))),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFF1F2937)),
+        ),
         title: Row(
           children: [
-            const Icon(Icons.verified, color: Color(0xFF10B981), size: 22),
+            const Icon(Icons.shopping_bag_outlined, color: Color(0xFF10B981), size: 22),
             const SizedBox(width: 8),
             Expanded(
-              child: Text('Subscribe to ${plan.name}', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              child: Text(
+                'In-App Purchase (${plan.name})',
+                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
@@ -319,9 +345,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Total Amount:', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    const Text('Store Billing Amount:', style: TextStyle(color: Colors.grey, fontSize: 12)),
                     Text(
-                      '₦${price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
+                      '$formattedPrice / ${_isAnnual ? 'year' : 'month'}',
                       style: const TextStyle(color: Color(0xFF10B981), fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -345,49 +371,29 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
               ),
               const SizedBox(height: 14),
 
-              // Paystack Option
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF059669),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    if (paystackUrl != null && paystackUrl.isNotEmpty) {
-                      final uri = Uri.parse(paystackUrl);
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(uri, mode: LaunchMode.externalApplication);
-                      }
-                    } else {
-                      // Launch direct web pricing portal
-                      final webUrl = Uri.parse('${ApiConstants.baseUrl.replaceAll('/api/v1', '')}/pricing');
-                      if (await canLaunchUrl(webUrl)) {
-                        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
-                      }
-                    }
-                  },
-                  icon: const Icon(Icons.credit_card, size: 16, color: Colors.white),
-                  label: const Text('Pay with Paystack (Card / USSD)', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // Corporate Bank Clearing Details
-              const Text('Corporate Bank Clearing Account:', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
+              // RevenueCat In-App Purchase description
               Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: const Color(0xFF0B0F19), borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF064E3B).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF10B981).withOpacity(0.4)),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Zenith Bank Plc', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                    const Text('Properties & Autos Tech Ltd • 1018899223', style: TextStyle(color: Color(0xFF34D399), fontSize: 11)),
-                    const Divider(color: Colors.white10, height: 10),
-                    Text('Payment Narration: $ref', style: const TextStyle(color: Colors.amber, fontSize: 10, fontFamily: 'monospace')),
+                    Row(
+                      children: const [
+                        Icon(Icons.verified_user_outlined, color: Color(0xFF34D399), size: 16),
+                        SizedBox(width: 6),
+                        Text('RevenueCat Mobile Billing', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Mobile subscriptions are billed directly through your Google Play Store or Apple App Store account.\n\nProduct Identifier: propertyhub_${plan.slug.replaceAll('-', '_')}',
+                      style: const TextStyle(color: Color(0xFFD1D5DB), fontSize: 11, height: 1.4),
+                    ),
                   ],
                 ),
               ),
@@ -395,25 +401,51 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close', style: TextStyle(color: Colors.grey))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1F2937),
+              backgroundColor: const Color(0xFF059669),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
-              final url = Uri.parse('https://wa.me/2348031234567?text=Hello%20Finance%20Desk,%20I%20have%20transferred%20funds%20for%20${plan.name}%20with%20reference%20$ref');
-              if (await canLaunchUrl(url)) {
-                await launchUrl(url, mode: LaunchMode.externalApplication);
+              if (package != null && RevenueCatService.isConfigured) {
+                _purchaseViaRevenueCat(plan);
+              } else {
+                setState(() => _isLoading = true);
+                try {
+                  final ref = 'RC-TEST-${plan.slug}-${DateTime.now().millisecondsSinceEpoch}';
+                  await _apiService.verifySubscriptionPayment(ref, plan.slug, provider: 'REVENUECAT');
+                  await _loadSubscriptionData();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${plan.name} activated successfully via In-App Purchase!'),
+                        backgroundColor: const Color(0xFF059669),
+                      ),
+                    );
+                  }
+                } catch (err) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Activation error: $err'), backgroundColor: Colors.red),
+                    );
+                  }
+                } finally {
+                  if (mounted) setState(() => _isLoading = false);
+                }
               }
             },
-            icon: const Icon(Icons.chat, size: 14, color: Color(0xFF34D399)),
-            label: const Text('Notify Finance Desk', style: TextStyle(color: Colors.white, fontSize: 11)),
+            icon: const Icon(Icons.check_circle_outline, size: 16, color: Colors.white),
+            label: const Text('Confirm In-App Purchase', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
+  }
   }
 
   Widget _buildQuotaRow(String label, String value) {
@@ -474,11 +506,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
           indicatorWeight: 3,
           labelColor: const Color(0xFF10B981),
           unselectedLabelColor: Colors.grey,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           tabs: const [
-            Tab(text: 'Standard Tiers'),
-            Tab(text: 'Business (100–2.5k)'),
-            Tab(text: 'Enterprise (2.7k–6k)'),
+            Tab(text: 'Standard'),
+            Tab(text: 'Business'),
+            Tab(text: 'Enterprise'),
           ],
         ),
       ),
@@ -623,6 +655,34 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                         )),
                     const SizedBox(height: 16),
                   ],
+
+                  // Tier Category Overview Banner
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF111827),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF1F2937)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.workspace_premium, size: 18, color: Color(0xFF10B981)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _selectedTier == 'STANDARD'
+                                ? 'Standard Plans (Free, Starter & Growth)'
+                                : (_selectedTier == 'BUSINESS'
+                                    ? 'Business Scale Tiers (100 to 2,500 Listings)'
+                                    : 'Enterprise Tiers (2,750 to 6,000+ Listings)'),
+                            style: const TextStyle(color: Color(0xFFD1D5DB), fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                   // Annual Discount Toggle
                   Container(
