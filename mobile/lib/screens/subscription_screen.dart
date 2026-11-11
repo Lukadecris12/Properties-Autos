@@ -6,6 +6,7 @@ import '../models/listing_model.dart';
 import '../services/api_service.dart';
 import '../services/revenuecat_service.dart';
 import '../core/constants.dart';
+import '../widgets/legal_dialog.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({Key? key}) : super(key: key);
@@ -838,6 +839,60 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                       ),
                     );
                   }).toList(),
+
+                  // Apple & Google Store Mandatory Subscription Disclosures
+                  Container(
+                    margin: const EdgeInsets.only(top: 8, bottom: 20),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF111827),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF1F2937)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: const [
+                            Icon(Icons.info_outline, size: 14, color: Color(0xFF38BDF8)),
+                            SizedBox(width: 6),
+                            Text(
+                              'Subscription Terms & Auto-Renewal Notice',
+                              style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '• Payment is charged to your Google Play Store or Apple ID account at confirmation of purchase.\n'
+                          '• Subscriptions automatically renew unless auto-renew is cancelled at least 24 hours before the end of the current billing cycle.\n'
+                          '• Your account will be charged for renewal within 24 hours prior to the end of the current period.\n'
+                          '• You can manage or cancel your subscription anytime in your Google Play or App Store account settings.',
+                          style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 10, height: 1.5),
+                        ),
+                        const Divider(color: Color(0xFF1F2937), height: 18),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            GestureDetector(
+                              onTap: () => LegalDialog.showTermsAndEula(context),
+                              child: const Text('Terms of Use (EULA)', style: TextStyle(color: Color(0xFF34D399), fontSize: 11, decoration: TextDecoration.underline)),
+                            ),
+                            const Text('•', style: TextStyle(color: Colors.grey)),
+                            GestureDetector(
+                              onTap: () => LegalDialog.showPrivacyPolicy(context),
+                              child: const Text('Privacy Policy', style: TextStyle(color: Color(0xFF34D399), fontSize: 11, decoration: TextDecoration.underline)),
+                            ),
+                            const Text('•', style: TextStyle(color: Colors.grey)),
+                            GestureDetector(
+                              onTap: _handleRestorePurchases,
+                              child: const Text('Restore Purchases', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11, decoration: TextDecoration.underline)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),

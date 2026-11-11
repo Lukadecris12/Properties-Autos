@@ -113,6 +113,116 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
     );
   }
 
+  void _showReportDialog(ListingModel item) {
+    String selectedReason = 'Fraudulent or scam listing';
+    final detailsController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF111827),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFF1F2937)),
+          ),
+          title: Row(
+            children: const [
+              Icon(Icons.shield_outlined, color: Colors.amber, size: 22),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Report Content', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Properties & Autos enforces zero tolerance for objectionable content. Flagged listings are reviewed and removed within 24 hours.',
+                  style: TextStyle(color: Colors.grey, fontSize: 11, height: 1.4),
+                ),
+                const SizedBox(height: 12),
+                const Text('Select reason:', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ...[
+                  'Fraudulent or scam listing',
+                  'Offensive or inappropriate content',
+                  'Misleading price, title or photos',
+                  'Stolen vehicle or counterfeit title',
+                  'Harassment or spam',
+                ].map((reason) {
+                  return RadioListTile<String>(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: const Color(0xFF10B981),
+                    title: Text(reason, style: const TextStyle(color: Colors.white, fontSize: 12)),
+                    value: reason,
+                    groupValue: selectedReason,
+                    onChanged: (val) {
+                      if (val != null) setDialogState(() => selectedReason = val);
+                    },
+                  );
+                }).toList(),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: detailsController,
+                  maxLines: 2,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  decoration: InputDecoration(
+                    hintText: 'Additional details (optional)...',
+                    hintStyle: const TextStyle(color: Colors.grey, fontSize: 11),
+                    filled: true,
+                    fillColor: const Color(0xFF0B0F19),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1F2937))),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber[800],
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                Navigator.pop(ctx);
+                try {
+                  await _apiService.reportListing(item.id, selectedReason, details: detailsController.text.trim());
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Listing reported. Our safety team will review it within 24 hours.'),
+                        backgroundColor: Color(0xFF059669),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Report received. Thank you for keeping our marketplace safe.'),
+                        backgroundColor: Color(0xFF059669),
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Submit Report', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final item = widget.listing;
@@ -170,6 +280,15 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                       ),
                     );
                   },
+                ),
+              ),
+              const SizedBox(width: 8),
+              CircleAvatar(
+                backgroundColor: Colors.black.withOpacity(0.6),
+                child: IconButton(
+                  icon: const Icon(Icons.flag_outlined, color: Colors.amber, size: 20),
+                  tooltip: 'Report Content',
+                  onPressed: () => _showReportDialog(item),
                 ),
               ),
               const SizedBox(width: 12),

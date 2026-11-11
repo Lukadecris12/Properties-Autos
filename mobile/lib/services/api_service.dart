@@ -1614,4 +1614,57 @@ class ApiService {
     }
     return all;
   }
+
+  /// Apple Guideline 5.1.1(v) & Google Play mandatory account deletion
+  Future<Map<String, dynamic>> deleteAccount() async {
+    final token = await getToken();
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null) headers['Authorization'] = 'Bearer $token';
+
+    final response = await client.delete(
+      Uri.parse('${ApiConstants.authEndpoint}/delete-account'),
+      headers: headers,
+    );
+    final decoded = json.decode(response.body);
+    if (response.statusCode == 200) {
+      await clearToken();
+      return decoded['data'] ?? {'status': 'DELETED'};
+    }
+    throw Exception(decoded['detail'] ?? decoded['message'] ?? 'Failed to delete account');
+  }
+
+  /// Apple Guideline 1.2 User Generated Content reporting mechanism
+  Future<Map<String, dynamic>> reportListing(int listingId, String reason, {String? details}) async {
+    final token = await getToken();
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null) headers['Authorization'] = 'Bearer $token';
+
+    final response = await client.post(
+      Uri.parse('${ApiConstants.listingsEndpoint}/$listingId/report'),
+      headers: headers,
+      body: json.encode({'reason': reason, 'details': details}),
+    );
+    final decoded = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return decoded['data'] ?? {'status': 'REPORTED'};
+    }
+    throw Exception(decoded['detail'] ?? decoded['message'] ?? 'Failed to report listing');
+  }
+
+  /// Apple Guideline 1.2 User Generated Content block user mechanism
+  Future<Map<String, dynamic>> blockUser(int targetUserId) async {
+    final token = await getToken();
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null) headers['Authorization'] = 'Bearer $token';
+
+    final response = await client.post(
+      Uri.parse('${ApiConstants.authEndpoint}/block-user/$targetUserId'),
+      headers: headers,
+    );
+    final decoded = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return decoded['data'] ?? {'status': 'BLOCKED'};
+    }
+    throw Exception(decoded['detail'] ?? decoded['message'] ?? 'Failed to block user');
+  }
 }

@@ -143,22 +143,51 @@ def apply_android_branding(android_dir: str) -> None:
     if os.path.exists(anydpi_dir):
         shutil.rmtree(anydpi_dir)
 
-    # Update AndroidManifest.xml label to "PropertyHub" and enable internet + cleartext traffic
+    # Update AndroidManifest.xml label to "Properties & Autos" and enable store permissions
     if os.path.exists(manifest_path):
         with open(manifest_path, "r", encoding="utf-8") as f:
             txt = f.read()
 
         txt = txt.replace('android:label="propertyhub_mobile"', 'android:label="Properties &amp; Autos"')
+        permissions = (
+            '<uses-permission android:name="android.permission.INTERNET"/>\n'
+            '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>\n'
+            '    <uses-permission android:name="android.permission.CAMERA"/>\n'
+            '    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>\n'
+            '    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>\n'
+            '    <application android:usesCleartextTraffic="true"'
+        )
         if "android.permission.INTERNET" not in txt:
-            txt = txt.replace(
-                "<application",
-                '<uses-permission android:name="android.permission.INTERNET"/>\n    <application android:usesCleartextTraffic="true"',
-                1,
-            )
+            txt = txt.replace("<application", permissions, 1)
         with open(manifest_path, "w", encoding="utf-8") as f:
             f.write(txt)
 
 
+def apply_ios_branding(ios_dir: str = "ios") -> None:
+    plist_path = os.path.join(ios_dir, "Runner", "Info.plist")
+    if os.path.exists(plist_path):
+        with open(plist_path, "r", encoding="utf-8") as f:
+            txt = f.read()
+
+        descriptions = (
+            '	<key>CFBundleDisplayName</key>\n'
+            '	<string>Properties &amp; Autos</string>\n'
+            '	<key>NSCameraUsageDescription</key>\n'
+            '	<string>Properties &amp; Autos requires camera access to allow you to photograph your properties and vehicles to publish listings.</string>\n'
+            '	<key>NSPhotoLibraryUsageDescription</key>\n'
+            '	<string>Properties &amp; Autos requires photo library access to upload photos and videos of your properties and vehicles.</string>\n'
+            '	<key>NSLocationWhenInUseUsageDescription</key>\n'
+            '	<string>Properties &amp; Autos uses your approximate location to display nearby real estate and vehicle listings.</string>\n'
+            '</dict>'
+        )
+        if "NSCameraUsageDescription" not in txt:
+            txt = txt.replace("</dict>", descriptions, 1)
+            with open(plist_path, "w", encoding="utf-8") as f:
+                f.write(txt)
+        print("Applied iOS privacy purpose strings to Info.plist")
+
+
 if __name__ == "__main__":
     apply_android_branding("android")
-    print("PropertyHub custom icon and Android branding applied successfully!")
+    apply_ios_branding("ios")
+    print("PropertyHub custom icon, Android & iOS store review branding applied successfully!")

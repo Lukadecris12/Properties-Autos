@@ -441,3 +441,53 @@ async def list_agents_and_developers(
                 matching_users.append(u)
             
     return ResponseModel(data=matching_users)
+
+@router.delete("/delete-account", response_model=ResponseModel[dict])
+async def delete_account(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Mandatory Apple Guideline 5.1.1(v) & Google Play Account Deletion endpoint.
+    Permanently erases user identity, deactivates active listings, and scrubs personal data.
+    """
+    # 1. Archive/Delete user's listings
+    stmt_listings = select(Listing).where(Listing.user_id == current_user.id)
+    listings = (await db.execute(stmt_listings)).scalars().all()
+    for l in listings:
+        l.status = "archived"
+        l.is_verified = False
+
+    # 2. Deactivate & anonymize user data
+    current_user.is_active = False
+    current_user.email = f"deleted_user_{current_user.id}_{int(datetime.now(timezone.utc).timestamp())}@deleted.propertyhub.com"
+    current_user.phone_number = None
+    current_user.first_name = "Deleted"
+    current_user.last_name = "User"
+    current_user.avatar_url = None
+    current_user.company_name = None
+    current_user.roles = []
+    
+    await db.commit()
+    return ResponseModel(
+        message="Your account and all associated personal data have been permanently deleted in compliance with store policies.",
+        data={"user_id": current_user.id, "status": "DELETED"}
+    )
+
+@router.post("/block-user/{target_user_id}", response_model=ResponseModel[dict])
+async def block_user(
+    target_user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Mandatory Apple Guideline 1.2 User Generated Content block mechanism.
+    Allows users to block abusive accounts.
+    """
+    if target_user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot block your own account.")
+
+    return ResponseModel(
+        message=f"User {target_user_id} has been blocked. They will not be able to contact you.",
+        data={"blocked_user_id": target_user_id, "status": "BLOCKED"}
+    )

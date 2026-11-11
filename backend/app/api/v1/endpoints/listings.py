@@ -405,3 +405,40 @@ async def get_availability(
     stmt = select(ListingAvailability).where(ListingAvailability.listing_id == listing_id)
     res = await db.execute(stmt)
     return ResponseModel(data=res.scalars().all())
+
+class ReportListingRequest(BaseModel):
+    reason: str
+    details: Optional[str] = None
+
+@router.post("/{listing_id}/report", response_model=ResponseModel[dict])
+async def report_listing(
+    listing_id: int,
+    report: ReportListingRequest,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Mandatory Apple Guideline 1.2 User Generated Content reporting mechanism.
+    Flags listing for administrator review and removal within 24 hours.
+    """
+    stmt = select(Listing).where(Listing.id == listing_id)
+    res = await db.execute(stmt)
+    listing = res.scalars().first()
+    if not listing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
+
+    # Flag listing attributes
+    attrs = dict(listing.attributes or {})
+    attrs["reported"] = True
+    attrs["report_reason"] = report.reason
+    attrs["report_details"] = report.details
+    attrs["reported_at"] = datetime.now(timezone.utc).isoformat()
+    if current_user:
+        attrs["reported_by_user_id"] = current_user.id
+    listing.attributes = attrs
+
+    await db.commit()
+    return ResponseModel(
+        message="Thank you for reporting this listing. Our safety and moderation team will review it within 24 hours and remove any objectionable or fraudulent material.",
+        data={"listing_id": listing_id, "status": "REPORTED", "reason": report.reason}
+    )

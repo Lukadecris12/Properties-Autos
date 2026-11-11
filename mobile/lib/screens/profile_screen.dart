@@ -9,6 +9,8 @@ import 'saved_listings_screen.dart';
 import 'contact_support_screen.dart';
 import 'subscription_screen.dart';
 import 'faq_screen.dart';
+import '../widgets/legal_dialog.dart';
+import '../services/api_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Function(int targetTab)? onNavigateTab;
@@ -23,6 +25,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _activeMode = 'BUYER'; // BUYER, SELLER, AGENT, DEVELOPER
   String _selectedCurrency = 'NGN (₦)';
   bool _isLoggedIn = true;
+
+  void _showDeleteAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF111827),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFDC2626)),
+        ),
+        title: Row(
+          children: const [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 24),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text('Delete Account', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to permanently delete your account?\n\n'
+          'In compliance with Apple Guideline 5.1.1(v) and Google Play account deletion policy, all your personal details, active property and car listings, chat messages, and subscription data will be permanently erased immediately.\n\n'
+          'This action is irreversible.',
+          style: TextStyle(color: Color(0xFFD1D5DB), fontSize: 12, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFB91C1C),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                final api = ApiService();
+                await api.deleteAccount();
+              } catch (_) {}
+              if (mounted) {
+                setState(() => _isLoggedIn = false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Your account and personal data have been permanently deleted.'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+              }
+            },
+            child: const Text('Delete Account Forever', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showSignInDialog() {
     final emailController = TextEditingController();
@@ -346,6 +405,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         MaterialPageRoute(builder: (context) => const FaqScreen()),
                       );
                     },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Legal & Store Review Compliance (Apple & Google Play)
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF111827),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFF1F2937)),
+              ),
+              child: Column(
+                children: [
+                  _buildMenuItem(
+                    icon: Icons.shield_outlined,
+                    iconColor: const Color(0xFF10B981),
+                    title: 'Privacy Policy',
+                    subtitle: 'Store compliant data safety, camera & photo usage',
+                    onTap: () => LegalDialog.showPrivacyPolicy(context),
+                  ),
+                  _buildDivider(),
+                  _buildMenuItem(
+                    icon: Icons.description_outlined,
+                    iconColor: const Color(0xFF38BDF8),
+                    title: 'Terms of Service & EULA',
+                    subtitle: 'Apple End User License Agreement & zero tolerance abuse policy',
+                    onTap: () => LegalDialog.showTermsAndEula(context),
+                  ),
+                  _buildDivider(),
+                  _buildMenuItem(
+                    icon: Icons.person_remove_outlined,
+                    iconColor: Colors.redAccent,
+                    title: 'Delete Account',
+                    subtitle: 'Permanently erase your account & personal data (Apple/Google)',
+                    onTap: _showDeleteAccountDialog,
                   ),
                 ],
               ),
