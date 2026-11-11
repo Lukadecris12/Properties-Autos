@@ -244,7 +244,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
   }
 
   void _purchaseViaRevenueCat(SubscriptionPlanModel plan) async {
-    final price = _isAnnual ? plan.annualPriceNgn : plan.priceNgn;
+    final price = _isAnnual ? plan.priceNgn * 10 : plan.priceNgn;
     final formattedPrice = '₦${price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
 
     Package? packageToBuy;
@@ -445,7 +445,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
         ],
       ),
     );
-  }
   }
 
   Widget _buildQuotaRow(String label, String value) {
