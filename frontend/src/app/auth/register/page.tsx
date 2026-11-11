@@ -269,8 +269,8 @@ export default function RegisterPage() {
       {/* Top Bar */}
       <div className="h-16 border-b border-gray-800 bg-[#111827]/70 backdrop-blur-md px-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-emerald-700 flex items-center justify-center shadow-md shadow-brand-500/20">
-            <Building2 className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-md shadow-brand-500/20 border border-brand-500/30 bg-black/40">
+            <img src="/logo.png" alt="Properties & Autos" className="w-full h-full object-cover" />
           </div>
           <span className="text-lg font-bold tracking-tight text-white">
             Properties<span className="text-brand-400 ml-1">&amp; Autos</span>

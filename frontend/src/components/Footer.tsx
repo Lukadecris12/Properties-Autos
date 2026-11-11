@@ -14,8 +14,8 @@ export const Footer: React.FC = () => {
           {/* Brand Info */}
           <div className="lg:col-span-2 space-y-4">
             <Link href="/" className="flex items-center gap-2.5 shrink-0 select-none">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-brand-500/20 shrink-0">
-                <Building2 className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 shadow-lg shadow-brand-500/20 border border-brand-500/30 bg-black/40">
+                <img src="/logo.png" alt="Properties & Autos" className="w-full h-full object-cover" />
               </div>
               <div className="flex items-center whitespace-nowrap leading-none">
                 <span className="text-xl font-extrabold tracking-tight text-white">

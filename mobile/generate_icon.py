@@ -120,12 +120,23 @@ def apply_android_branding(android_dir: str) -> None:
         "mipmap-xxxhdpi": 192,
     }
 
+    # Locate custom Properties & Autos logo mipmaps
+    source_res = "res_icons"
+    if not os.path.exists(source_res) and os.path.exists(os.path.join("..", "mobile", "res_icons")):
+        source_res = os.path.join("..", "mobile", "res_icons")
+
     for folder, px in sizes.items():
         target_dir = os.path.join(res_dir, folder)
         os.makedirs(target_dir, exist_ok=True)
-        rgba = render_propertyhub_icon(px)
-        write_png(os.path.join(target_dir, "ic_launcher.png"), px, px, rgba)
-        write_png(os.path.join(target_dir, "ic_launcher_round.png"), px, px, rgba)
+        src_launcher = os.path.join(source_res, folder, "ic_launcher.png")
+        if os.path.exists(src_launcher):
+            shutil.copy2(src_launcher, os.path.join(target_dir, "ic_launcher.png"))
+            shutil.copy2(src_launcher, os.path.join(target_dir, "ic_launcher_round.png"))
+            print(f"Applied custom logo to {folder}")
+        else:
+            rgba = render_propertyhub_icon(px)
+            write_png(os.path.join(target_dir, "ic_launcher.png"), px, px, rgba)
+            write_png(os.path.join(target_dir, "ic_launcher_round.png"), px, px, rgba)
 
     # Remove adaptive v26 XML overrides if present so Android always uses our custom PNG icons
     anydpi_dir = os.path.join(res_dir, "mipmap-anydpi-v26")

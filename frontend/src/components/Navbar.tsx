@@ -101,8 +101,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           
           {/* Logo & Brand Identity */}
           <Link href="/" className="flex items-center gap-2.5 sm:gap-3 shrink-0 select-none">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-brand-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-brand-500/20 shrink-0">
-              <Building2 className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden shrink-0 shadow-lg shadow-brand-500/20 border border-brand-500/30 bg-black/40">
+              <img src="/logo.png" alt="Properties & Autos" className="w-full h-full object-cover" />
             </div>
             <div className="flex flex-col justify-center">
               <div className="flex items-center whitespace-nowrap leading-none">

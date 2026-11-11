@@ -48,8 +48,8 @@ export default function LoginPage() {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 text-center">
         <Link href="/" className="inline-flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-brand-500/20">
-            <Building2 className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 rounded-2xl overflow-hidden shrink-0 shadow-lg shadow-brand-500/20 border border-brand-500/30 bg-black/40">
+            <img src="/logo.png" alt="Properties & Autos" className="w-full h-full object-cover" />
           </div>
           <span className="text-2xl font-bold tracking-tight text-white">
             Properties <span className="text-brand-500">& Autos</span>

@@ -20,14 +20,9 @@ class WelcomeScreen extends StatelessWidget {
                 children: [
                   const SizedBox(height: 20),
                   Container(
-                    width: 72,
-                    height: 72,
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF059669), Color(0xFF047857)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -37,7 +32,19 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.apartment, color: Colors.white, size: 38),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.asset(
+                        'assets/logo.png',
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: const Color(0xFF059669),
+                          child: const Icon(Icons.apartment, color: Colors.white, size: 38),
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   RichText(

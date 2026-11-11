@@ -33,12 +33,16 @@ jobs:
       - name: Generate Android Platform Wrapper & Custom PropertyHub Icon
         run: |
           cp -r mobile/lib /tmp/lib_backup
+          cp -r mobile/assets /tmp/assets_backup
+          cp -r mobile/res_icons /tmp/res_icons_backup
           cp mobile/pubspec.yaml /tmp/pubspec_backup.yaml
           cp mobile/generate_icon.py /tmp/generate_icon.py
           cd mobile
           flutter create --org com.propertyhub.luxury.app --project-name propertyhub_mobile --platforms=android .
           rm -rf lib test
           cp -r /tmp/lib_backup lib
+          cp -r /tmp/assets_backup assets
+          cp -r /tmp/res_icons_backup res_icons
           cp /tmp/pubspec_backup.yaml pubspec.yaml
           cp /tmp/generate_icon.py generate_icon.py
           python3 generate_icon.py

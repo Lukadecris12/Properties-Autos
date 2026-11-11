@@ -4,6 +4,14 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Properties & Autos — Luxury Real Estate, Land Banking & Automobile Marketplace',
   description: 'Buy, rent, and lease land, houses, commercial buildings, cars, and vehicles. Features bidirectional AI matching, verified listings, and real-time bookings.',
+  icons: {
+    icon: [
+      { url: '/icon.png', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-icon.png',
+  },
 };
 
 export default function RootLayout({
