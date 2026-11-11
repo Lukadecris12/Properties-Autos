@@ -21,6 +21,12 @@ class ApiService {
     _authToken = token;
   }
 
+  static void clearToken() {
+    _authToken = null;
+    _isLoggedIn = false;
+    _currentUser = null;
+  }
+
   static bool get isLoggedIn => _isLoggedIn;
 
   static void setLoggedIn(bool loggedIn, [Map<String, dynamic>? user]) {
@@ -1627,7 +1633,7 @@ class ApiService {
     );
     final decoded = json.decode(response.body);
     if (response.statusCode == 200) {
-      await clearToken();
+      ApiService.clearToken();
       return decoded['data'] ?? {'status': 'DELETED'};
     }
     throw Exception(decoded['detail'] ?? decoded['message'] ?? 'Failed to delete account');
