@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { Building2, ShieldCheck, Globe, Mail, Phone, Sparkles, X } from 'lucide-react';
+import { Building2, ShieldCheck, Globe, Mail, Phone } from 'lucide-react';
 
 const socialLinks = [
   {
     name: 'Facebook',
-    href: 'https://facebook.com',
+    label: 'Facebook',
     hoverClasses: 'hover:bg-[#1877F2]/15 hover:border-[#1877F2]/50 hover:text-[#1877F2] hover:shadow-[0_0_18px_rgba(24,119,242,0.4)]',
     icon: (
       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
@@ -16,8 +16,8 @@ const socialLinks = [
     ),
   },
   {
-    name: 'X (Twitter)',
-    href: 'https://x.com',
+    name: 'X',
+    label: 'X',
     hoverClasses: 'hover:bg-white/15 hover:border-white/50 hover:text-white hover:shadow-[0_0_18px_rgba(255,255,255,0.3)]',
     icon: (
       <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
@@ -27,7 +27,7 @@ const socialLinks = [
   },
   {
     name: 'Instagram',
-    href: 'https://instagram.com',
+    label: 'Instagram',
     hoverClasses: 'hover:bg-[#E4405F]/15 hover:border-[#E4405F]/50 hover:text-[#E4405F] hover:shadow-[0_0_18px_rgba(228,64,95,0.4)]',
     icon: (
       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
@@ -37,7 +37,7 @@ const socialLinks = [
   },
   {
     name: 'YouTube',
-    href: 'https://youtube.com',
+    label: 'YouTube',
     hoverClasses: 'hover:bg-[#FF0000]/15 hover:border-[#FF0000]/50 hover:text-[#FF0000] hover:shadow-[0_0_18px_rgba(255,0,0,0.4)]',
     icon: (
       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
@@ -47,7 +47,7 @@ const socialLinks = [
   },
   {
     name: 'TikTok',
-    href: 'https://tiktok.com',
+    label: 'TikTok',
     hoverClasses: 'hover:bg-[#25F4EE]/15 hover:border-[#25F4EE]/50 hover:text-[#25F4EE] hover:shadow-[0_0_18px_rgba(37,244,238,0.4)]',
     icon: (
       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
@@ -57,7 +57,7 @@ const socialLinks = [
   },
   {
     name: 'WhatsApp',
-    href: 'https://wa.me/2348000000000',
+    label: 'WhatsApp',
     hoverClasses: 'hover:bg-[#25D366]/15 hover:border-[#25D366]/50 hover:text-[#25D366] hover:shadow-[0_0_18px_rgba(37,211,102,0.4)]',
     icon: (
       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
@@ -68,22 +68,10 @@ const socialLinks = [
 ];
 
 export const Footer: React.FC = () => {
-  const [activeNotice, setActiveNotice] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!activeNotice) return;
-    const timer = setTimeout(() => {
-      setActiveNotice(null);
-    }, 4500);
-    return () => clearTimeout(timer);
-  }, [activeNotice]);
-
-  const handleSocialClick = (name: string) => {
-    setActiveNotice(name);
-  };
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   return (
-    <footer className="bg-gray-950 border-t border-gray-800/80 pt-16 pb-12 text-xs text-gray-400 relative">
+    <footer className="bg-gray-950 border-t border-gray-800/80 pt-16 pb-12 text-xs text-gray-400">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
@@ -111,26 +99,40 @@ export const Footer: React.FC = () => {
 
             {/* Social Media Channels */}
             <div className="pt-1">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-300">
-                  Connect With Us
-                </span>
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/25">
-                  Coming Soon
-                </span>
-              </div>
-              <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-300 block mb-3">
+                Connect With Us
+              </span>
+              <div className="flex items-center gap-2.5 flex-wrap pt-1">
                 {socialLinks.map((item) => (
-                  <button
+                  <div
                     key={item.name}
-                    type="button"
-                    onClick={() => handleSocialClick(item.name)}
-                    aria-label={`${item.name} (Launching Soon)`}
-                    title={`${item.name} - Official channel currently in setup`}
-                    className={`w-9 h-9 rounded-xl bg-gray-900/90 border border-gray-800/80 text-gray-400 flex items-center justify-center transition-all duration-300 hover:-translate-y-1 shadow-sm backdrop-blur-sm cursor-pointer ${item.hoverClasses}`}
+                    className="relative flex items-center justify-center group"
+                    onMouseEnter={() => setActiveTooltip(item.name)}
+                    onMouseLeave={() => setActiveTooltip(null)}
                   >
-                    {item.icon}
-                  </button>
+                    {/* Tooltip positioned directly on top of the icon */}
+                    <div
+                      role="tooltip"
+                      className={`absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-lg bg-gray-900 border border-gray-700/80 text-[11px] font-medium text-gray-100 whitespace-nowrap shadow-xl shadow-black/80 pointer-events-none z-30 transition-all duration-200 ${
+                        activeTooltip === item.name
+                          ? 'opacity-100 visible -translate-y-0.5'
+                          : 'opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:-translate-y-0.5'
+                      }`}
+                    >
+                      <span>{item.label} channel coming soon</span>
+                      {/* Tooltip downward caret arrow */}
+                      <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-gray-900" />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveTooltip(item.name)}
+                      aria-label={`${item.label} channel coming soon`}
+                      className={`w-9 h-9 rounded-xl bg-gray-900/90 border border-gray-800/80 text-gray-400 flex items-center justify-center transition-all duration-300 hover:-translate-y-1 shadow-sm backdrop-blur-sm cursor-pointer ${item.hoverClasses}`}
+                    >
+                      {item.icon}
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -204,41 +206,6 @@ export const Footer: React.FC = () => {
         </div>
 
       </div>
-
-      {/* Floating Channel In-Setup Notification */}
-      {activeNotice && (
-        <aside
-          role="status"
-          aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 max-w-sm w-[calc(100vw-3rem)] bg-gray-950/95 border border-brand-500/40 backdrop-blur-xl p-4 rounded-2xl shadow-2xl shadow-black/90 flex items-start gap-3.5 ring-1 ring-white/10 animate-in fade-in slide-in-from-bottom-5 duration-300"
-        >
-          <div className="w-10 h-10 rounded-xl bg-brand-500/10 border border-brand-500/30 flex items-center justify-center shrink-0 text-brand-400 shadow-inner">
-            <Sparkles className="w-5 h-5 text-brand-400 animate-pulse" />
-          </div>
-          <div className="flex-1 min-w-0 pr-1">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h5 className="text-xs font-bold text-white tracking-tight">
-                {activeNotice} Channel Coming Soon
-              </h5>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
-                In Setup
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-300 leading-relaxed">
-              Our official {activeNotice} handle is currently under construction and verification. 
-              Exciting announcements, community updates, and exclusive deals will go live here shortly!
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setActiveNotice(null)}
-            className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors shrink-0"
-            aria-label="Dismiss notice"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </aside>
-      )}
     </footer>
   );
 };
