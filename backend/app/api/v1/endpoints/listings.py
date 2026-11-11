@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import Optional, List
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -414,7 +415,7 @@ class ReportListingRequest(BaseModel):
 async def report_listing(
     listing_id: int,
     report: ReportListingRequest,
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
