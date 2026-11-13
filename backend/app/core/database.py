@@ -1,8 +1,14 @@
+from datetime import datetime, timezone
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 
 from app.core.config import settings
+
+
+def utc_now() -> datetime:
+    """Return current UTC time as a naive datetime for TIMESTAMP WITHOUT TIME ZONE columns."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 # Configure engine arguments
 engine_kwargs = {"echo": False}

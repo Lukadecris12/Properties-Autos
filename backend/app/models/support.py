@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from sqlalchemy import (
     Column, Integer, String, DateTime, Text, ForeignKey
 )
-from app.core.database import Base
+from app.core.database import Base, utc_now
 
 class SupportTicket(Base):
     __tablename__ = "support_tickets"
@@ -19,5 +19,5 @@ class SupportTicket(Base):
     admin_response = Column(Text, nullable=True)
     responded_at = Column(DateTime, nullable=True)
 
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)

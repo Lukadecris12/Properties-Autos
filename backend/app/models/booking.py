@@ -5,7 +5,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from app.core.database import Base
+from app.core.database import Base, utc_now
 from app.models.enums import BookingStatus, InspectionStatus, InspectionType
 
 class Booking(Base):
@@ -35,8 +35,8 @@ class Booking(Base):
     guest_notes = Column(Text, nullable=True)
     host_notes = Column(Text, nullable=True)
 
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     # Relationships
     listing = relationship("Listing", back_populates="bookings")
@@ -57,8 +57,8 @@ class Inspection(Base):
     requester_notes = Column(Text, nullable=True)
     host_response = Column(Text, nullable=True)
 
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     # Relationships
     listing = relationship("Listing", back_populates="inspections")
@@ -73,8 +73,8 @@ class Conversation(Base):
     participant_2_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     
     subject = Column(String(255), nullable=True)
-    last_message_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    last_message_at = Column(DateTime, default=utc_now)
+    created_at = Column(DateTime, default=utc_now)
 
     # Relationships
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan", order_by="Message.created_at.asc()")
@@ -92,7 +92,7 @@ class Message(Base):
     content = Column(Text, nullable=False)
     attachment_url = Column(String(500), nullable=True)
     is_read = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now)
 
     conversation = relationship("Conversation", back_populates="messages")
     sender = relationship("User", foreign_keys=[sender_id])

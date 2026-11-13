@@ -3,7 +3,7 @@ from typing import List, Optional
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, JSON, Text, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
-from app.core.database import Base
+from app.core.database import Base, utc_now
 from app.models.enums import UserRole, VerificationStatus
 
 class User(Base):
@@ -47,8 +47,8 @@ class User(Base):
     # Verification level: Basic, ID_Verified, Business_Verified, Trusted_Partner
     verification_badge = Column(String(50), default="Unverified")
     
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     # Relationships
     listings = relationship("Listing", back_populates="owner", cascade="all, delete-orphan")
@@ -72,6 +72,6 @@ class VerificationDocument(Base):
     reviewer_notes = Column(Text, nullable=True)
     reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", back_populates="verification_documents", foreign_keys=[user_id])

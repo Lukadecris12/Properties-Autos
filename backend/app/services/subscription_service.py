@@ -5,6 +5,8 @@ from sqlalchemy.future import select
 from sqlalchemy import func, desc, or_
 from decimal import Decimal
 
+from app.core.database import utc_now
+
 from app.models.subscription import (
     SubscriptionPlan,
     UserSubscription,
@@ -238,7 +240,7 @@ class SubscriptionService:
     @staticmethod
     async def process_expired_boosts(db: AsyncSession):
         """Expire any boosts whose expiry time has passed and update listing promotional state."""
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         stmt = select(ListingBoost).where(ListingBoost.is_active == True, ListingBoost.expires_at <= now)
         expired_boosts = (await db.execute(stmt)).scalars().all()
         
@@ -280,7 +282,7 @@ class SubscriptionService:
         )
         sub = (await db.execute(stmt)).scalars().first()
 
-        now = datetime.now(timezone.utc)
+        now = utc_now()
 
         # Retrieve Free Plan template
         free_plan_stmt = select(SubscriptionPlan).where(SubscriptionPlan.slug == "free")
@@ -385,7 +387,7 @@ class SubscriptionService:
         used_featured_count = (await db.execute(feat_stmt)).scalar() or 0
         
         # Active boosts
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         boost_stmt = (
             select(ListingBoost)
             .where(
@@ -485,7 +487,7 @@ class SubscriptionService:
                     listing
                 )
             listing.is_featured = True
-            listing.featured_at = datetime.now(timezone.utc)
+            listing.featured_at = utc_now()
             action_msg = "Listing successfully designated as Featured."
         else:
             listing.is_featured = False
@@ -521,7 +523,7 @@ class SubscriptionService:
             )
 
         duration = duration_hours or await SubscriptionService.get_configured_boost_duration_hours(db)
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         expires_at = now + timedelta(hours=duration)
 
         # Deduct credit safely
@@ -591,7 +593,7 @@ class SubscriptionService:
         if not plan:
             return False, f"Subscription plan '{plan_slug}' does not exist.", None
 
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         period_end = now + timedelta(days=plan.duration_days)
 
         # Get current subscription

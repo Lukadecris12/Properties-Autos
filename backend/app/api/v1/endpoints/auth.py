@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.core.config import settings
-from app.core.database import get_db
+from app.core.database import get_db, utc_now
 from app.core.security import (
     verify_password,
     get_password_hash,
@@ -61,7 +61,7 @@ async def signup_initiate(req: SignupInitiateRequest, db: AsyncSession = Depends
     # Direct Onboarding Mode (OTP temporarily disabled pending custom domain setup)
     token = secrets.token_urlsafe(32)
     temp_hash = get_password_hash(req.password)
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=2)
+    expires_at = utc_now() + timedelta(hours=2)
 
     # Store pre-verified onboarding record
     otp_record = OTPVerification(
@@ -124,7 +124,7 @@ async def resend_otp(req: ResendOtpRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=400, detail="User already registered.")
 
     otp_code = generate_otp_code()
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+    expires_at = utc_now() + timedelta(minutes=15)
 
     otp_record = OTPVerification(
         email=req.email,

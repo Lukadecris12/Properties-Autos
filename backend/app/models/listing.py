@@ -6,7 +6,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from app.core.database import Base
+from app.core.database import Base, utc_now
 from app.models.enums import (
     TransactionType, AssetCategory, ListingStatus, 
     RentalPeriod, LocationPrivacy
@@ -73,8 +73,8 @@ class Listing(Base):
     
     # Dates
     available_from = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     published_at = Column(DateTime, nullable=True)
 
     # Relationships

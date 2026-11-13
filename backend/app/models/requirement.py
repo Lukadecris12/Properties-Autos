@@ -5,7 +5,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from app.core.database import Base
+from app.core.database import Base, utc_now
 from app.models.enums import (
     TransactionType, AssetCategory, RequirementStatus, RentalPeriod
 )
@@ -48,8 +48,8 @@ class Requirement(Base):
     # For VEHICLE: vehicle_types, brands, models, min_year, max_mileage, transmission, fuel_type, rental_service_type
     criteria = Column(JSON, default=dict)
     
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     # Relationships
     user = relationship("User", back_populates="requirements")
@@ -74,7 +74,7 @@ class AIMatch(Base):
     is_contacted = Column(Boolean, default=False)
     is_dismissed = Column(Boolean, default=False)
     
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now)
 
     # Relationships
     requirement = relationship("Requirement", back_populates="matches")

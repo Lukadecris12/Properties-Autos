@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from app.core.database import Base
+from app.core.database import Base, utc_now
 
 class OTPVerification(Base):
     __tablename__ = "otp_verifications"
@@ -12,8 +12,8 @@ class OTPVerification(Base):
     verification_token = Column(String(255), unique=True, index=True, nullable=True)
     is_verified = Column(Boolean, default=False)
     
-    expires_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc) + timedelta(minutes=15))
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    expires_at = Column(DateTime, nullable=False, default=lambda: utc_now() + timedelta(minutes=15))
+    created_at = Column(DateTime, default=utc_now)
 
     @property
     def is_expired(self) -> bool:

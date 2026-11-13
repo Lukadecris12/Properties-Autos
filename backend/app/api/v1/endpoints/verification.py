@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc
 
-from app.core.database import get_db
+from app.core.database import get_db, utc_now
 from app.core.dependencies import get_current_user, require_admin
 from app.models.user import User, VerificationDocument
 from app.models.enums import VerificationStatus
@@ -67,7 +67,7 @@ async def review_document(
     doc.status = status
     doc.reviewer_notes = reviewer_notes
     doc.reviewed_by = admin_user.id
-    doc.reviewed_at = datetime.now(timezone.utc)
+    doc.reviewed_at = utc_now()
 
     # If approved, update user's verification badge and flags
     if status == VerificationStatus.APPROVED:

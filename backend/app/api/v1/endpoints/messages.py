@@ -6,7 +6,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import or_, and_, desc
 
-from app.core.database import get_db
+from app.core.database import get_db, utc_now
 from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.booking import Conversation, Message
@@ -78,7 +78,7 @@ async def send_message(
     db.add(msg)
 
     # Update conversation last_message_at
-    conv.last_message_at = datetime.now(timezone.utc)
+    conv.last_message_at = utc_now()
     await db.commit()
     await db.refresh(msg)
 

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, JSON, Text, ForeignKey
 from sqlalchemy.orm import relationship
-from app.core.database import Base
+from app.core.database import Base, utc_now
 
 class InvestmentProperty(Base):
     __tablename__ = "investment_properties"
@@ -30,8 +30,8 @@ class InvestmentProperty(Base):
     status = Column(String(50), default="active")  # active, fully_funded, completed
     is_approved = Column(Boolean, default=True)  # Admin approval flag
     
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     # Relationships
     investments = relationship("UserInvestment", back_populates="property", cascade="all, delete-orphan")
@@ -54,7 +54,7 @@ class UserInvestment(Base):
     payout_received = Column(Float, default=0.0)
     
     status = Column(String(50), default="active")  # active, matured, liquidated
-    invested_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    invested_at = Column(DateTime, default=utc_now)
 
     # Relationships
     property = relationship("InvestmentProperty", back_populates="investments")

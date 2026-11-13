@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func, desc
 
-from app.core.database import get_db
+from app.core.database import get_db, utc_now
 from app.core.dependencies import get_current_user
 from app.core.security import get_password_hash
 from app.models.user import User
@@ -203,7 +203,7 @@ async def get_activity_logs(
 ):
     """Audit trail of recent marketplace activities."""
     verify_admin(current_user)
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    now = utc_now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Construct rich live activity feed
     logs = [
@@ -231,7 +231,7 @@ async def get_subscription_stats(
     total_revenue = (await db.execute(rev_stmt)).scalar() or Decimal("0.00")
 
     # Active subscribers
-    now = datetime.now(timezone.utc)
+    now = utc_now()
     active_sub_stmt = select(func.count(UserSubscription.id)).where(
         UserSubscription.status == "ACTIVE",
         UserSubscription.current_period_end > now
@@ -364,7 +364,7 @@ async def admin_revoke_subscription(
     for s in active_subs:
         s.status = "CANCELLED"
 
-    now = datetime.now(timezone.utc)
+    now = utc_now()
     new_sub = UserSubscription(
         user_id=user_id,
         plan_id=free_plan.id,

@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from sqlalchemy.future import select
 
-from app.core.database import AsyncSessionLocal, async_engine, Base
+from app.core.database import AsyncSessionLocal, async_engine, Base, utc_now
 from app.core.security import get_password_hash
 from app.models.enums import (
     TransactionType, AssetCategory, ListingStatus, RentalPeriod, 
@@ -159,7 +159,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 1.2 Serviced Apartment in Victoria Island (RENT - YEARLY)
@@ -200,7 +200,7 @@ async def seed_data():
                 {"url": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800", "caption": "Apartment view", "is_cover": True}
             ],
             is_featured=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 1.3 Minimalist Studio Short-let in Lekki Phase 1 (RENT - NIGHTLY)
@@ -237,7 +237,7 @@ async def seed_data():
                 {"url": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800", "caption": "Living room", "is_cover": True}
             ],
             is_featured=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 1.4 Waterfront Terrace Duplex with Jetty - Banana Island (SALE)
@@ -276,7 +276,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 1.5 Smart Villa with Infinity Pool - Maitama, Abuja (SALE)
@@ -315,7 +315,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 1.6 Furnished Penthouse with Skyline Views - Victoria Island (RENT - YEARLY)
@@ -357,7 +357,7 @@ async def seed_data():
                 {"url": "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800", "caption": "Skyline Balcony", "is_cover": False}
             ],
             is_featured=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 1.7 Ambassadorial Mansion on 1,500 sqm Grounds - Asokoro, Abuja (SALE)
@@ -396,7 +396,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 1.8 Semi-Detached Duplex with BQ - Lekki Phase 1 (SALE)
@@ -435,7 +435,7 @@ async def seed_data():
             ],
             is_featured=False,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 1.9 Serviced 3-Bedroom Apartment - Ikeja GRA (RENT - YEARLY)
@@ -477,7 +477,7 @@ async def seed_data():
                 {"url": "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800", "caption": "Interior Hall", "is_cover": False}
             ],
             is_featured=False,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 1.10 Designer Short-Let Studio - Victoria Island (RENT - NIGHTLY)
@@ -518,7 +518,7 @@ async def seed_data():
                 {"url": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800", "caption": "Lounge Area", "is_cover": False}
             ],
             is_featured=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 1.11 Modern 4-Bedroom Duplex with Rooftop - Guzape, Abuja (SALE)
@@ -557,7 +557,7 @@ async def seed_data():
             ],
             is_featured=False,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 1.12 Waterfront Townhouse - Lekki Phase 1 (SALE)
@@ -595,7 +595,7 @@ async def seed_data():
                 {"url": "https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800", "caption": "Master Suite", "is_cover": False}
             ],
             is_featured=False,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 1.13 High-End Serviced Apartment in Ocean Parade - Banana Island (RENT - YEARLY)
@@ -638,7 +638,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # =========================================================================
@@ -679,7 +679,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 2.2 2,000 sqm Waterfront Commercial Plot - Ibeju-Lekki (SALE)
@@ -716,7 +716,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 2.3 600 sqm Dry Residential Plot in Diplomatic Golf Estate - Guzape, Abuja (SALE)
@@ -753,7 +753,7 @@ async def seed_data():
             ],
             is_featured=False,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 2.4 10,000 sqm Industrial Land - Lekki Free Trade Zone (SALE)
@@ -790,7 +790,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 2.5 1,200 sqm Gated Corner Plot - Banana Island, Ikoyi (SALE)
@@ -827,7 +827,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 2.6 4,500 sqm Prime Commercial Plot - Jabi District, Abuja (SALE)
@@ -864,7 +864,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 2.7 5 Acres Agricultural & Agri-Tech Farmland - Epe (SALE)
@@ -900,7 +900,7 @@ async def seed_data():
                 {"url": "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800", "caption": "Farmland Greenery", "is_cover": True}
             ],
             is_featured=False,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 2.8 800 sqm Panoramic Hilltop Residential Plot - Asokoro Hills, Abuja (SALE)
@@ -937,7 +937,7 @@ async def seed_data():
             ],
             is_featured=False,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 2.9 650 sqm Ready-to-Build Land in Royal Gardens Estate - Ajah, Lagos (SALE)
@@ -974,7 +974,7 @@ async def seed_data():
             ],
             is_featured=False,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 2.10 3,000 sqm Waterfront Promenade Commercial Plot - Eko Atlantic City (SALE)
@@ -1011,7 +1011,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 2.11 5,000 sqm Mixed-Use Land - Epe Expressway (SALE)
@@ -1048,7 +1048,7 @@ async def seed_data():
             ],
             is_featured=False,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # =========================================================================
@@ -1090,7 +1090,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 3.2 2023 Mercedes-Benz GLE 450 (RENT - DAILY)
@@ -1130,7 +1130,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 3.3 2024 Mercedes-AMG G 63 V8 Biturbo (SALE)
@@ -1168,7 +1168,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 3.4 2023 Range Rover Autobiography LWB (RENT - DAILY)
@@ -1211,7 +1211,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 3.5 2023 Lexus LX 600 Ultra Luxury VIP (SALE)
@@ -1249,7 +1249,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 3.6 2022 BMW M5 Competition (SALE)
@@ -1287,7 +1287,7 @@ async def seed_data():
             ],
             is_featured=False,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 3.7 2023 Porsche 911 Carrera S Coupe (SALE)
@@ -1325,7 +1325,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 3.8 2023 Tesla Model X Plaid (SALE)
@@ -1363,7 +1363,7 @@ async def seed_data():
             ],
             is_featured=False,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 3.9 2024 Ford F-150 Raptor 4x4 (SALE)
@@ -1401,7 +1401,7 @@ async def seed_data():
             ],
             is_featured=False,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 3.10 2023 Toyota Hilux GR-Sport Double-Cabin 4WD (SALE)
@@ -1439,7 +1439,7 @@ async def seed_data():
             ],
             is_featured=False,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 3.11 2023 Toyota Coaster 30-Passenger Executive Bus (RENT - DAILY)
@@ -1482,7 +1482,7 @@ async def seed_data():
             ],
             is_featured=False,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # 3.12 2023 Audi RS7 Sportback Quattro (SALE)
@@ -1520,7 +1520,7 @@ async def seed_data():
             ],
             is_featured=True,
             is_verified_asset=True,
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # =========================================================================
@@ -1559,7 +1559,7 @@ async def seed_data():
             images=[
                 {"url": "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800", "caption": "Warehouse Interior", "is_cover": True}
             ],
-            published_at=datetime.now(timezone.utc)
+            published_at=utc_now()
         ))
 
         # Insert or update listings idempotently

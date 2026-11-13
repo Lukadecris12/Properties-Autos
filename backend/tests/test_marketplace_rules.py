@@ -1,5 +1,6 @@
 import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import timedelta
+from app.core.database import utc_now
 from decimal import Decimal
 from httpx import AsyncClient
 
@@ -156,7 +157,7 @@ async def test_anti_double_booking_prevention(db_session):
     await db_session.commit()
     await db_session.refresh(listing)
 
-    now = datetime.now(timezone.utc)
+    now = utc_now()
     day_1 = now + timedelta(days=2)
     day_5 = now + timedelta(days=6)
 

@@ -7,7 +7,7 @@ from sqlalchemy.future import select
 from sqlalchemy import desc, or_, case
 from sqlalchemy.orm import selectinload
 
-from app.core.database import get_db
+from app.core.database import get_db, utc_now
 from app.core.dependencies import get_current_user, get_optional_current_user
 from app.models.user import User
 from app.models.listing import Listing, ListingAvailability
@@ -80,7 +80,7 @@ async def create_listing(
         videos=listing_in.videos,
         virtual_tour_url=listing_in.virtual_tour_url,
         available_from=listing_in.available_from,
-        published_at=datetime.now(timezone.utc)
+        published_at=utc_now()
     )
     db.add(listing)
 
