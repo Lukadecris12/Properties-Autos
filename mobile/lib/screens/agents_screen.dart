@@ -102,7 +102,7 @@ class _AgentsScreenState extends State<AgentsScreen> {
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                   onChanged: (val) => setState(() => _searchQuery = val),
                   decoration: InputDecoration(
-                    hintText: 'Search by agency, developer, or city...',
+                    hintText: 'Search by agency, developer, auto dealer, or city...',
                     hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
                     prefixIcon: const Icon(Icons.search, color: Color(0xFF10B981), size: 20),
                     filled: true,
@@ -128,6 +128,7 @@ class _AgentsScreenState extends State<AgentsScreen> {
                       _buildFilterChip('all', 'All Partners'),
                       _buildFilterChip('agent', 'Real Estate Agents'),
                       _buildFilterChip('developer', 'Certified Developers'),
+                      _buildFilterChip('dealer', 'Cars & Vehicles Dealers'),
                     ],
                   ),
                 ),

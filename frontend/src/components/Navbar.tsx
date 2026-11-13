@@ -234,17 +234,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
+            {/* BUY / RENT / INVESTMENTS */}
           </nav>
 
-          {/* Directory Links: Investments, Agents & Developers, Messages, Saved, Plans, Support, FAQ */}
+          {/* Prominent Investments Pill visible on md+ */}
+          <Link
+            href="/investments"
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all shrink-0 whitespace-nowrap"
+          >
+            <TrendingUp className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span>Investments</span>
+          </Link>
+
+          {/* Directory Links: Agents & Developers, Messages, Saved, Plans, Support, FAQ */}
           <div className="hidden xl:flex items-center gap-1 2xl:gap-1.5 text-xs font-medium text-gray-300 shrink min-w-0">
-            <Link 
-              href="/investments" 
-              className="flex items-center gap-1 hover:text-amber-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
-            >
-              <TrendingUp className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>Investments</span>
-            </Link>
             <Link 
               href="/agents" 
               className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"

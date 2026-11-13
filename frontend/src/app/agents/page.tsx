@@ -27,7 +27,7 @@ export default function AgentsPage() {
   const [agentListings, setAgentListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [listingsLoading, setListingsLoading] = useState(false);
-  const [filterRole, setFilterRole] = useState<'all' | 'agent' | 'developer'>('all');
+  const [filterRole, setFilterRole] = useState<'all' | 'agent' | 'developer' | 'dealer'>('all');
 
   useEffect(() => {
     fetchAgents();
@@ -80,18 +80,19 @@ export default function AgentsPage() {
             <span>Verified Professionals</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white">
-            Property Agents & Developers Directory
+            Agents, Developers &amp; Auto Dealers Directory
           </h1>
           <p className="text-sm text-gray-400 mt-2 max-w-2xl">
-            Browse verified real estate agents and property developers. Click on any professional to inspect their full inventory of properties and listings.
+            Browse verified real estate agents, property developers, and certified automobile dealers. Click on any professional to inspect their full inventory of properties and vehicles.
           </p>
 
           {/* Role Filter Tabs */}
-          <div className="flex gap-2 mt-6">
+          <div className="flex flex-wrap gap-2 mt-6">
             {[
               { id: 'all', label: 'All Professionals' },
-              { id: 'agent', label: 'Property Agents' },
-              { id: 'developer', label: 'Property Developers & Companies' },
+              { id: 'agent', label: 'Real Estate Agents' },
+              { id: 'developer', label: 'Certified Developers' },
+              { id: 'dealer', label: 'Cars & Vehicles Dealers' },
             ].map((tab) => (
               <button
                 key={tab.id}

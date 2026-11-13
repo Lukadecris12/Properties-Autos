@@ -1187,6 +1187,22 @@ class ApiService {
       'is_business_verified': true,
       'bio': 'Exclusive diplomatic residences, embassy zone short-lets, and armored luxury supercars in Abuja.',
     },
+    {
+      'id': 4,
+      'first_name': 'Tunde',
+      'last_name': 'Balogun',
+      'company_name': 'AutoWorx Luxury Motors',
+      'email': 'dealer@autoworx.ng',
+      'phone_number': '+2348055556666',
+      'roles': ['dealer', 'rental_company', 'seller'],
+      'active_mode': 'dealer',
+      'city': 'Ikeja',
+      'state': 'Lagos',
+      'verification_badge': 'Verified Automobile Dealer',
+      'is_identity_verified': true,
+      'is_business_verified': true,
+      'bio': 'Certified dealership for brand new, Tokunbo, and executive SUVs, sedans, and fleet rentals across Nigeria.',
+    },
   ];
 
   Future<List<Map<String, dynamic>>> fetchAgentsAndDevelopers({String? role}) async {
