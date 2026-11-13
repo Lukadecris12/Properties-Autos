@@ -97,19 +97,19 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-50 glass-panel border-b border-gray-800">
       <div className="w-full max-w-[1720px] mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-2 lg:gap-3 h-20">
+        <div className="flex items-center justify-between gap-2 2xl:gap-3 h-20">
           
           {/* Logo & Brand Identity */}
-          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 shrink-0 select-none">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden shrink-0 shadow-lg shadow-brand-500/20 border border-brand-500/30 bg-black/40">
+          <Link href="/" className="flex items-center gap-2 sm:gap-2.5 shrink-0 select-none">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden shrink-0 shadow-lg shadow-brand-500/20 border border-brand-500/30 bg-black/40">
               <img src="/logo.png" alt="Properties & Autos" className="w-full h-full object-cover" />
             </div>
             <div className="flex flex-col justify-center">
               <div className="flex items-center whitespace-nowrap leading-none">
-                <span className="text-lg sm:text-xl xl:text-2xl font-extrabold tracking-tight text-white">
+                <span className="text-lg sm:text-xl 2xl:text-2xl font-extrabold tracking-tight text-white">
                   Properties
                 </span>
-                <span className="text-lg sm:text-xl xl:text-2xl font-extrabold tracking-tight text-brand-400 ml-1.5">
+                <span className="text-lg sm:text-xl 2xl:text-2xl font-extrabold tracking-tight text-brand-400 ml-1">
                   &amp;&nbsp;Autos
                 </span>
               </div>
@@ -237,45 +237,45 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* Directory Links: Agents & Developers, Messages, Saved, Plans, Investments, FAQ */}
-          <div className="hidden xl:flex items-center gap-1 2xl:gap-1.5 text-xs font-medium text-gray-300 shrink min-w-0">
+          <div className="hidden xl:flex items-center gap-0.5 2xl:gap-1.5 text-xs font-medium text-gray-300 shrink-0">
             <Link 
               href="/agents" 
-              className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
+              className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-1.5 2xl:px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
             >
               <UserCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span>Agents<span className="hidden 2xl:inline">&nbsp;&amp;&nbsp;Developers</span></span>
             </Link>
             <Link 
               href="/messages" 
-              className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
+              className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-1.5 2xl:px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
             >
               <MessageSquare className="w-3.5 h-3.5 text-brand-400 shrink-0" />
               <span>Messages</span>
             </Link>
             <Link 
               href="/saved" 
-              className="flex items-center gap-1 hover:text-rose-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 text-gray-300 whitespace-nowrap"
+              className="flex items-center gap-1 hover:text-rose-400 transition-colors py-1 px-1.5 2xl:px-2 rounded-lg hover:bg-gray-800/50 text-gray-300 whitespace-nowrap"
             >
               <Heart className="w-3.5 h-3.5 text-rose-500 shrink-0" />
               <span>Saved</span>
             </Link>
             <Link 
               href="/pricing" 
-              className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
+              className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-1.5 2xl:px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
             >
               <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>Plans</span>
             </Link>
             <Link 
               href="/investments" 
-              className="flex items-center gap-1 hover:text-amber-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
+              className="flex items-center gap-1 hover:text-amber-400 transition-colors py-1 px-1.5 2xl:px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
             >
               <TrendingUp className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>Investments</span>
             </Link>
             <Link 
               href="/faq" 
-              className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
+              className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-1.5 2xl:px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
             >
               <HelpCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>FAQ</span>
@@ -283,7 +283,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {currentUser?.is_superuser && (
               <Link 
                 href="/admin" 
-                className="flex items-center gap-1 text-red-400 hover:text-red-300 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
+                className="flex items-center gap-1 text-red-400 hover:text-red-300 transition-colors py-1 px-1.5 2xl:px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-red-400 shrink-0" />
                 <span>Admin</span>
@@ -292,12 +292,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Quick Actions & Auth */}
-          <div className="hidden lg:flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="hidden lg:flex items-center gap-1.5 2xl:gap-2.5 shrink-0">
             
             {/* Post Request */}
             <Link
               href="/requirements/new"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-300 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 transition-all shrink-0 whitespace-nowrap"
+              className="flex items-center gap-1.5 px-2.5 2xl:px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-300 bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 transition-all shrink-0 whitespace-nowrap"
             >
               <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>Post Request</span>
@@ -306,7 +306,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Post Listing CTA */}
             <Link
               href="/listings/new"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 transition-all shadow-md shadow-brand-600/20 shrink-0 whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 2xl:px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 transition-all shadow-md shadow-brand-600/20 shrink-0 whitespace-nowrap"
             >
               <PlusCircle className="w-3.5 h-3.5 shrink-0" />
               <span>Publish Listing</span>

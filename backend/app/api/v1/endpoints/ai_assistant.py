@@ -2,12 +2,20 @@ from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from app.core.config import settings
 from app.core.dependencies import get_optional_current_user
 from app.models.user import User
 from app.schemas.common import ResponseModel
 from app.services.ai_service import AIService
 
 router = APIRouter()
+
+@router.get("/status", response_model=ResponseModel[dict])
+async def ai_status():
+    return ResponseModel(data={
+        "gemini_configured": bool(settings.GEMINI_API_KEY),
+        "gemini_model": settings.GEMINI_MODEL,
+    })
 
 class ChatMessage(BaseModel):
     role: str
