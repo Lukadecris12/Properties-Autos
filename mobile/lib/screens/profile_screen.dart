@@ -298,6 +298,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   _buildDivider(),
                   _buildMenuItem(
+                    icon: Icons.trending_up,
+                    iconColor: const Color(0xFFF59E0B),
+                    title: 'Property Investments & ROI',
+                    subtitle: 'Explore co-investment projects & return calculator',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const InvestmentsScreen()),
+                      );
+                    },
+                  ),
+                  _buildDivider(),
+                  _buildMenuItem(
                     icon: Icons.storefront,
                     iconColor: const Color(0xFF10B981),
                     title: 'Agents & Developers Directory',

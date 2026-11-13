@@ -50,6 +50,17 @@ export default function InvestmentsPage() {
     loadInvestments();
   }, [selectedCategory]);
 
+  useEffect(() => {
+    if (!activeInvestment) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveInvestment(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeInvestment]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     loadInvestments();
@@ -244,12 +255,20 @@ export default function InvestmentsPage() {
 
         {/* Investment Return Calculator & Commitment Modal */}
         {activeInvestment && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-[#111827] border border-gray-800 rounded-2xl w-full max-w-xl p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+          <div
+            onClick={() => setActiveInvestment(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#111827] border border-gray-800 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 my-auto"
+            >
               
               <button
+                type="button"
+                aria-label="Close modal"
                 onClick={() => setActiveInvestment(null)}
-                className="absolute top-5 right-5 p-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-white"
+                className="sticky top-0 float-right z-10 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>

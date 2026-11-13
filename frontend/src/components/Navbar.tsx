@@ -236,8 +236,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           </nav>
 
-          {/* Directory Links: Agents & Developers, Messages, Saved, Plans, Support, FAQ */}
+          {/* Directory Links: Investments, Agents & Developers, Messages, Saved, Plans, Support, FAQ */}
           <div className="hidden xl:flex items-center gap-1 2xl:gap-1.5 text-xs font-medium text-gray-300 shrink min-w-0">
+            <Link 
+              href="/investments" 
+              className="flex items-center gap-1 hover:text-amber-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
+            >
+              <TrendingUp className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Investments</span>
+            </Link>
             <Link 
               href="/agents" 
               className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
@@ -433,6 +440,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {/* Menu Group 2: High Value Ecosystem */}
                     <div className="py-2 space-y-1">
                       <Link
+                        href="/investments"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs text-gray-200 hover:text-white hover:bg-gray-800/70 transition-all group"
+                      >
+                        <TrendingUp className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                        <span className="font-semibold">Property Investments &amp; ROI</span>
+                      </Link>
+                      <Link
                         href="/agents"
                         onClick={() => setProfileDropdownOpen(false)}
                         className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs text-gray-200 hover:text-white hover:bg-gray-800/70 transition-all group"
@@ -608,6 +623,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <MessageSquare className="w-4 h-4 text-brand-400" />
               <span>Direct Messages Inbox</span>
+            </Link>
+            <Link
+              href="/investments"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 p-2.5 rounded-xl bg-gray-900 text-xs font-medium text-gray-200 border border-gray-800"
+            >
+              <TrendingUp className="w-4 h-4 text-amber-400" />
+              <span>Property Investments &amp; ROI</span>
             </Link>
             <Link
               href="/pricing"
