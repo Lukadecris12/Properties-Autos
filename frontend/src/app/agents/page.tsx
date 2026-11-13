@@ -92,7 +92,7 @@ export default function AgentsPage() {
               { id: 'all', label: 'All Professionals' },
               { id: 'agent', label: 'Real Estate Agents' },
               { id: 'developer', label: 'Certified Developers' },
-              { id: 'dealer', label: 'Cars & Vehicles Dealers' },
+              { id: 'dealer', label: 'Car Dealers & Companies' },
             ].map((tab) => (
               <button
                 key={tab.id}
