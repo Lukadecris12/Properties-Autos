@@ -123,6 +123,6 @@ jobs:
             set -e
             cd ~/$EC2_APP_DIR
             git pull origin main
-            docker compose up -d --build
+            docker compose up -d --build --force-recreate --renew-anon-volumes
             docker image prune -f
           "

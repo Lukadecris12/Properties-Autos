@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Building2, ShieldCheck, Globe, Mail, Phone } from 'lucide-react';
+import { Building2, ShieldCheck, Globe, Mail, Phone, Headphones } from 'lucide-react';
 
 const socialLinks = [
   {
@@ -178,7 +178,12 @@ export const Footer: React.FC = () => {
             <h4 className="text-white font-semibold mb-3 tracking-wider uppercase text-[11px]">Trust & Safety</h4>
             <ul className="space-y-2">
               <li><Link href="/pricing" className="hover:text-white transition-colors text-amber-400 font-semibold">Pricing &amp; Memberships</Link></li>
-              <li><Link href="/contact" className="hover:text-white transition-colors text-brand-400 font-semibold">Contact &amp; Support Desk</Link></li>
+              <li>
+                <Link href="/contact" className="inline-flex items-center gap-1.5 hover:text-white transition-colors text-brand-400 font-semibold">
+                  <Headphones className="w-3.5 h-3.5 text-brand-400 shrink-0" />
+                  <span>Support &amp; Help Desk</span>
+                </Link>
+              </li>
               <li><Link href="/faq" className="hover:text-white transition-colors text-emerald-400 font-semibold">Frequently Asked Questions (FAQ)</Link></li>
               <li><Link href="/verification" className="hover:text-white transition-colors">Identity Verification</Link></li>
               <li><Link href="/verification" className="hover:text-white transition-colors">Business Verification</Link></li>
@@ -196,8 +201,12 @@ export const Footer: React.FC = () => {
             Regulatory Notice: Properties & Autos is a technology marketplace platform connecting verified asset owners, landlords, agents, dealers, and seekers. Automated document extraction or AI compatibility scoring does not constitute legal title guarantee or statutory ownership transfer. All property transactions should be finalized with authoritative land registry searches and accredited legal representation.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-            <p>© {new Date().getFullYear()} Properties & Autos Technologies Ltd. All rights reserved.</p>
-            <div className="flex items-center gap-6">
+            <p>© {new Date().getFullYear()} Clean Connect. All rights reserved.</p>
+            <div className="flex items-center gap-6 flex-wrap">
+              <Link href="/contact" className="inline-flex items-center gap-1.5 text-gray-300 hover:text-white font-medium">
+                <Headphones className="w-3.5 h-3.5 text-brand-400" />
+                <span>Support</span>
+              </Link>
               <Link href="/terms" className="hover:text-gray-400">Terms of Service</Link>
               <Link href="/privacy" className="hover:text-gray-400">Privacy Policy</Link>
               <Link href="/security" className="hover:text-gray-400">Security Disclosures</Link>
