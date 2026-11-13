@@ -948,16 +948,26 @@ class ApiService {
     };
   }
 
-  Future<String> queryAIConcierge(String message) async {
+  Future<String> queryAIConcierge(
+    String message, {
+    List<Map<String, String>>? history,
+  }) async {
     try {
+      final token = await getToken();
       final uri = Uri.parse('${ApiConstants.aiEndpoint}/chat');
       final response = await client
           .post(
             uri,
-            headers: {'Content-Type': 'application/json'},
-            body: json.encode({'message': message}),
+            headers: {
+              'Content-Type': 'application/json',
+              if (token != null) 'Authorization': 'Bearer $token',
+            },
+            body: json.encode({
+              'message': message,
+              if (history != null && history.isNotEmpty) 'history': history,
+            }),
           )
-          .timeout(const Duration(seconds: 4));
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
@@ -965,7 +975,7 @@ class ApiService {
       }
     } catch (_) {}
 
-    return 'Properties & Autos AI Advisory: For "$message", always verify the land title (Certificate of Occupancy or Governor\'s Consent) at the State Land Registry, or inspect vehicle custom duty papers before concluding offline payment.';
+    return 'I\'m temporarily unable to reach the live AI intelligence engine. Please check your connection and try again.';
   }
 
   // --- 6-Digit Resend OTP Onboarding ---

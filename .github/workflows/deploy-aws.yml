@@ -112,7 +112,7 @@ jobs:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           EC2_APP_DIR: ${{ secrets.EC2_APP_DIR || 'propertyhub' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL || 'gemini-3.5-flash' }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL || 'gemini-3.5-flash-lite' }}
         run: |
           if [ -z "$EC2_HOST" ] || [ -z "$EC2_SSH_KEY" ]; then
             echo "EC2_HOST or EC2_SSH_KEY GitHub secret is not configured. Skipping EC2 deployment."

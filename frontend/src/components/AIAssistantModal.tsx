@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Send, X, Bot, User, ShieldAlert, ArrowRight } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -31,6 +31,13 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [messages, loading, isOpen]);
 
   if (!isOpen) return null;
 
@@ -186,6 +193,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
               </div>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Bottom Input */}

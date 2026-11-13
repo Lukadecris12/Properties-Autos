@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     AI_MODEL: str = "gpt-4o-mini"
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-3.5-flash"
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
 
     # Payment Gateways (Paystack)
     PAYSTACK_SECRET_KEY: str = ""

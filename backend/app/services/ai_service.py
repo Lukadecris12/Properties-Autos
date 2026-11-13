@@ -37,6 +37,7 @@ class AIService:
         json_mode: bool = False,
         timeout: float = 45.0,
         contents: Optional[List[Dict[str, Any]]] = None,
+        max_output_tokens: Optional[int] = None,
     ) -> Optional[str]:
         """
         Executes a call to the Google Gemini API with fallback handling.
@@ -45,17 +46,19 @@ class AIService:
         if not api_key:
             return None
 
-        model = settings.GEMINI_MODEL or "gemini-3.5-flash"
+        model = settings.GEMINI_MODEL or "gemini-3.5-flash-lite"
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
         request_contents = contents or [{"role": "user", "parts": [{"text": prompt or ""}]}]
 
         generation_config: Dict[str, Any] = {
             "temperature": 0.3,
-            # Disable internal thinking tokens by default so chat responses return quickly
-            # instead of timing out behind 20-30s of reasoning latency.
-            "thinkingConfig": {"thinkingBudget": 0},
         }
+        # Disable thinking budget on thinking-capable flash models (not flash-lite, which rejects it)
+        if "lite" not in model.lower():
+            generation_config["thinkingConfig"] = {"thinkingBudget": 0}
+        if max_output_tokens is not None:
+            generation_config["maxOutputTokens"] = max_output_tokens
         if json_mode:
             generation_config["responseMimeType"] = "application/json"
 
@@ -252,6 +255,7 @@ class AIService:
                 system_instruction=sys_prompt,
                 json_mode=True,
                 contents=contents,
+                max_output_tokens=700,
             )
             if raw:
                 data = cls._parse_json_response(raw)

@@ -16,10 +16,11 @@ class _ChatMessage {
   _ChatMessage({required this.isUser, required this.text});
 }
 
-class _AIChatScreenState extends State<AIChatScreen> {
+class _AIChatScreenState extends State<AIChatScreen> with WidgetsBindingObserver {
   final ApiService _apiService = ApiService();
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _inputFocusNode = FocusNode();
   final List<_ChatMessage> _messages = [
     _ChatMessage(
       isUser: false,
@@ -28,11 +29,43 @@ class _AIChatScreenState extends State<AIChatScreen> {
   ];
   bool _loading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _inputFocusNode.addListener(() {
+      if (_inputFocusNode.hasFocus) {
+        Future.delayed(const Duration(milliseconds: 250), _scrollToBottom);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _textController.dispose();
+    _scrollController.dispose();
+    _inputFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    _scrollToBottom();
+  }
+
   void _sendMessage([String? quickQuery]) async {
     final text = quickQuery ?? _textController.text.trim();
     if (text.isEmpty || _loading) return;
 
     if (quickQuery == null) _textController.clear();
+
+    final recent = _messages.length > 1 ? _messages.sublist(1) : <_ChatMessage>[];
+    final sliced = recent.length > 10 ? recent.sublist(recent.length - 10) : recent;
+    final history = sliced
+        .map((m) => {'role': m.isUser ? 'user' : 'model', 'text': m.text})
+        .toList();
 
     setState(() {
       _messages.add(_ChatMessage(isUser: true, text: text));
@@ -42,7 +75,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
     _scrollToBottom();
 
     try {
-      final answer = await _apiService.queryAIConcierge(text);
+      final answer = await _apiService.queryAIConcierge(text, history: history);
       if (mounted) {
         setState(() {
           _messages.add(_ChatMessage(isUser: false, text: answer));
@@ -54,15 +87,17 @@ class _AIChatScreenState extends State<AIChatScreen> {
         setState(() {
           _messages.add(_ChatMessage(
             isUser: false,
-            text: "Advisory: Before executing transactions, ensure you verify documents (C of O / Governor's Consent) with the state land registry and inspect vehicle papers.",
+            text: "I'm temporarily unable to reach the live AI intelligence engine. Please try again.",
           ));
         });
+        _scrollToBottom();
       }
     } finally {
       if (mounted) {
         setState(() {
           _loading = false;
         });
+        _scrollToBottom();
       }
     }
   }
@@ -72,7 +107,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
         );
       }
@@ -177,6 +212,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: TextField(
                         controller: _textController,
+                        focusNode: _inputFocusNode,
                         style: const TextStyle(color: Colors.white, fontSize: 13),
                         decoration: const InputDecoration(
                           hintText: 'Ask Chat AI anything...',
