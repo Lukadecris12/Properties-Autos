@@ -38,13 +38,18 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
     const query = textToSend || input;
     if (!query.trim() || loading) return;
 
+    const history = messages.slice(1).slice(-10).map((m) => ({
+      role: m.sender === 'user' ? ('user' as const) : ('model' as const),
+      text: m.text,
+    }));
+
     const userMsg: Message = { sender: 'user', text: query };
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setLoading(true);
 
     try {
-      const res = await api.chatWithAI(query);
+      const res = await api.chatWithAI(query, history);
       const aiData = res.data;
       const aiMsg: Message = {
         sender: 'ai',
@@ -64,6 +69,28 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
     } finally {
       setLoading(false);
     }
+  };
+
+  const renderFormattedText = (text: string) => {
+    return text.split('\n').map((line, lineIdx) => {
+      const cleanLine = line.replace(/^#{1,6}\s+/, '');
+      const isHeading = /^#{1,6}\s+/.test(line);
+      const parts = cleanLine.split(/(\*\*[^*]+\*\*)/g);
+
+      return (
+        <span key={lineIdx} className={`block ${isHeading ? 'font-bold text-white mt-1.5 mb-0.5' : ''} ${line.trim() === '' ? 'h-2' : ''}`}>
+          {parts.map((part, pIdx) =>
+            part.startsWith('**') && part.endsWith('**') ? (
+              <strong key={pIdx} className="font-semibold text-white">
+                {part.slice(2, -2)}
+              </strong>
+            ) : (
+              <React.Fragment key={pIdx}>{part}</React.Fragment>
+            )
+          )}
+        </span>
+      );
+    });
   };
 
   return (
@@ -114,7 +141,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
                     : 'bg-gray-800/90 text-gray-200 border border-gray-700/60'
                 }`}
               >
-                <p className="whitespace-pre-line">{m.text}</p>
+                <div className="space-y-0.5">{renderFormattedText(m.text)}</div>
 
                 {/* Suggested Follow-up Actions */}
                 {m.suggestedActions && m.suggestedActions.length > 0 && (

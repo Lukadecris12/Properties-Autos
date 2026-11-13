@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
@@ -9,8 +9,13 @@ from app.services.ai_service import AIService
 
 router = APIRouter()
 
+class ChatMessage(BaseModel):
+    role: str
+    text: str
+
 class ChatRequest(BaseModel):
     message: str
+    history: Optional[List[ChatMessage]] = None
     context: Optional[dict] = None
 
 class EnhanceListingRequest(BaseModel):
@@ -28,8 +33,15 @@ async def ai_chat_concierge(
     req: ChatRequest,
     current_user: Optional[User] = Depends(get_optional_current_user)
 ):
-    user_context = {"user_id": current_user.id, "active_mode": current_user.active_mode} if current_user else None
-    response = AIService.answer_concierge_query(req.message, user_context=user_context)
+    user_context = {"user_id": current_user.id, "active_mode": current_user.active_mode} if current_user else {}
+    if req.context:
+        user_context.update(req.context)
+    history = [{"role": m.role, "text": m.text} for m in req.history] if req.history else None
+    response = AIService.answer_concierge_query(
+        req.message,
+        user_context=user_context or None,
+        history=history,
+    )
     return ResponseModel(data=response)
 
 @router.post("/enhance-listing", response_model=ResponseModel[dict])

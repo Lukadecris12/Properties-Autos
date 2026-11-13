@@ -16,12 +16,27 @@ class AIService:
     """
 
     @classmethod
+    def _parse_json_response(cls, raw: str) -> Optional[Dict[str, Any]]:
+        """Parses JSON from Gemini output, stripping optional markdown code fences."""
+        cleaned = raw.strip()
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+            cleaned = re.sub(r"\s*```$", "", cleaned)
+        try:
+            data = json.loads(cleaned)
+            return data if isinstance(data, dict) else None
+        except Exception as e:
+            logger.warning(f"Failed to parse Gemini JSON response: {e}")
+            return None
+
+    @classmethod
     def _call_gemini(
-        cls, 
-        prompt: str, 
-        system_instruction: Optional[str] = None, 
+        cls,
+        prompt: Optional[str] = None,
+        system_instruction: Optional[str] = None,
         json_mode: bool = False,
-        timeout: float = 20.0
+        timeout: float = 45.0,
+        contents: Optional[List[Dict[str, Any]]] = None,
     ) -> Optional[str]:
         """
         Executes a call to the Google Gemini API with fallback handling.
@@ -33,15 +48,20 @@ class AIService:
         model = settings.GEMINI_MODEL or "gemini-3.5-flash"
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
+        request_contents = contents or [{"role": "user", "parts": [{"text": prompt or ""}]}]
+
+        generation_config: Dict[str, Any] = {
+            "temperature": 0.3,
+            # Disable internal thinking tokens by default so chat responses return quickly
+            # instead of timing out behind 20-30s of reasoning latency.
+            "thinkingConfig": {"thinkingBudget": 0},
+        }
+        if json_mode:
+            generation_config["responseMimeType"] = "application/json"
+
         payload: Dict[str, Any] = {
-            "contents": [
-                {
-                    "parts": [{"text": prompt}]
-                }
-            ],
-            "generationConfig": {
-                "temperature": 0.3,
-            }
+            "contents": request_contents,
+            "generationConfig": generation_config,
         }
 
         if system_instruction:
@@ -49,12 +69,14 @@ class AIService:
                 "parts": [{"text": system_instruction}]
             }
 
-        if json_mode:
-            payload["generationConfig"]["responseMimeType"] = "application/json"
-
         try:
             with httpx.Client(timeout=timeout) as client:
                 res = client.post(url, json=payload)
+                # Retry once without thinkingConfig if the configured model rejects it.
+                if res.status_code == 400 and "thinkingConfig" in payload["generationConfig"]:
+                    payload["generationConfig"].pop("thinkingConfig", None)
+                    res = client.post(url, json=payload)
+
                 if res.status_code == 200:
                     data = res.json()
                     candidates = data.get("candidates", [])
@@ -189,55 +211,81 @@ class AIService:
         }
 
     @classmethod
-    def answer_concierge_query(cls, query: str, user_context: Optional[dict] = None) -> Dict[str, Any]:
+    def answer_concierge_query(
+        cls,
+        query: str,
+        user_context: Optional[dict] = None,
+        history: Optional[List[Dict[str, str]]] = None,
+    ) -> Dict[str, Any]:
         """
         Answers real estate, vehicle, and marketplace questions via Gemini with rule-based fallback.
         """
         if settings.GEMINI_API_KEY:
             sys_prompt = (
-                "You are Properties & Autos AI Concierge, the premier marketplace assistant for luxury real estate and vehicles.\n"
+                "You are Properties & Autos AI Concierge, an intelligent, knowledgeable marketplace assistant for real estate and vehicles.\n"
                 "Target markets: Nigeria (Lagos, Abuja, Port Harcourt, Ibadan, etc.) and global hubs (London, Dubai, Accra).\n"
-                "Provide accurate, authoritative, friendly guidance on:\n"
+                "Answer the user's question directly, specifically, and helpfully using real market knowledge (e.g. realistic price/rent ranges by neighborhood, title types, fees, or vehicle advice).\n"
+                "Domain expertise:\n"
                 "1. Property transactions: SALE, RENT, and LEASE strictly separated.\n"
                 "2. Land titles: Certificate of Occupancy (C of O), Governor's Consent, Gazette, Excision, Deed of Assignment, Survey Plan.\n"
                 "3. Serviced short-let apartments: nightly booking, amenities, calendar availability.\n"
                 "4. Automobile rentals & sales: daily/weekly vehicle rentals, verified dealerships, luxury fleet.\n"
                 "5. AI Matching: seekers can post a Request and receive proactive AI matches.\n"
                 "Format requirement: Return JSON with keys:\n"
-                "- answer: concise, well-formatted markdown response\n"
-                "- suggested_actions: array of 2-4 short actionable next-step buttons (e.g. 'Explore Lekki Shortlets', 'Filter by C of O')\n"
+                "- answer: concise, clear response with bullet points (use • or -) and **bold** for key figures/terms; avoid raw # markdown headings\n"
+                "- suggested_actions: array of 2-4 short actionable follow-up prompts/buttons relevant to the user's query\n"
                 "- disclaimer: 'Marketplace suggestions are advisory. Verify documentation before transactions.'"
             )
+            contents: List[Dict[str, Any]] = []
+            if history:
+                for msg in history[-10:]:
+                    text = (msg.get("text") or "").strip()
+                    if not text:
+                        continue
+                    role = "model" if msg.get("role") == "model" else "user"
+                    contents.append({"role": role, "parts": [{"text": text}]})
+
             context_str = f"\nUser Context: {json.dumps(user_context)}" if user_context else ""
-            raw = cls._call_gemini(f"User Query: {query}{context_str}", system_instruction=sys_prompt, json_mode=True)
+            contents.append({"role": "user", "parts": [{"text": f"{query}{context_str}"}]})
+
+            raw = cls._call_gemini(
+                system_instruction=sys_prompt,
+                json_mode=True,
+                contents=contents,
+            )
             if raw:
-                try:
-                    data = json.loads(raw)
-                    if "answer" in data:
-                        return {
-                            "answer": data["answer"],
-                            "suggested_actions": data.get("suggested_actions", ["Explore Marketplace", "Post Request"]),
-                            "disclaimer": data.get("disclaimer", "Marketplace suggestions are provided for advisory convenience.")
-                        }
-                except Exception as e:
-                    logger.warning(f"Failed to parse Gemini concierge JSON: {e}")
+                data = cls._parse_json_response(raw)
+                if data and "answer" in data:
+                    return {
+                        "answer": str(data["answer"]).strip(),
+                        "suggested_actions": data.get("suggested_actions", ["Explore Marketplace", "Post Request"]),
+                        "disclaimer": data.get("disclaimer", "Marketplace suggestions are provided for advisory convenience.")
+                    }
+                # If Gemini returned plain text instead of valid JSON, still surface its real answer.
+                cleaned_raw = raw.strip()
+                if cleaned_raw and not cleaned_raw.startswith("{"):
+                    return {
+                        "answer": cleaned_raw,
+                        "suggested_actions": ["Explore Marketplace", "Post Request"],
+                        "disclaimer": "Marketplace suggestions are provided for advisory convenience."
+                    }
 
         # Local rule-based fallback
         query_lower = query.lower()
         if "c of o" in query_lower or "certificate of occupancy" in query_lower or "title" in query_lower:
             response_text = (
                 "A Certificate of Occupancy (C of O) is the official state-issued land title document in Nigeria certifying "
-                "the 99-year leasehold ownership granted by the State Governor. Other valid titles include Governors Consent, "
+                "the 99-year leasehold ownership granted by the State Governor. Other valid titles include Governor's Consent, "
                 "Gazette, and Excision. On Properties & Autos, you can filter land and residential listings by verified title documents."
             )
             suggested_actions = ["Search Land for Sale", "Filter by C of O"]
-        elif "short-let" in query_lower or "nightly" in query_lower:
+        elif "short-let" in query_lower or "shortlet" in query_lower or "nightly" in query_lower:
             response_text = (
                 "Properties & Autos features serviced short-let apartments with real-time calendar availability, nightly pricing, "
                 "and instant booking verification. You can specify your check-in and check-out dates to avoid conflicting reservations."
             )
             suggested_actions = ["Browse Short-let Apartments", "Check Calendar Dates"]
-        elif "rent a car" in query_lower or "vehicle rental" in query_lower:
+        elif "rent a car" in query_lower or "vehicle rental" in query_lower or "car rental" in query_lower:
             response_text = (
                 "Vehicle rentals on Properties & Autos support hourly, daily, weekly, and monthly rates. You can choose between "
                 "self-drive or chauffeur-driven options, with transparent pricing and deposit details clearly displayed."
@@ -251,10 +299,10 @@ class AIService:
             suggested_actions = ["Post Request", "View My AI Matches"]
         else:
             response_text = (
-                f"Welcome to Properties & Autos AI Concierge. I can assist you with property acquisitions, vehicle rentals, "
-                f"inspection bookings, and real-time marketplace intelligence. How can I help you find your ideal property or automobile today?"
+                "I'm temporarily unable to reach the live AI intelligence engine to answer your specific question. "
+                "Please try again in a moment, or explore our verified marketplace listings directly."
             )
-            suggested_actions = ["Explore Buy Marketplace", "Explore Rent & Lease", "AI Search"]
+            suggested_actions = ["Explore Buy Marketplace", "Explore Rent & Lease", "Post Request"]
 
         return {
             "answer": response_text,

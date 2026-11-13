@@ -147,11 +147,11 @@ class ApiClient {
     return res.json();
   }
 
-  async chatWithAI(message: string) {
+  async chatWithAI(message: string, history?: { role: 'user' | 'model'; text: string }[]) {
     const res = await fetch(`${API_BASE_URL}/ai/chat`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, history }),
     });
     if (!res.ok) throw new Error('AI query failed');
     return res.json();
