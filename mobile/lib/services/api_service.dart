@@ -894,19 +894,20 @@ class ApiService {
   Future<List<ListingModel>> fetchMyListings() async {
     try {
       final token = await getToken();
+      if (token == null || token.isEmpty) return [];
       final headers = {
         'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
+        'Authorization': 'Bearer $token',
       };
       final uri = Uri.parse('${ApiConstants.listingsEndpoint}/user/my-listings');
-      final res = await client.get(uri, headers: headers).timeout(const Duration(seconds: 5));
+      final res = await client.get(uri, headers: headers).timeout(const Duration(seconds: 15));
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
         final List items = data['data'] ?? [];
         return items.map((i) => ListingModel.fromJson(i)).toList();
       }
     } catch (_) {}
-    return _seedFallbackListings.take(5).toList();
+    return [];
   }
 
   Future<Map<String, dynamic>> postRequirement({
@@ -1060,24 +1061,6 @@ class ApiService {
       'status': 'success',
       'verification_token': 'simulated_token_${DateTime.now().millisecondsSinceEpoch}',
     };
-  }
-
-  Future<List<ListingModel>> fetchMyListings() async {
-    if (_authToken == null || _authToken!.isEmpty) return [];
-    final uri = Uri.parse('${ApiConstants.listingsEndpoint}/user/my-listings');
-    final response = await client.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_authToken',
-      },
-    ).timeout(const Duration(seconds: 15));
-    if (response.statusCode == 200) {
-      final decoded = json.decode(response.body);
-      final List items = decoded['data'] ?? [];
-      return items.map((item) => ListingModel.fromJson(item)).toList();
-    }
-    throw Exception('Failed to load your listings');
   }
 
   Future<void> deleteListing(int listingId) async {
