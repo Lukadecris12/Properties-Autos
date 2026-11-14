@@ -12,45 +12,7 @@ class AdminScreen extends StatefulWidget {
 class _AdminScreenState extends State<AdminScreen> {
   final ApiService _apiService = ApiService();
   late Future<Map<String, dynamic>> _adminStatsFuture;
-
-  final List<Map<String, dynamic>> _mockUsers = [
-    {
-      'id': 1,
-      'name': 'David Adeyemi',
-      'email': 'david.apex@propertyhub.ng',
-      'role': 'AGENT',
-      'location': 'Lekki Phase 1, Lagos',
-      'verified': true,
-      'active': true,
-    },
-    {
-      'id': 2,
-      'name': 'Victoria Chen-Okeke',
-      'email': 'victoria@ekoatlantic.com',
-      'role': 'DEVELOPER',
-      'location': 'Victoria Island, Lagos',
-      'verified': true,
-      'active': true,
-    },
-    {
-      'id': 3,
-      'name': 'Senator Aliyu Bello',
-      'email': 'bello.invest@vip.ng',
-      'role': 'BUYER',
-      'location': 'Maitama, Abuja',
-      'verified': true,
-      'active': true,
-    },
-    {
-      'id': 4,
-      'name': 'Emeka Okafor Motors',
-      'email': 'emeka.motors@autos.ng',
-      'role': 'DEALER',
-      'location': 'Ikeja GRA, Lagos',
-      'verified': false,
-      'active': true,
-    },
-  ];
+  late Future<List<Map<String, dynamic>>> _usersFuture;
 
   @override
   void initState() {
@@ -61,6 +23,7 @@ class _AdminScreenState extends State<AdminScreen> {
   void _loadStats() {
     setState(() {
       _adminStatsFuture = _apiService.fetchAdminStats();
+      _usersFuture = _apiService.fetchAdminUsers();
     });
   }
 
@@ -116,23 +79,24 @@ class _AdminScreenState extends State<AdminScreen> {
               builder: (context, snapshot) {
                 final stats = snapshot.data?['data'] ?? {};
                 final users = stats['users'] ?? {};
+                final listings = stats['listings'] ?? {};
                 final investments = stats['investments'] ?? {};
 
                 return Column(
                   children: [
                     Row(
                       children: [
-                        _buildStatBox('Total Users', '${users['total'] ?? 48}', Icons.people, const Color(0xFF10B981)),
+                        _buildStatBox('Total Users', '${users['total'] ?? 0}', Icons.people, const Color(0xFF10B981)),
                         const SizedBox(width: 10),
-                        _buildStatBox('Developers', '${users['developers'] ?? 6}', Icons.domain, const Color(0xFFF59E0B)),
+                        _buildStatBox('Developers', '${users['developers'] ?? 0}', Icons.domain, const Color(0xFFF59E0B)),
                       ],
                     ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        _buildStatBox('Active Listings', '18 Verified', Icons.home_work, const Color(0xFF60A5FA)),
+                        _buildStatBox('Active Listings', '${listings['total'] ?? 0}', Icons.home_work, const Color(0xFF60A5FA)),
                         const SizedBox(width: 10),
-                        _buildStatBox('Co-Investments', '₦830M Raised', Icons.trending_up, const Color(0xFFA78BFA)),
+                        _buildStatBox('Investments', '${investments['active_projects'] ?? 0}', Icons.trending_up, const Color(0xFFA78BFA)),
                       ],
                     ),
                   ],
@@ -148,7 +112,29 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
             const SizedBox(height: 10),
 
-            ..._mockUsers.map((u) => _buildUserCard(u)).toList(),
+            FutureBuilder<List<Map<String, dynamic>>>(
+              future: _usersFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: CircularProgressIndicator(color: Color(0xFF10B981)),
+                    ),
+                  );
+                }
+                final usersList = snapshot.data ?? [];
+                if (usersList.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Text('No registered users found.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  );
+                }
+                return Column(
+                  children: usersList.map((u) => _buildUserCard(u)).toList(),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -179,8 +165,14 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Widget _buildUserCard(Map<String, dynamic> user) {
-    final bool isVerified = user['verified'] == true;
-    final bool isActive = user['active'] == true;
+    final bool isVerified = user['is_identity_verified'] == true || user['verified'] == true;
+    final bool isActive = user['is_active'] ?? (user['active'] == true);
+    final String name = (user['company_name']?.toString().isNotEmpty == true)
+        ? user['company_name'].toString()
+        : '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim();
+    final String displayName = name.isNotEmpty ? name : (user['email']?.toString() ?? 'User #${user['id']}');
+    final String roleLabel = (user['active_mode'] ?? user['role'] ?? 'BUYER').toString().toUpperCase();
+    final String locationLabel = [user['city'], user['state']].where((e) => e != null && e.toString().isNotEmpty).join(', ');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -200,8 +192,8 @@ class _AdminScreenState extends State<AdminScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(user['name'], style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-                    Text(user['email'], style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    Text(displayName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text(user['email']?.toString() ?? '', style: const TextStyle(fontSize: 11, color: Colors.grey)),
                   ],
                 ),
               ),
@@ -211,54 +203,24 @@ class _AdminScreenState extends State<AdminScreen> {
                   color: const Color(0xFF064E3B),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(user['role'], style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF34D399))),
+                child: Text(roleLabel, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF34D399))),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(user['location'], style: const TextStyle(fontSize: 11, color: Colors.grey)),
-          const SizedBox(height: 12),
+          Text(locationLabel.isNotEmpty ? locationLabel : 'Nigeria', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: isVerified ? Colors.grey : const Color(0xFF10B981)),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                onPressed: () {
-                  setState(() {
-                    user['verified'] = !isVerified;
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Toggled verification for ${user['name']}')),
-                  );
-                },
-                child: Text(
-                  isVerified ? 'Revoke Verify' : 'Approve Verify',
-                  style: TextStyle(fontSize: 11, color: isVerified ? Colors.grey : const Color(0xFF10B981)),
-                ),
+              Text(
+                isVerified ? 'Verified' : 'Unverified',
+                style: TextStyle(fontSize: 11, color: isVerified ? const Color(0xFF10B981) : Colors.grey),
               ),
-              const SizedBox(width: 8),
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: isActive ? Colors.redAccent : const Color(0xFF10B981)),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                onPressed: () {
-                  setState(() {
-                    user['active'] = !isActive;
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Toggled status for ${user['name']}')),
-                  );
-                },
-                child: Text(
-                  isActive ? 'Suspend' : 'Activate',
-                  style: TextStyle(fontSize: 11, color: isActive ? Colors.redAccent : const Color(0xFF10B981)),
-                ),
+              const SizedBox(width: 12),
+              Text(
+                isActive ? 'Active' : 'Suspended',
+                style: TextStyle(fontSize: 11, color: isActive ? const Color(0xFF10B981) : Colors.redAccent),
               ),
             ],
           ),

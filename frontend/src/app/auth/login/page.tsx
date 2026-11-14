@@ -237,37 +237,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Seed demo credentials helper */}
-          <div className="p-3.5 rounded-2xl bg-gray-950/70 border border-gray-800 text-[11px] space-y-1.5">
-            <div className="font-semibold text-gray-300">Demo Accounts Available:</div>
-            <div className="text-gray-400 flex justify-between">
-              <span>Agent: <strong className="text-emerald-400">agent@apexproperties.ng</strong></span>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('agent@apexproperties.ng');
-                  setPassword('AgentPass123!');
-                }}
-                className="text-brand-400 hover:underline"
-              >
-                Autofill
-              </button>
-            </div>
-            <div className="text-gray-400 flex justify-between">
-              <span>Seeker: <strong className="text-gold-400">seeker@gmail.com</strong></span>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('seeker@gmail.com');
-                  setPassword('SeekerPass123!');
-                }}
-                className="text-brand-400 hover:underline"
-              >
-                Autofill
-              </button>
-            </div>
-          </div>
-
           <div className="text-center text-xs text-gray-400 border-t border-gray-800 pt-4">
             Don't have an account yet?{' '}
             <Link href="/auth/register" className="font-semibold text-brand-400 hover:text-brand-300 underline">

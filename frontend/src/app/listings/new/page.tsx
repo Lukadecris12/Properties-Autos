@@ -372,27 +372,14 @@ export default function NewListingPage() {
     }
 
     try {
-      // In development, default to active test user if no token present
       const token = typeof window !== 'undefined' ? localStorage.getItem('propertyhub_token') : null;
-      let headers: Record<string, string> = { 'Content-Type': 'application/json' };
-
-      // If no token stored yet, obtain quick agent bearer token
       if (!token) {
-        const authRes = await fetch('/api/v1/auth/login', {
-          method: 'POST',
-          body: new URLSearchParams({
-            username: 'agent@apexproperties.ng',
-            password: 'AgentPass123!'
-          })
-        });
-        const authData = await authRes.json();
-        if (authData.access_token) {
-          headers['Authorization'] = `Bearer ${authData.access_token}`;
-          localStorage.setItem('propertyhub_token', authData.access_token);
-        }
-      } else {
-        headers['Authorization'] = `Bearer ${token}`;
+        throw new Error('Please sign in to publish a listing.');
       }
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
 
       const res = await fetch('/api/v1/listings/', {
         method: 'POST',

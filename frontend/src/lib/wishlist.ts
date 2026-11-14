@@ -4,9 +4,9 @@ export const getWishlistIds = (): number[] => {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem('propertyhub_saved_listings');
-    return raw ? JSON.parse(raw) : [1, 2]; // Default saved luxury listings for demo
+    return raw ? JSON.parse(raw) : [];
   } catch {
-    return [1, 2];
+    return [];
   }
 };
 

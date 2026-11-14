@@ -11,69 +11,25 @@ class RequestsScreen extends StatefulWidget {
 class _RequestsScreenState extends State<RequestsScreen> {
   final ApiService _apiService = ApiService();
   String _selectedCategory = 'ALL';
+  List<Map<String, dynamic>> _requests = [];
+  bool _loading = true;
 
-  final List<Map<String, dynamic>> _mockRequests = [
-    {
-      'id': 1,
-      'title': 'Need 4-Bedroom Fully Detached Duplex with Swimming Pool',
-      'category': 'RESIDENTIAL',
-      'transaction': 'BUY',
-      'budget': '₦350,000,000',
-      'location': 'Lekki Phase 1, Lagos',
-      'requester': 'Tunde B. (Pre-Approved High-Net-Worth Buyer)',
-      'time': '2 hours ago',
-      'verified': true,
-      'criteria': 'Governor\'s Consent or C of O, 2 BQ rooms, minimum 500sqm compound',
-    },
-    {
-      'id': 2,
-      'title': 'Looking for 3-Bedroom Serviced Waterfront Apartment for Rent',
-      'category': 'RESIDENTIAL',
-      'transaction': 'RENT',
-      'budget': '₦18,000,000 / year',
-      'location': 'Old Ikoyi, Lagos',
-      'requester': 'Chevron Expatriate Executive',
-      'time': '4 hours ago',
-      'verified': true,
-      'criteria': '24/7 power, swimming pool, gym, elevator, 2 parking slots',
-    },
-    {
-      'id': 3,
-      'title': 'Urgent: 1,000sqm Dry Commercial/Residential Plot',
-      'category': 'LAND',
-      'transaction': 'BUY',
-      'budget': '₦160,000,000',
-      'location': 'Epe Expressway / Alaro City axis',
-      'requester': 'Apex Prime Real Estate Fund',
-      'time': 'Yesterday',
-      'verified': true,
-      'criteria': 'Registered Survey & Gazette/C of O. Immediate physical inspection',
-    },
-    {
-      'id': 4,
-      'title': 'Want to Rent Toyota Land Cruiser LC300 (Bulletproof Preferred)',
-      'category': 'VEHICLE',
-      'transaction': 'RENT',
-      'budget': '₦350,000 / day',
-      'location': 'Abuja Central / Maitama',
-      'requester': 'Diplomatic Protocol Team',
-      'time': 'Yesterday',
-      'verified': true,
-      'criteria': '2023-2024 model, experienced protocol driver included, 7 days duration',
-    },
-    {
-      'id': 5,
-      'title': 'Direct Purchase: Mercedes-Benz G63 AMG (2022+ Clean Title)',
-      'category': 'VEHICLE',
-      'transaction': 'BUY',
-      'budget': '₦240,000,000',
-      'location': 'Victoria Island, Lagos',
-      'requester': 'Private Tech Founder',
-      'time': '2 days ago',
-      'verified': true,
-      'criteria': 'Full custom duty paid, under 15,000km, clean vin history',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadRequests();
+  }
+
+  Future<void> _loadRequests() async {
+    setState(() => _loading = true);
+    final items = await _apiService.fetchRequirements();
+    if (mounted) {
+      setState(() {
+        _requests = items;
+        _loading = false;
+      });
+    }
+  }
 
   void _showPostRequestDialog() {
     final titleController = TextEditingController();
@@ -261,6 +217,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
 
                           if (mounted) {
                             Navigator.pop(context);
+                            _loadRequests();
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 backgroundColor: Color(0xFF065F46),
@@ -284,8 +241,8 @@ class _RequestsScreenState extends State<RequestsScreen> {
   @override
   Widget build(BuildContext context) {
     final filtered = _selectedCategory == 'ALL'
-        ? _mockRequests
-        : _mockRequests.where((r) => r['category'] == _selectedCategory).toList();
+        ? _requests
+        : _requests.where((r) => (r['asset_category'] ?? r['category']) == _selectedCategory).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
@@ -364,14 +321,23 @@ class _RequestsScreenState extends State<RequestsScreen> {
 
           // Requests List
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: filtered.length,
-              itemBuilder: (context, index) {
-                final req = filtered[index];
-                return _buildRequestCard(req);
-              },
-            ),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)))
+                : filtered.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No buyer/renter requests posted yet.',
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) {
+                          final req = filtered[index];
+                          return _buildRequestCard(req);
+                        },
+                      ),
           ),
         ],
       ),
@@ -404,7 +370,14 @@ class _RequestsScreenState extends State<RequestsScreen> {
   }
 
   Widget _buildRequestCard(Map<String, dynamic> req) {
-    final isBuy = req['transaction'] == 'BUY';
+    final tx = (req['transaction_type'] ?? req['transaction'] ?? 'BUY').toString().toUpperCase();
+    final isBuy = tx == 'BUY' || tx == 'SALE';
+    final budgetVal = req['max_budget'] ?? req['budget'] ?? '';
+    final budgetLabel = budgetVal is num ? '₦${budgetVal.toStringAsFixed(0)}' : budgetVal.toString();
+    final locationLabel = [req['preferred_city'], req['preferred_state']].where((e) => e != null && e.toString().isNotEmpty).join(', ');
+    final criteriaLabel = (req['description'] ?? req['criteria'] ?? '').toString();
+    final requesterLabel = (req['requester_name'] ?? req['requester'] ?? 'Verified Seeker').toString();
+    final timeLabel = (req['created_at'] ?? req['time'] ?? '').toString();
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
@@ -426,7 +399,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  req['transaction'],
+                  tx,
                   style: TextStyle(
                     color: isBuy ? const Color(0xFF34D399) : const Color(0xFF60A5FA),
                     fontSize: 10,
@@ -435,14 +408,14 @@ class _RequestsScreenState extends State<RequestsScreen> {
                 ),
               ),
               Text(
-                req['time'],
+                timeLabel.length > 10 ? timeLabel.substring(0, 10) : timeLabel,
                 style: const TextStyle(color: Color(0xFF6B7280), fontSize: 11),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            req['title'],
+            (req['title'] ?? '').toString(),
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 6),
@@ -451,23 +424,28 @@ class _RequestsScreenState extends State<RequestsScreen> {
               const Icon(Icons.payments, size: 14, color: Color(0xFFF59E0B)),
               const SizedBox(width: 4),
               Text(
-                'Budget: ${req['budget']}',
+                'Budget: $budgetLabel',
                 style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFF59E0B)),
               ),
               const SizedBox(width: 12),
               const Icon(Icons.location_on, size: 14, color: Colors.grey),
               const SizedBox(width: 4),
-              Text(
-                req['location'],
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
+              Expanded(
+                child: Text(
+                  locationLabel.isNotEmpty ? locationLabel : (req['location'] ?? 'Nigeria').toString(),
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Specs: ${req['criteria']}',
-            style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
-          ),
+          if (criteriaLabel.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Specs: $criteriaLabel',
+              style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -477,7 +455,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                   const Icon(Icons.verified, size: 14, color: Color(0xFF10B981)),
                   const SizedBox(width: 4),
                   Text(
-                    req['requester'],
+                    requesterLabel,
                     style: const TextStyle(fontSize: 11, color: Color(0xFF10B981)),
                   ),
                 ],
@@ -490,7 +468,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                 ),
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Opening direct proposal link for ${req['requester']}')),
+                    SnackBar(content: Text('Opening direct proposal link for $requesterLabel')),
                   );
                 },
                 child: const Text('Offer Property', style: TextStyle(color: Color(0xFF10B981), fontSize: 11)),

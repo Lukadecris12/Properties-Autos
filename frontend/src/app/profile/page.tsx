@@ -85,41 +85,10 @@ export default function ProfilePage() {
           }
         }
       } else {
-        // Fallback demo user if not logged in
-        setCurrentUser({
-          id: 1,
-          email: 'investor.prime@propertyhub.ng',
-          first_name: 'David',
-          last_name: 'Adeleke',
-          company_name: 'Apex Horizon Estates & Motors Ltd',
-          phone_number: '+234 803 123 4567',
-          city: 'Ikoyi, Lagos',
-          state: 'Lagos',
-          is_verified: true,
-          roles: ['buyer', 'seller', 'agent', 'developer'],
-          active_mode: 'buyer'
-        });
-        setEditFirstName('David');
-        setEditLastName('Adeleke');
-        setEditPhone('+234 803 123 4567');
-        setEditCity('Ikoyi, Lagos');
-        setEditState('Lagos');
+        setCurrentUser(null);
       }
     } catch (_) {
-      // Demo fallback
-      setCurrentUser({
-        id: 1,
-        email: 'investor.prime@propertyhub.ng',
-        first_name: 'David',
-        last_name: 'Adeleke',
-        company_name: 'Apex Horizon Estates & Motors Ltd',
-        phone_number: '+234 803 123 4567',
-        city: 'Ikoyi, Lagos',
-        state: 'Lagos',
-        is_verified: true,
-        roles: ['buyer', 'seller', 'agent'],
-        active_mode: 'buyer'
-      });
+      setCurrentUser(null);
     } finally {
       setLoading(false);
     }

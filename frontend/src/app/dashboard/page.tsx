@@ -80,29 +80,11 @@ function DashboardPageContent() {
     setLoading(true);
     try {
       // Retrieve the user's authenticated token
-      let token = typeof window !== 'undefined' ? localStorage.getItem('propertyhub_token') : null;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('propertyhub_token') : null;
       if (!token) {
-        const loginUsername = (activeMode === 'seller' || activeMode === 'landlord') 
-          ? 'agent@apexproperties.ng' 
-          : activeMode === 'dealer'
-          ? 'dealer@autoworx.ng'
-          : 'seeker@gmail.com';
-
-        const loginPassword = (activeMode === 'seller' || activeMode === 'landlord')
-          ? 'AgentPass123!'
-          : activeMode === 'dealer'
-          ? 'DealerPass123!'
-          : 'SeekerPass123!';
-
-        const authRes = await fetch('/api/v1/auth/login', {
-          method: 'POST',
-          body: new URLSearchParams({ username: loginUsername, password: loginPassword })
-        });
-        const authData = await authRes.json();
-        if (authData.access_token) {
-          localStorage.setItem('propertyhub_token', authData.access_token);
-          token = authData.access_token;
-        }
+        setCurrentUser(null);
+        setLoading(false);
+        return;
       }
 
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
