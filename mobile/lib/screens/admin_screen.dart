@@ -65,6 +65,32 @@ class _AdminScreenState extends State<AdminScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = ApiService.isLoggedIn && ApiService.currentUser?['is_superuser'] == true;
+    if (!isAdmin) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF0B0F19),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF111827),
+          title: const Text('Admin Console', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        ),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock_outline, color: Colors.redAccent, size: 48),
+                SizedBox(height: 12),
+                Text('Administrator Access Required', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                SizedBox(height: 6),
+                Text('Sign in with a platform administrator account to view this console.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: AppBar(

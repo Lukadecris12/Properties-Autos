@@ -200,7 +200,7 @@ export const Footer: React.FC = () => {
           <p>
             Regulatory Notice: Properties & Autos is a technology marketplace platform connecting verified asset owners, landlords, agents, dealers, and seekers. Automated document extraction or AI compatibility scoring does not constitute legal title guarantee or statutory ownership transfer. All property transactions should be finalized with authoritative land registry searches and accredited legal representation.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 sm:pr-44">
             <p>© {new Date().getFullYear()} Clean Connect. All rights reserved.</p>
             <div className="flex items-center gap-6 flex-wrap">
               <Link href="/terms" className="hover:text-gray-400">Terms of Service</Link>

@@ -56,9 +56,16 @@ export default function LoginPage() {
         localStorage.setItem('propertyhub_token', res.access_token);
         localStorage.setItem('propertyhub_saved_email', email.trim());
         localStorage.setItem('propertyhub_saved_password', password);
+        let targetRoute = '/dashboard';
+        try {
+          const me = await api.getMe();
+          if (me?.data?.is_superuser) {
+            targetRoute = '/admin';
+          }
+        } catch (_) {}
         setSuccess(true);
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push(targetRoute);
         }, 800);
       } else {
         throw new Error('Login failed: Token not received');

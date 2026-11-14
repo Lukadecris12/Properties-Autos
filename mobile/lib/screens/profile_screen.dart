@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'investments_screen.dart';
 import 'admin_screen.dart';
+import 'my_listings_screen.dart';
 import 'onboarding_screen.dart';
 import 'welcome_screen.dart';
 import 'messages_screen.dart';
@@ -255,6 +256,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(backgroundColor: const Color(0xFF065F46), content: Text('Signed in as $_displayName')),
                                   );
+                                  if (user['is_superuser'] == true) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const AdminScreen()),
+                                    );
+                                  }
                                 }
                               } catch (e) {
                                 setModalState(() {
@@ -739,18 +746,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 children: [
                   _buildMenuItem(
-                    icon: Icons.admin_panel_settings,
-                    iconColor: Colors.redAccent,
-                    title: 'Admin Console & Moderation',
-                    subtitle: 'User approvals, platform metrics & audit stream',
+                    icon: Icons.dashboard_customize_outlined,
+                    iconColor: const Color(0xFF10B981),
+                    title: 'My Dashboard & Listings',
+                    subtitle: 'Manage your published properties & vehicles',
                     onTap: () {
+                      if (!_isLoggedIn) {
+                        _showSignInDialog();
+                        return;
+                      }
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const AdminScreen()),
+                        MaterialPageRoute(builder: (context) => const MyListingsScreen()),
                       );
                     },
                   ),
                   _buildDivider(),
+                  if (_isLoggedIn && _user?['is_superuser'] == true) ...[
+                    _buildMenuItem(
+                      icon: Icons.admin_panel_settings,
+                      iconColor: Colors.redAccent,
+                      title: 'Admin Console & Moderation',
+                      subtitle: 'User approvals, platform metrics & audit stream',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AdminScreen()),
+                        );
+                      },
+                    ),
+                    _buildDivider(),
+                  ],
                   _buildMenuItem(
                     icon: Icons.forum_outlined,
                     iconColor: const Color(0xFF10B981),

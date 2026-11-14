@@ -405,7 +405,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <span className="font-semibold">My Profile &amp; Account Settings</span>
                       </Link>
                       <Link
-                        href="/dashboard"
+                        href="/dashboard?tab=my_listings"
                         onClick={() => setProfileDropdownOpen(false)}
                         className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs text-gray-200 hover:text-white hover:bg-gray-800/70 transition-all group"
                       >

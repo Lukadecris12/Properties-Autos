@@ -1062,6 +1062,41 @@ class ApiService {
     };
   }
 
+  Future<List<ListingModel>> fetchMyListings() async {
+    if (_authToken == null || _authToken!.isEmpty) return [];
+    final uri = Uri.parse('${ApiConstants.listingsEndpoint}/user/my-listings');
+    final response = await client.get(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_authToken',
+      },
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode == 200) {
+      final decoded = json.decode(response.body);
+      final List items = decoded['data'] ?? [];
+      return items.map((item) => ListingModel.fromJson(item)).toList();
+    }
+    throw Exception('Failed to load your listings');
+  }
+
+  Future<void> deleteListing(int listingId) async {
+    if (_authToken == null || _authToken!.isEmpty) {
+      throw Exception('Please sign in first');
+    }
+    final uri = Uri.parse('${ApiConstants.listingsEndpoint}/$listingId');
+    final response = await client.delete(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_authToken',
+      },
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Failed to delete listing');
+    }
+  }
+
   Future<Map<String, dynamic>> onboardingComplete(
     Map<String, dynamic> payload, {
     String? password,

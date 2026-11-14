@@ -432,7 +432,7 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* 1. Dashboard */}
                 <Link
-                  href="/dashboard"
+                  href="/dashboard?tab=my_listings"
                   className="p-4 rounded-2xl bg-gray-950/70 border border-gray-800 hover:border-brand-500/50 hover:bg-gray-900/50 transition-all flex items-start gap-3.5 group"
                 >
                   <div className="p-2.5 rounded-xl bg-brand-950/80 border border-brand-500/30 text-brand-400 group-hover:scale-105 transition-transform">

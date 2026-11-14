@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { 
   Building2, 
   Car, 
@@ -34,10 +35,25 @@ import { Listing, Booking, AIMatch, User } from '@/lib/types';
 import { api } from '@/lib/api';
 import { getCoverImageUrl, getFallbackImage } from '@/lib/media';
 
-export default function DashboardPage() {
+function DashboardPageContent() {
+  const searchParams = useSearchParams();
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [activeMode, setActiveMode] = useState<'buyer' | 'seller' | 'landlord' | 'dealer'>('buyer');
   const [activeTab, setActiveTab] = useState<'overview' | 'my_listings' | 'subscription' | 'bookings' | 'inspections' | 'verification'>('overview');
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (
+      tabParam === 'my_listings' ||
+      tabParam === 'subscription' ||
+      tabParam === 'bookings' ||
+      tabParam === 'inspections' ||
+      tabParam === 'verification' ||
+      tabParam === 'overview'
+    ) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -450,11 +466,15 @@ export default function DashboardPage() {
                 <span className="text-[11px] text-gray-500">{myMatches.length} active matches</span>
               </div>
 
-              <div className="glass-panel p-5 rounded-2xl border border-gray-800 space-y-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab('my_listings')}
+                className="glass-panel p-5 rounded-2xl border border-gray-800 hover:border-brand-500/50 space-y-1 text-left transition-all"
+              >
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Published Assets</span>
                 <div className="text-2xl font-extrabold text-white">{myListings.length}</div>
-                <span className="text-[11px] text-gray-500">Live in marketplace</span>
-              </div>
+                <span className="text-[11px] text-brand-400">Click to view my listings →</span>
+              </button>
 
               <div className="glass-panel p-5 rounded-2xl border border-gray-800 space-y-1">
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Bookings</span>
@@ -947,5 +967,13 @@ export default function DashboardPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0b0f19]" />}>
+      <DashboardPageContent />
+    </Suspense>
   );
 }
