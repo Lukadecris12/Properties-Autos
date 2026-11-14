@@ -247,88 +247,10 @@ class _RequestsScreenState extends State<RequestsScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
-      body: Column(
+      body: Stack(
         children: [
-          AutoHideCollapsibleSection(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Top AI Matching Banner
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF064E3B), Color(0xFF0F172A)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF059669).withOpacity(0.4)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.auto_awesome, color: Color(0xFF10B981), size: 24),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'AI Smart Matching',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Post what you want to buy or rent. Verified agents will match your exact budget & location.',
-                              style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        onPressed: _showPostRequestDialog,
-                        child: const Text('Post Request', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Category Chips
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      _buildCategoryFilter('ALL', 'All Requests'),
-                      const SizedBox(width: 8),
-                      _buildCategoryFilter('RESIDENTIAL', 'Houses & Apartments'),
-                      const SizedBox(width: 8),
-                      _buildCategoryFilter('LAND', 'Land'),
-                      const SizedBox(width: 8),
-                      _buildCategoryFilter('VEHICLE', 'Autos & Vehicles'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-            ),
-          ),
-
-          // Requests List
-          Expanded(
+          // Requests List (full-height underneath so scrolling never shifts)
+          Positioned.fill(
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)))
                 : filtered.isEmpty
@@ -339,13 +261,100 @@ class _RequestsScreenState extends State<RequestsScreen> {
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.fromLTRB(16, 168, 16, 16),
                         itemCount: filtered.length,
                         itemBuilder: (context, index) {
                           final req = filtered[index];
                           return _buildRequestCard(req);
                         },
                       ),
+          ),
+
+          // Floating Collapsible Post Request Banner & Category Chips
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: AutoHideCollapsibleSection(
+              child: Container(
+                color: const Color(0xFF0B0F19),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Top AI Matching Banner
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF064E3B), Color(0xFF0F172A)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFF059669).withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.auto_awesome, color: Color(0xFF10B981), size: 24),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Text(
+                                  'AI Smart Matching',
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Post what you want to buy or rent. Verified agents will match your exact budget & location.',
+                                  style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF10B981),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            onPressed: _showPostRequestDialog,
+                            child: const Text('Post Request', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Category Chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          _buildCategoryFilter('ALL', 'All Requests'),
+                          const SizedBox(width: 8),
+                          _buildCategoryFilter('RESIDENTIAL', 'Houses & Apartments'),
+                          const SizedBox(width: 8),
+                          _buildCategoryFilter('LAND', 'Land'),
+                          const SizedBox(width: 8),
+                          _buildCategoryFilter('VEHICLE', 'Autos & Vehicles'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),

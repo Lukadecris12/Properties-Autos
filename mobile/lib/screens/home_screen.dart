@@ -234,104 +234,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // --- TAB 0: EXPLORE MARKETPLACE FEED ---
   Widget _buildExploreTab() {
-    return Column(
+    return Stack(
       children: [
-        AutoHideCollapsibleSection(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 1. Mobile Search Bar
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                color: const Color(0xFF111827),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0B0F19),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF374151)),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.search, color: Colors.grey, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextField(
-                                controller: _searchController,
-                                style: const TextStyle(color: Colors.white, fontSize: 13),
-                                decoration: const InputDecoration(
-                                  hintText: 'Search city, location, or keyword...',
-                                  hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                ),
-                                onChanged: (val) {
-                                  setState(() {
-                                    _searchQuery = val.trim().toLowerCase();
-                                  });
-                                },
-                              ),
-                            ),
-                            if (_searchQuery.isNotEmpty)
-                              GestureDetector(
-                                onTap: () {
-                                  _searchController.clear();
-                                  setState(() {
-                                    _searchQuery = '';
-                                  });
-                                },
-                                child: const Icon(Icons.close, color: Colors.grey, size: 16),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // 2. Transaction Selector (BUY | RENT) - Lease removed
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                color: const Color(0xFF111827),
-                child: Row(
-                  children: [
-                    _buildTxTab('SALE', 'BUY'),
-                    const SizedBox(width: 12),
-                    _buildTxTab('RENT', 'RENT'),
-                  ],
-                ),
-              ),
-
-              // 3. Category Selector (Houses & Apartments | Commercial Property | Land | Cars & Vehicles)
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: Row(
-                  children: [
-                    _buildCategoryChip('RESIDENTIAL', 'Houses & Apartments', Icons.home),
-                    const SizedBox(width: 8),
-                    _buildCategoryChip('COMMERCIAL', 'Commercial Property', Icons.business),
-                    const SizedBox(width: 8),
-                    _buildCategoryChip('LAND', 'Land', Icons.landscape),
-                    const SizedBox(width: 8),
-                    _buildCategoryChip('VEHICLE', 'Cars & Vehicles', Icons.directions_car),
-                  ],
-                ),
-              ),
-
-              // 3B. Dynamic Subcategory / Vehicle Filter Provision
-              _buildSubcategoryProvisionBar(),
-            ],
-          ),
-        ),
-
-        // 4. Live Marketplace Listings Feed
-        Expanded(
+        // 4. Live Marketplace Listings Feed (full-height underneath so scrolling never shifts)
+        Positioned.fill(
           child: FutureBuilder<List<ListingModel>>(
             future: _listingsFuture,
             builder: (context, snapshot) {
@@ -383,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 176, 16, 16),
                 itemCount: listings.length,
                 itemBuilder: (context, index) {
                   final item = listings[index];
@@ -391,6 +297,109 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               );
             },
+          ),
+        ),
+
+        // Floating Collapsible Search, Buy/Rent & Category Header
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: AutoHideCollapsibleSection(
+            child: Container(
+              color: const Color(0xFF0B0F19),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 1. Mobile Search Bar
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    color: const Color(0xFF111827),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0B0F19),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFF374151)),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.search, color: Colors.grey, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _searchController,
+                                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                                    decoration: const InputDecoration(
+                                      hintText: 'Search city, location, or keyword...',
+                                      hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
+                                      border: InputBorder.none,
+                                      isDense: true,
+                                    ),
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _searchQuery = val.trim().toLowerCase();
+                                      });
+                                    },
+                                  ),
+                                ),
+                                if (_searchQuery.isNotEmpty)
+                                  GestureDetector(
+                                    onTap: () {
+                                      _searchController.clear();
+                                      setState(() {
+                                        _searchQuery = '';
+                                      });
+                                    },
+                                    child: const Icon(Icons.close, color: Colors.grey, size: 16),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // 2. Transaction Selector (BUY | RENT) - Lease removed
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    color: const Color(0xFF111827),
+                    child: Row(
+                      children: [
+                        _buildTxTab('SALE', 'BUY'),
+                        const SizedBox(width: 12),
+                        _buildTxTab('RENT', 'RENT'),
+                      ],
+                    ),
+                  ),
+
+                  // 3. Category Selector (Houses & Apartments | Commercial Property | Land | Cars & Vehicles)
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    child: Row(
+                      children: [
+                        _buildCategoryChip('RESIDENTIAL', 'Houses & Apartments', Icons.home),
+                        const SizedBox(width: 8),
+                        _buildCategoryChip('COMMERCIAL', 'Commercial Property', Icons.business),
+                        const SizedBox(width: 8),
+                        _buildCategoryChip('LAND', 'Land', Icons.landscape),
+                        const SizedBox(width: 8),
+                        _buildCategoryChip('VEHICLE', 'Cars & Vehicles', Icons.directions_car),
+                      ],
+                    ),
+                  ),
+
+                  // 3B. Dynamic Subcategory / Vehicle Filter Provision
+                  _buildSubcategoryProvisionBar(),
+                ],
+              ),
+            ),
           ),
         ),
       ],

@@ -30,6 +30,7 @@ class AutoHideAppBarScaffold extends StatefulWidget {
 class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
   bool _headerVisible = true;
   bool _pointerDown = false;
+  bool _isScrolling = false;
   Timer? _restoreTimer;
 
   @override
@@ -47,9 +48,9 @@ class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
 
   void _scheduleRestore() {
     _restoreTimer?.cancel();
-    if (_pointerDown) return;
-    _restoreTimer = Timer(const Duration(milliseconds: 160), () {
-      if (!_pointerDown && !_headerVisible && mounted) {
+    if (_pointerDown || _isScrolling) return;
+    _restoreTimer = Timer(const Duration(milliseconds: 200), () {
+      if (!_pointerDown && !_isScrolling && !_headerVisible && mounted) {
         setState(() => _headerVisible = true);
       }
     });
@@ -59,14 +60,16 @@ class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
     if (notification.metrics.axis != Axis.vertical) return false;
 
     if (notification is ScrollStartNotification) {
+      _isScrolling = true;
       if (notification.dragDetails != null) {
         _hideHeader();
       }
     } else if (notification is ScrollUpdateNotification) {
-      if (notification.dragDetails != null || (notification.scrollDelta?.abs() ?? 0) > 1.5) {
+      if (notification.dragDetails != null) {
         _hideHeader();
       }
     } else if (notification is ScrollEndNotification) {
+      _isScrolling = false;
       _scheduleRestore();
     }
     return false;
@@ -108,8 +111,8 @@ class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
               children: [
                 if (bar != null)
                   AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOutCubic,
+                    duration: const Duration(milliseconds: 240),
+                    curve: Curves.easeInOutCubic,
                     height: _headerVisible ? (topPadding + barHeight) : topPadding,
                     color: barBg,
                     child: ClipRect(
@@ -119,8 +122,8 @@ class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
                         maxHeight: topPadding + barHeight,
                         child: AnimatedOpacity(
                           opacity: _headerVisible ? 1.0 : 0.0,
-                          duration: const Duration(milliseconds: 180),
-                          curve: Curves.easeOut,
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeInOutCubic,
                           child: SizedBox(
                             height: topPadding + barHeight,
                             child: bar,
@@ -167,8 +170,8 @@ class AutoHideHeaderScope extends InheritedWidget {
   }
 }
 
-/// Smoothly fades out and collapses its [child] in sync with [AutoHideAppBarScaffold]
-/// whenever the user touches and slides vertically, then restores it when released.
+/// Smoothly fades and slides out its [child] in sync with [AutoHideAppBarScaffold]
+/// without resizing the underlying scrollable viewport, keeping scrolling smooth.
 class AutoHideCollapsibleSection extends StatelessWidget {
   final Widget child;
 
@@ -180,16 +183,16 @@ class AutoHideCollapsibleSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visible = AutoHideHeaderScope.isVisibleOf(context);
-    return AnimatedOpacity(
-      opacity: visible ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOut,
-      child: ClipRect(
-        child: AnimatedAlign(
-          alignment: Alignment.topCenter,
-          heightFactor: visible ? 1.0 : 0.0,
+    return IgnorePointer(
+      ignoring: !visible,
+      child: AnimatedSlide(
+        offset: visible ? Offset.zero : const Offset(0, -0.2),
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeInOutCubic,
+        child: AnimatedOpacity(
+          opacity: visible ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
+          curve: Curves.easeInOutCubic,
           child: child,
         ),
       ),
