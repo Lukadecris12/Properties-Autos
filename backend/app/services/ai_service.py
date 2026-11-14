@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import time
 from typing import Dict, Any, List, Optional
 import httpx
 
@@ -14,6 +15,7 @@ class AIService:
     Provides conversational real estate & automotive concierge,
     automated high-converting listing copywriting, and document analysis.
     """
+    last_error: Optional[str] = None
 
     @classmethod
     def _parse_json_response(cls, raw: str) -> Optional[Dict[str, Any]]:
@@ -35,62 +37,82 @@ class AIService:
         prompt: Optional[str] = None,
         system_instruction: Optional[str] = None,
         json_mode: bool = False,
-        timeout: float = 45.0,
+        timeout: float = 35.0,
         contents: Optional[List[Dict[str, Any]]] = None,
         max_output_tokens: Optional[int] = None,
+        response_schema: Optional[Dict[str, Any]] = None,
     ) -> Optional[str]:
         """
-        Executes a call to the Google Gemini API with fallback handling.
+        Executes a call to the Google Gemini API with automatic retry and model fallback.
         """
         api_key = settings.GEMINI_API_KEY
         if not api_key:
+            cls.last_error = "GEMINI_API_KEY is not configured"
             return None
 
-        model = settings.GEMINI_MODEL or "gemini-3.5-flash-lite"
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        primary_model = settings.GEMINI_MODEL or "gemini-3.5-flash-lite"
+        fallback_models = [primary_model]
+        for candidate in ("gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.5-flash"):
+            if candidate not in fallback_models:
+                fallback_models.append(candidate)
 
         request_contents = contents or [{"role": "user", "parts": [{"text": prompt or ""}]}]
 
-        generation_config: Dict[str, Any] = {
-            "temperature": 0.3,
-        }
-        # Disable thinking budget on thinking-capable flash models (not flash-lite, which rejects it)
-        if "lite" not in model.lower():
-            generation_config["thinkingConfig"] = {"thinkingBudget": 0}
-        if max_output_tokens is not None:
-            generation_config["maxOutputTokens"] = max_output_tokens
-        if json_mode:
-            generation_config["responseMimeType"] = "application/json"
+        for model_idx, model in enumerate(fallback_models):
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
-        payload: Dict[str, Any] = {
-            "contents": request_contents,
-            "generationConfig": generation_config,
-        }
-
-        if system_instruction:
-            payload["systemInstruction"] = {
-                "parts": [{"text": system_instruction}]
+            generation_config: Dict[str, Any] = {
+                "temperature": 0.3,
             }
+            if "lite" not in model.lower():
+                generation_config["thinkingConfig"] = {"thinkingBudget": 0}
+            if max_output_tokens is not None:
+                generation_config["maxOutputTokens"] = max_output_tokens
+            if json_mode:
+                generation_config["responseMimeType"] = "application/json"
+                if response_schema:
+                    generation_config["responseSchema"] = response_schema
 
-        try:
-            with httpx.Client(timeout=timeout) as client:
-                res = client.post(url, json=payload)
-                # Retry once without thinkingConfig if the configured model rejects it.
-                if res.status_code == 400 and "thinkingConfig" in payload["generationConfig"]:
-                    payload["generationConfig"].pop("thinkingConfig", None)
+            payload: Dict[str, Any] = {
+                "contents": request_contents,
+                "generationConfig": generation_config,
+            }
+            if system_instruction:
+                payload["systemInstruction"] = {
+                    "parts": [{"text": system_instruction}]
+                }
+
+            try:
+                with httpx.Client(timeout=timeout) as client:
                     res = client.post(url, json=payload)
+                    if res.status_code == 400 and (
+                        "thinkingConfig" in payload["generationConfig"]
+                        or "responseSchema" in payload["generationConfig"]
+                    ):
+                        payload["generationConfig"].pop("thinkingConfig", None)
+                        payload["generationConfig"].pop("responseSchema", None)
+                        res = client.post(url, json=payload)
 
-                if res.status_code == 200:
-                    data = res.json()
-                    candidates = data.get("candidates", [])
-                    if candidates:
-                        parts = candidates[0].get("content", {}).get("parts", [])
-                        if parts:
-                            return parts[0].get("text", "")
-                else:
-                    logger.warning(f"Gemini API returned error {res.status_code}: {res.text[:200]}")
-        except Exception as e:
-            logger.warning(f"Gemini API invocation failed: {e}")
+                    if res.status_code == 200:
+                        data = res.json()
+                        candidates = data.get("candidates", [])
+                        if candidates:
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            if parts:
+                                text = parts[0].get("text", "")
+                                if text:
+                                    cls.last_error = None
+                                    return text
+                        cls.last_error = f"{model}: empty candidates"
+                    else:
+                        cls.last_error = f"{model}: HTTP {res.status_code} {res.text[:160]}"
+                        logger.warning(f"Gemini API error ({model}) {res.status_code}: {res.text[:200]}")
+            except Exception as e:
+                cls.last_error = f"{model}: {e}"
+                logger.warning(f"Gemini API invocation failed ({model}): {e}")
+
+            if model_idx < len(fallback_models) - 1:
+                time.sleep(0.4)
 
         return None
 
@@ -251,17 +273,36 @@ class AIService:
             context_str = f"\nUser Context: {json.dumps(user_context)}" if user_context else ""
             contents.append({"role": "user", "parts": [{"text": f"{query}{context_str}"}]})
 
+            concierge_schema = {
+                "type": "OBJECT",
+                "properties": {
+                    "answer": {"type": "STRING"},
+                    "suggested_actions": {
+                        "type": "ARRAY",
+                        "items": {"type": "STRING"},
+                    },
+                    "disclaimer": {"type": "STRING"},
+                },
+                "required": ["answer", "suggested_actions", "disclaimer"],
+            }
+
             raw = cls._call_gemini(
                 system_instruction=sys_prompt,
                 json_mode=True,
                 contents=contents,
                 max_output_tokens=700,
+                response_schema=concierge_schema,
             )
             if raw:
                 data = cls._parse_json_response(raw)
-                if data and "answer" in data:
+                if data:
+                    answer_text = data.get("answer")
+                    if not answer_text:
+                        # Fallback if model returned JSON with different keys
+                        parts = [f"• **{k.replace('_', ' ').title()}**: {v}" for k, v in data.items() if isinstance(v, (str, int, float))]
+                        answer_text = "\n".join(parts) if parts else json.dumps(data)
                     return {
-                        "answer": str(data["answer"]).strip(),
+                        "answer": str(answer_text).strip(),
                         "suggested_actions": data.get("suggested_actions", ["Explore Marketplace", "Post Request"]),
                         "disclaimer": data.get("disclaimer", "Marketplace suggestions are provided for advisory convenience.")
                     }

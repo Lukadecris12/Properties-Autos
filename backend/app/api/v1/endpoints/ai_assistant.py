@@ -15,6 +15,7 @@ async def ai_status():
     return ResponseModel(data={
         "gemini_configured": bool(settings.GEMINI_API_KEY),
         "gemini_model": settings.GEMINI_MODEL,
+        "last_error": AIService.last_error,
     })
 
 class ChatMessage(BaseModel):
