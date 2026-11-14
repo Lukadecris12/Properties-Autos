@@ -1893,4 +1893,21 @@ class ApiService {
     }
     throw Exception(decoded['detail'] ?? decoded['message'] ?? 'Failed to block user');
   }
+
+  /// Upload an image file to /api/v1/media/upload and return the uploaded URL
+  Future<String> uploadMediaFile(String filePath) async {
+    final uri = Uri.parse('${ApiConstants.baseUrl}/media/upload');
+    final request = http.MultipartRequest('POST', uri);
+    request.files.add(await http.MultipartFile.fromPath('files', filePath));
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+    final decoded = json.decode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final images = decoded['images'] as List<dynamic>?;
+      if (images != null && images.isNotEmpty) {
+        return images.first['url'] as String;
+      }
+    }
+    throw Exception(decoded['detail'] ?? decoded['message'] ?? 'Failed to upload image');
+  }
 }

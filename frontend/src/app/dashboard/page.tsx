@@ -74,7 +74,7 @@ function DashboardPageContent() {
 
   useEffect(() => {
     loadDashboardData();
-  }, [activeMode]);
+  }, []);
 
   const loadDashboardData = async () => {
     setLoading(true);
@@ -188,9 +188,23 @@ function DashboardPageContent() {
     }
   };
 
-  const handleModeSwitch = async (mode: 'buyer' | 'seller' | 'landlord' | 'dealer') => {
+  const handleModeSwitch = (mode: 'buyer' | 'seller' | 'landlord' | 'dealer') => {
     setActiveMode(mode);
-    localStorage.removeItem('propertyhub_token'); // Refresh token according to role in dev
+  };
+
+  const getRegistrationRoleLabel = (user: User | null): string => {
+    const entity = (user?.entity_type || '').toLowerCase();
+    const roleMap: Record<string, string> = {
+      agent: 'Agent',
+      owner: 'Owner',
+      developer: 'Property Developer',
+      dealer: 'Auto/Car Dealer',
+      company: 'Company / Agency',
+      seeker: 'Seeker',
+      individual: user?.user_type === 'seller' ? 'Owner / Seller' : 'Seeker',
+    };
+    if (entity && roleMap[entity]) return roleMap[entity];
+    return user?.user_type === 'seller' ? 'Seller' : 'Seeker';
   };
 
   const handleDocumentSubmit = async (e: React.FormEvent) => {
@@ -236,11 +250,19 @@ function DashboardPageContent() {
         <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-gray-800 shadow-2xl mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-600 to-emerald-800 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-brand-600/30">
-              {currentUser?.first_name ? currentUser.first_name[0] : 'U'}
-            </div>
+            {(currentUser?.avatar_url || currentUser?.logo_url) ? (
+              <img
+                src={currentUser.avatar_url || currentUser.logo_url}
+                alt={currentUser.first_name || 'User'}
+                className="w-16 h-16 rounded-2xl object-cover shadow-lg shadow-brand-600/30 border border-gray-700"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-600 to-emerald-800 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-brand-600/30">
+                {currentUser?.first_name ? currentUser.first_name[0] : 'U'}
+              </div>
+            )}
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl sm:text-2xl font-bold text-white">
                   {currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : 'Marketplace User'}
                 </h1>
@@ -249,8 +271,11 @@ function DashboardPageContent() {
                   {currentUser?.verification_badge || 'Identity Verified'}
                 </span>
               </div>
-              <p className="text-xs text-gray-400 mt-1">
-                {currentUser?.email} • Unified Account • {currentUser?.city || 'Lagos'}, {currentUser?.country || 'Nigeria'}
+              <p className="text-xs font-semibold text-brand-400 mt-1">
+                {getRegistrationRoleLabel(currentUser)}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {currentUser?.email} • {currentUser?.city || 'Lagos'}, {currentUser?.country || 'Nigeria'}
               </p>
             </div>
           </div>

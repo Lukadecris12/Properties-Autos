@@ -9,12 +9,17 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
+  company_name?: string;
   phone_number?: string;
   avatar_url?: string;
+  logo_url?: string;
   country: string;
   state?: string;
   city?: string;
   address?: string;
+  user_type?: string;
+  entity_type?: string;
+  asset_interests?: string[];
   roles: string[];
   active_mode: string;
   is_identity_verified: boolean;

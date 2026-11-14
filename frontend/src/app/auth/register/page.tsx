@@ -1,115 +1,128 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { 
-  Building2, 
-  Mail, 
-  Lock, 
-  ArrowRight, 
-  ShieldCheck, 
-  CheckCircle2, 
-  User, 
-  Briefcase, 
-  Home, 
-  LandPlot, 
-  Car, 
-  Phone, 
-  MapPin, 
-  Upload, 
-  Sparkles, 
-  Search,
+import {
+  Building2,
+  Mail,
+  Lock,
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle2,
+  User,
+  Briefcase,
+  Phone,
+  Upload,
   ChevronDown,
   RefreshCw,
   X,
   Eye,
-  EyeOff
+  EyeOff,
+  Camera
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { COUNTRIES, CountryData } from '@/lib/geoData';
 
+type AssetOption = 'residential' | 'land' | 'vehicle';
+type RoleOption = 'seeker' | 'owner' | 'agent' | 'developer' | 'dealer';
+
+const ASSET_OPTIONS: Array<{ value: AssetOption; label: string }> = [
+  { value: 'residential', label: 'Houses & Apartment' },
+  { value: 'land', label: 'Land' },
+  { value: 'vehicle', label: 'Vehicles (cars, trucks, buses, motorcycles)' },
+];
+
 export default function RegisterPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Multi-step onboarding state:
+  // 1 = Email & Password
+  // 2 = Seeker or Seller
+  // 3 = Asset Category pull-down
+  // 4 = Role / Type pull-down (based on Asset Category)
+  // 5 = First & Last Names
+  // 6 = Phone Code + Number, Country + State + City, Optional Profile Picture
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
 
   // Step 1: Credentials
-  const [step, setStep] = useState<1 | 2 | 3>(1); // 1 = credentials, 2 = OTP modal, 3 = detailed onboarding
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // Step 2: 6-Digit OTP State
-  const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
-  const [otpDebug, setOtpDebug] = useState<string | null>(null);
   const [verificationToken, setVerificationToken] = useState('');
-  const [resendingOtp, setResendingOtp] = useState(false);
 
-  // Step 3: Detailed Onboarding State
-  const [selectedRole, setSelectedRole] = useState<'seeker' | 'owner' | 'agent' | 'developer' | 'dealer'>('seeker');
-  const [assetInterests, setAssetInterests] = useState<string[]>(['residential', 'vehicle']);
+  // Step 2-4: Intent, Asset & Role
+  const [accountIntent, setAccountIntent] = useState<'seeker' | 'seller'>('seeker');
+  const [selectedAsset, setSelectedAsset] = useState<AssetOption>('residential');
+  const [selectedRole, setSelectedRole] = useState<RoleOption>('seeker');
+
+  // Step 5: Names
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [companyName, setCompanyName] = useState('');
 
-  // Phone & Geo
-  const [selectedCountry, setSelectedCountry] = useState<CountryData>(COUNTRIES[0]); // Default Nigeria
+  // Step 6: Phone, Geo & Profile Picture
+  const [selectedCountry, setSelectedCountry] = useState<CountryData>(COUNTRIES[0]);
+  const [dialCountry, setDialCountry] = useState<CountryData>(COUNTRIES[0]);
   const [countrySearch, setCountrySearch] = useState('');
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
 
   const [dialCodeSearch, setDialCodeSearch] = useState('');
   const [dialCodeDropdownOpen, setDialCodeDropdownOpen] = useState(false);
 
-  const [selectedState, setSelectedState] = useState(COUNTRIES[0].states[0]); // Default Lagos
+  const [selectedState, setSelectedState] = useState(COUNTRIES[0].states[0]);
   const [stateSearch, setStateSearch] = useState('');
   const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [city, setCity] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [logoUrl, setLogoUrl] = useState('');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Feedback & Loading
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Toggle asset interests
-  const toggleAssetInterest = (asset: string) => {
-    if (assetInterests.includes(asset)) {
-      if (assetInterests.length > 1) {
-        setAssetInterests(assetInterests.filter(a => a !== asset));
-      }
-    } else {
-      setAssetInterests([...assetInterests, asset]);
+  const roleOptions = useMemo<Array<{ value: RoleOption; label: string }>>(() => {
+    if (selectedAsset === 'vehicle') {
+      return [
+        { value: 'seeker', label: 'Seeker' },
+        { value: 'owner', label: 'Owner' },
+        { value: 'agent', label: 'Agent' },
+        { value: 'dealer', label: 'Auto/Car Dealer' },
+      ];
     }
-  };
+    return [
+      { value: 'seeker', label: 'Seeker' },
+      { value: 'owner', label: 'Owner' },
+      { value: 'agent', label: 'Agent' },
+      { value: 'developer', label: 'Property Developer' },
+    ];
+  }, [selectedAsset]);
 
-  // Filtered Countries
   const filteredCountries = useMemo(() => {
-    return COUNTRIES.filter(c => 
-      c.name.toLowerCase().includes(countrySearch.toLowerCase()) || 
-      c.code.toLowerCase().includes(countrySearch.toLowerCase())
+    const q = countrySearch.toLowerCase();
+    return COUNTRIES.filter(
+      (c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
     );
   }, [countrySearch]);
 
-  // Filtered Dial Codes
   const filteredDialCodes = useMemo(() => {
-    return COUNTRIES.filter(c => 
-      c.name.toLowerCase().includes(dialCodeSearch.toLowerCase()) || 
-      c.dialCode.includes(dialCodeSearch)
+    const q = dialCodeSearch.toLowerCase();
+    return COUNTRIES.filter(
+      (c) => c.name.toLowerCase().includes(q) || c.dialCode.includes(dialCodeSearch) || c.code.toLowerCase().includes(q)
     );
   }, [dialCodeSearch]);
 
-  // Filtered States based on selected country
   const filteredStates = useMemo(() => {
-    return selectedCountry.states.filter(s => 
-      s.toLowerCase().includes(stateSearch.toLowerCase())
-    );
+    const q = stateSearch.toLowerCase();
+    return selectedCountry.states.filter((s) => s.toLowerCase().includes(q));
   }, [selectedCountry, stateSearch]);
 
-  // Select Country: Auto-updates available states & default state
   const handleSelectCountry = (country: CountryData) => {
     setSelectedCountry(country);
     setSelectedState(country.states[0] || '');
@@ -117,7 +130,7 @@ export default function RegisterPage() {
     setCountrySearch('');
   };
 
-  // --- STEP 1: INITIATE SIGNUP (SEND RESEND 6-DIGIT OTP) ---
+  // Step 1 submit
   const handleInitiateSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
@@ -145,8 +158,8 @@ export default function RegisterPage() {
       if (res.verification_token) {
         setVerificationToken(res.verification_token);
       }
-      setSuccessMsg('Credentials confirmed! Please complete your onboarding details below.');
-      setStep(3); // Direct transition to Onboarding profile, bypassing OTP
+      setSuccessMsg('');
+      setStep(2);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to initiate signup. Please check your connection.');
     } finally {
@@ -154,82 +167,70 @@ export default function RegisterPage() {
     }
   };
 
-  // --- STEP 2: HANDLE 6-DIGIT OTP INPUT ---
-  const handleOtpDigitChange = (index: number, val: string) => {
-    if (val.length > 1) {
-      val = val.slice(-1);
-    }
-    const updated = [...otpCode];
-    updated[index] = val;
-    setOtpCode(updated);
-
-    // Auto-focus next input
-    if (val && index < 5) {
-      const nextInput = document.getElementById(`otp-input-${index + 1}`);
-      if (nextInput) nextInput.focus();
-    }
+  const handleSelectIntent = (intent: 'seeker' | 'seller') => {
+    setErrorMsg('');
+    setAccountIntent(intent);
+    setSelectedRole(intent === 'seeker' ? 'seeker' : 'owner');
+    setStep(3);
   };
 
-  const handleVerifyOtp = async () => {
+  const handleAssetContinue = (e: React.FormEvent) => {
+    e.preventDefault();
     setErrorMsg('');
-    const fullCode = otpCode.join('');
-    if (fullCode.length !== 6) {
-      setErrorMsg('Please enter the complete 6-digit verification code.');
+    // Ensure selectedRole matches the new asset's valid options
+    const validValues = (selectedAsset === 'vehicle'
+      ? ['seeker', 'owner', 'agent', 'dealer']
+      : ['seeker', 'owner', 'agent', 'developer']) as RoleOption[];
+    if (!validValues.includes(selectedRole)) {
+      setSelectedRole(accountIntent === 'seeker' ? 'seeker' : 'owner');
+    }
+    setStep(4);
+  };
+
+  const handleRoleContinue = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setStep(5);
+  };
+
+  const handleNamesContinue = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    if (!firstName.trim() || !lastName.trim()) {
+      setErrorMsg('Please enter both your First Name and Last Name.');
       return;
     }
-
-    setLoading(true);
-    try {
-      const res = await api.signupVerifyOtp(email, fullCode);
-      setVerificationToken(res.verification_token);
-      setSuccessMsg('Email verified successfully! Complete your onboarding profile.');
-      setStep(3); // Proceed to detailed onboarding form
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Invalid or expired 6-digit code.');
-    } finally {
-      setLoading(false);
-    }
+    setStep(6);
   };
 
-  const handleResendOtp = async () => {
-    setResendingOtp(true);
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     setErrorMsg('');
+    setUploadingAvatar(true);
     try {
-      const res = await api.resendOtp(email);
-      if (res.otp_debug) setOtpDebug(res.otp_debug);
-      setSuccessMsg('A fresh 6-digit verification code has been sent to your email.');
+      const res = await api.uploadMedia([file]);
+      const uploadedUrl = res.images?.[0]?.url;
+      if (uploadedUrl) {
+        setAvatarUrl(uploadedUrl);
+      }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to resend code.');
+      setErrorMsg(err.message || 'Failed to upload profile picture.');
     } finally {
-      setResendingOtp(false);
+      setUploadingAvatar(false);
     }
   };
 
-  // --- STEP 3: COMPLETE ONBOARDING ---
-  const handleCompleteOnboarding = async (e: React.FormEvent) => {
+  const handleCompleteRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
-    // Strict validation based on selected role
-    if (selectedRole === 'developer' || selectedRole === 'dealer') {
-      if (!companyName.trim()) {
-        setErrorMsg(selectedRole === 'developer' ? 'Development Company / Entity Name is required.' : 'Dealership / Showroom Name is required.');
-        return;
-      }
-    } else {
-      if (!firstName.trim() || !lastName.trim()) {
-        setErrorMsg('First Name and Last Name are required.');
-        return;
-      }
-    }
-
     if (!phoneNumber.trim()) {
-      setErrorMsg('Please provide your authenticated phone number.');
+      setErrorMsg('Please enter your phone number.');
       return;
     }
-
     if (!city.trim()) {
-      setErrorMsg('Please specify your city or town.');
+      setErrorMsg('Please enter your city or town.');
       return;
     }
 
@@ -240,22 +241,20 @@ export default function RegisterPage() {
         verification_token: verificationToken || 'direct_onboarding',
         user_type: selectedRole === 'seeker' ? 'buyer' : 'seller',
         entity_type: selectedRole,
-        asset_interests: assetInterests,
-        first_name: firstName.trim() || (companyName.trim() ? companyName.trim().split(' ')[0] : 'Member'),
-        last_name: lastName.trim() || (companyName.trim() ? companyName.trim().split(' ').slice(1).join(' ') || 'User' : 'User'),
+        asset_interests: [selectedAsset],
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
         company_name: companyName.trim() || undefined,
-        country_code: selectedCountry.dialCode,
+        country_code: dialCountry.dialCode,
         phone_number: phoneNumber.trim(),
         country: selectedCountry.name,
         state: selectedState,
         city: city.trim(),
         avatar_url: avatarUrl.trim() || undefined,
-        logo_url: logoUrl.trim() || undefined,
       };
 
       const res = await api.onboardingComplete(payload);
 
-      // Save token in localStorage
       if (res.access_token) {
         localStorage.setItem('propertyhub_token', res.access_token);
       }
@@ -263,7 +262,6 @@ export default function RegisterPage() {
         localStorage.setItem('propertyhub_user', JSON.stringify(res.user));
       }
 
-      // Immediately redirect to user dashboard
       router.push('/dashboard');
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to complete onboarding. Please check all required fields.');
@@ -273,68 +271,81 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0b0f19] text-white">
-      {/* Top Bar */}
-      <div className="h-16 border-b border-gray-800 bg-[#111827]/70 backdrop-blur-md px-6 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-md shadow-brand-500/20 border border-brand-500/30 bg-black/40">
-            <img src="/logo.png" alt="Properties & Autos" className="w-full h-full object-cover" />
-          </div>
-          <span className="text-lg font-bold tracking-tight text-white">
-            Properties<span className="text-brand-400 ml-1">&amp; Autos</span>
-          </span>
-        </Link>
-        <Link href="/auth/login" className="text-xs text-gray-400 hover:text-white transition-colors">
-          Already have an account? <span className="text-brand-400 font-semibold underline">Sign In</span>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-[#0b0f19] text-gray-100 flex flex-col justify-center py-10 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <style>{`
+        @keyframes flyInBox {
+          from { opacity: 0; transform: translateY(18px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .fly-in-box {
+          animation: flyInBox 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
 
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-2xl bg-[#111827] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden p-6 sm:p-10 relative">
+      {/* Background Orbs */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl -z-10 pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-600/15 rounded-full blur-3xl -z-10 pointer-events-none" />
 
-          {/* Progress Tracker */}
-          <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-800">
-            <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                step === 1 ? 'bg-brand-600 text-white' : 'bg-emerald-600 text-white'
-              }`}>
-                1
-              </div>
-              <span className={`text-xs font-semibold ${step === 1 ? 'text-white' : 'text-gray-400'}`}>1. Credentials</span>
+      <div className="max-w-2xl w-full mx-auto">
+        {/* Brand Header */}
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-brand-500/30">
+              <Building2 className="w-5 h-5 text-white" />
             </div>
-            <div className={`h-0.5 flex-1 mx-4 ${step === 3 ? 'bg-brand-600' : 'bg-gray-800'}`} />
-            <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                step === 3 ? 'bg-brand-600 text-white' : 'bg-gray-800 text-gray-400'
-              }`}>
-                2
-              </div>
-              <span className={`text-xs font-semibold ${step === 3 ? 'text-white' : 'text-gray-400'}`}>2. Onboarding Profile</span>
+            <div>
+              <span className="font-extrabold text-xl tracking-tight text-white">Properties &amp; Autos</span>
+              <span className="block text-[10px] uppercase tracking-widest text-brand-400 font-semibold">Global Onboarding</span>
+            </div>
+          </Link>
+
+          <Link href="/auth/login" className="text-xs font-medium text-gray-400 hover:text-white transition-colors">
+            Already have an account? <span className="text-brand-400 font-bold">Sign In</span>
+          </Link>
+        </div>
+
+        {/* Main Card */}
+        <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-gray-800 shadow-2xl">
+          {/* Progress Bar (6 Steps) */}
+          <div className="mb-7">
+            <div className="flex items-center justify-between text-[11px] font-semibold text-gray-400 mb-2">
+              <span>Step {step} of 6</span>
+              <span className="text-brand-400">
+                {step === 1 && 'Account Credentials'}
+                {step === 2 && 'Seeker or Seller'}
+                {step === 3 && 'Category Selection'}
+                {step === 4 && 'Account Type'}
+                {step === 5 && 'Full Name'}
+                {step === 6 && 'Phone, Location & Photo'}
+              </span>
+            </div>
+            <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-brand-500 to-emerald-500 transition-all duration-300"
+                style={{ width: `${(step / 6) * 100}%` }}
+              />
             </div>
           </div>
 
-          {/* Error & Success Alerts */}
           {errorMsg && (
-            <div className="mb-6 p-4 rounded-xl bg-red-950/60 border border-red-800/60 text-red-200 text-xs flex items-center gap-2">
+            <div className="mb-5 p-3.5 rounded-xl bg-red-950/60 border border-red-800/60 text-red-200 text-xs flex items-center gap-2">
               <span className="font-bold">Error:</span> {errorMsg}
             </div>
           )}
           {successMsg && (
-            <div className="mb-6 p-4 rounded-xl bg-emerald-950/60 border border-emerald-800/60 text-emerald-200 text-xs flex items-center gap-2">
+            <div className="mb-5 p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-800/60 text-emerald-200 text-xs flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>{successMsg}</span>
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* STEP 1: EMAIL & PASSWORD REGISTRATION */}
-          {/* ========================================================================= */}
+          {/* STEP 1: EMAIL & PASSWORD */}
           {step === 1 && (
-            <div>
+            <div key="step1" className="fly-in-box">
               <div className="mb-6">
                 <h1 className="text-2xl font-extrabold text-white tracking-tight">Create Your Properties &amp; Autos Account</h1>
                 <p className="text-xs text-gray-400 mt-1">
-                  Enter your email and password to begin creating your Properties &amp; Autos account.
+                  Enter your email and password to begin onboarding.
                 </p>
               </div>
 
@@ -409,7 +420,7 @@ export default function RegisterPage() {
                     <RefreshCw className="w-4 h-4 animate-spin text-white" />
                   ) : (
                     <>
-                      <span>Continue to Onboarding Profile</span>
+                      <span>Continue</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -418,468 +429,290 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* STEP 2: 6-DIGIT OTP POP-UP / MODAL */}
-          {/* ========================================================================= */}
+          {/* STEP 2: SEEKER OR SELLER (FLY-IN BOXES) */}
           {step === 2 && (
-            <div className="text-center">
-              <div className="w-14 h-14 rounded-2xl bg-brand-950 border border-brand-500/30 flex items-center justify-center mx-auto mb-4">
-                <ShieldCheck className="w-7 h-7 text-brand-400" />
-              </div>
-              <h2 className="text-xl font-bold text-white mb-2">Enter 6-Digit Verification Code</h2>
-              <p className="text-xs text-gray-400 max-w-md mx-auto mb-6">
-                We sent a 6-digit confirmation code via Resend to <strong className="text-white">{email}</strong>. 
-                Please enter the code to verify your human identity.
-              </p>
-
-              {/* Dev Bypass / Debug Box if running offline/simulation */}
-              {otpDebug && (
-                <div className="inline-block mb-6 px-4 py-2 rounded-xl bg-amber-950/50 border border-amber-600/40 text-amber-300 text-xs font-mono">
-                  🔑 Simulation Code: <strong>{otpDebug}</strong>
-                </div>
-              )}
-
-              {/* 6 Digit Inputs */}
-              <div className="flex justify-center gap-2 sm:gap-3 mb-6">
-                {otpCode.map((digit, idx) => (
-                  <input
-                    key={idx}
-                    id={`otp-input-${idx}`}
-                    type="text"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Backspace' && !digit && idx > 0) {
-                        const prev = document.getElementById(`otp-input-${idx - 1}`);
-                        if (prev) prev.focus();
-                      }
-                    }}
-                    className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-bold bg-[#0b0f19] border border-gray-700 rounded-xl focus:outline-none focus:border-brand-500 text-white font-mono transition-colors"
-                  />
-                ))}
+            <div key="step2" className="fly-in-box space-y-5">
+              <div>
+                <h2 className="text-xl font-bold text-white">Are you joining as a Seeker or a Seller?</h2>
+                <p className="text-xs text-gray-400 mt-1">Select the option that describes how you will use Properties &amp; Autos.</p>
               </div>
 
-              <div className="flex flex-col gap-3 max-w-sm mx-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   type="button"
-                  onClick={handleVerifyOtp}
-                  disabled={loading}
-                  className="w-full py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm shadow-xl shadow-brand-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  onClick={() => handleSelectIntent('seeker')}
+                  className={`p-5 rounded-2xl border text-left transition-all hover:scale-[1.01] ${
+                    accountIntent === 'seeker'
+                      ? 'bg-brand-950/60 border-brand-500 shadow-lg shadow-brand-500/15'
+                      : 'bg-[#0b0f19] border-gray-800 hover:border-gray-600'
+                  }`}
                 >
-                  {loading ? (
-                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                  ) : (
-                    <>
-                      <span>Verify & Continue to Onboarding</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
+                  <div className="w-10 h-10 rounded-xl bg-brand-500/20 flex items-center justify-center text-brand-400 mb-3">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-base font-bold text-white">Seeker</h3>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Looking to buy, rent, or lease houses, land, or vehicles.
+                  </p>
                 </button>
 
-                <div className="flex items-center justify-between text-xs text-gray-400 pt-2">
-                  <span>Didn't receive the code?</span>
-                  <button
-                    type="button"
-                    onClick={handleResendOtp}
-                    disabled={resendingOtp}
-                    className="text-brand-400 font-semibold hover:underline flex items-center gap-1"
-                  >
-                    {resendingOtp ? <RefreshCw className="w-3 h-3 animate-spin" /> : null}
-                    <span>Resend Code</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSelectIntent('seller')}
+                  className={`p-5 rounded-2xl border text-left transition-all hover:scale-[1.01] ${
+                    accountIntent === 'seller'
+                      ? 'bg-emerald-950/60 border-emerald-500 shadow-lg shadow-emerald-500/15'
+                      : 'bg-[#0b0f19] border-gray-800 hover:border-gray-600'
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
+                    <Briefcase className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-base font-bold text-white">Seller</h3>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Owner, agent, developer, or dealer listing properties or vehicles.
+                  </p>
+                </button>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="text-xs text-gray-400 hover:text-white flex items-center gap-1.5"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back</span>
+              </button>
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* STEP 3: DETAILED COMPREHENSIVE ONBOARDING FORM */}
-          {/* ========================================================================= */}
+          {/* STEP 3: CATEGORY PULL-DOWN LIST */}
           {step === 3 && (
-            <div>
-              <div className="mb-6">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-950 border border-brand-500/30 text-brand-300 text-xs font-semibold mb-2">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Email Verified</span>
-                </div>
-                <h2 className="text-2xl font-extrabold text-white tracking-tight">Complete Your Onboarding Profile</h2>
+            <form key="step3" onSubmit={handleAssetContinue} className="fly-in-box space-y-5">
+              <div>
+                <h2 className="text-xl font-bold text-white">Select What You Are Interested In</h2>
                 <p className="text-xs text-gray-400 mt-1">
-                  Configure your primary marketplace role, asset preferences, and geographic parameters.
+                  Choose a category from the pull-down list below.
                 </p>
               </div>
 
-              <form onSubmit={handleCompleteOnboarding} className="space-y-6">
-
-                {/* 1. ROLE SELECTION */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">
-                    1. Select Your Role on Properties & Autos <span className="text-red-400">*</span>
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {[
-                      {
-                        id: 'seeker',
-                        title: 'Property / Auto Seeker',
-                        desc: 'Looking to buy, rent, or lease property or vehicles',
-                        icon: User,
-                      },
-                      {
-                        id: 'owner',
-                        title: 'Property / Auto Owner',
-                        desc: 'Private owner selling or leasing personal properties or cars',
-                        icon: Home,
-                      },
-                      {
-                        id: 'agent',
-                        title: 'Property / Auto Agent',
-                        desc: 'Licensed broker, agent, or representative managing listings',
-                        icon: Briefcase,
-                      },
-                      {
-                        id: 'developer',
-                        title: 'Property Developer',
-                        desc: 'Real estate developer, construction firm, or project sponsor',
-                        icon: Building2,
-                      },
-                      {
-                        id: 'dealer',
-                        title: 'Auto Dealer',
-                        desc: 'Automotive dealership, verified showroom, or leasing fleet',
-                        icon: Car,
-                      },
-                    ].map((role) => {
-                      const Icon = role.icon;
-                      const isSelected = selectedRole === role.id;
-                      return (
-                        <button
-                          key={role.id}
-                          type="button"
-                          onClick={() => setSelectedRole(role.id as any)}
-                          className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                            isSelected
-                              ? 'bg-brand-950 border-brand-500 text-brand-300 shadow-md shadow-brand-500/20 ring-1 ring-brand-500'
-                              : 'bg-gray-900 border-gray-800 text-gray-400 hover:border-gray-700'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5 mb-1.5">
-                            <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-brand-600/20 text-brand-400' : 'bg-gray-800 text-gray-400'}`}>
-                              <Icon className="w-4 h-4" />
-                            </div>
-                            <span className="text-xs font-bold text-white">{role.title}</span>
-                          </div>
-                          <p className="text-[11px] text-gray-400 leading-tight">{role.desc}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-2">
+                  Category <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedAsset}
+                    onChange={(e) => setSelectedAsset(e.target.value as AssetOption)}
+                    className="w-full appearance-none bg-[#0b0f19] border border-gray-700 rounded-xl px-4 py-3.5 pr-10 text-sm text-white focus:outline-none focus:border-brand-500"
+                  >
+                    {ASSET_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value} className="bg-gray-900 text-white">
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
+              </div>
 
-                {/* 2. ASSET INTERESTS (Houses, Land, Autos) */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">
-                    2. Primary Asset Focus <span className="text-red-400">*</span>
-                  </label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { id: 'residential', label: 'Houses & Apartments', icon: Home },
-                      { id: 'land', label: 'Land', icon: LandPlot },
-                      { id: 'vehicle', label: 'Autos & Vehicles', icon: Car },
-                    ].map((item) => {
-                      const Icon = item.icon;
-                      const isSelected = assetInterests.includes(item.id);
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => toggleAssetInterest(item.id)}
-                          className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
-                            isSelected
-                              ? 'bg-brand-950 border-brand-500 text-brand-300 shadow-md shadow-brand-500/20 ring-1 ring-brand-500'
-                              : 'bg-gray-900 border-gray-800 text-gray-400 hover:border-gray-700'
-                          }`}
-                        >
-                          <Icon className={`w-5 h-5 mb-1.5 ${isSelected ? 'text-brand-400' : 'text-gray-400'}`} />
-                          <span className="text-xs font-bold text-white">{item.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="text-xs text-gray-400 hover:text-white flex items-center gap-1.5"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back</span>
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-bold text-sm flex items-center gap-2"
+                >
+                  <span>Continue</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* STEP 4: ROLE PULL-DOWN LIST BASED ON STEP 3 */}
+          {step === 4 && (
+            <form key="step4" onSubmit={handleRoleContinue} className="fly-in-box space-y-5">
+              <div>
+                <h2 className="text-xl font-bold text-white">Select Your Role</h2>
+                <p className="text-xs text-gray-400 mt-1">
+                  Options tailored to <span className="text-brand-400 font-semibold">{ASSET_OPTIONS.find((a) => a.value === selectedAsset)?.label}</span>.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-2">
+                  Registration Type <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value as RoleOption)}
+                    className="w-full appearance-none bg-[#0b0f19] border border-gray-700 rounded-xl px-4 py-3.5 pr-10 text-sm text-white focus:outline-none focus:border-brand-500"
+                  >
+                    {roleOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value} className="bg-gray-900 text-white">
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
+              </div>
 
-                {/* 3. NAME & IDENTIFICATION FIELDS */}
-                {selectedRole === 'developer' ? (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-300 mb-1">
-                        Development Company / Firm Name <span className="text-red-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        placeholder="e.g. Apex Horizon Urban Developers Ltd"
-                        className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-300 mb-1">
-                          Primary Contact First Name
-                        </label>
-                        <input
-                          type="text"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          placeholder="John"
-                          className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-300 mb-1">
-                          Primary Contact Last Name
-                        </label>
-                        <input
-                          type="text"
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                          placeholder="Doe"
-                          className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ) : selectedRole === 'dealer' ? (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-300 mb-1">
-                        Dealership / Showroom Name <span className="text-red-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        placeholder="e.g. Prestige Auto Gallery & Motors"
-                        className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-300 mb-1">
-                          Showroom Representative First Name
-                        </label>
-                        <input
-                          type="text"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          placeholder="John"
-                          className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-300 mb-1">
-                          Showroom Representative Last Name
-                        </label>
-                        <input
-                          type="text"
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                          placeholder="Doe"
-                          className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-300 mb-1">
-                          First Name <span className="text-red-400">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          placeholder="John"
-                          className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-300 mb-1">
-                          Last Name <span className="text-red-400">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                          placeholder="Doe"
-                          className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
-                        />
-                      </div>
-                    </div>
-                    {selectedRole === 'agent' && (
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-300 mb-1">
-                          Agency / Brokerage Name (Optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={companyName}
-                          onChange={(e) => setCompanyName(e.target.value)}
-                          placeholder="e.g. Apex Realty & Luxury Motors"
-                          className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
+                  className="text-xs text-gray-400 hover:text-white flex items-center gap-1.5"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back</span>
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-bold text-sm flex items-center gap-2"
+                >
+                  <span>Continue</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
+          )}
 
-                {/* 5. PHONE NUMBER WITH SEARCHABLE COUNTRY CODE */}
+          {/* STEP 5: FIRST & LAST NAMES (FLY-IN TEXT BOXES) */}
+          {step === 5 && (
+            <form key="step5" onSubmit={handleNamesContinue} className="fly-in-box space-y-4">
+              <div>
+                <h2 className="text-xl font-bold text-white">Your Personal Details</h2>
+                <p className="text-xs text-gray-400 mt-1">Enter your first and last name as you want it displayed on your account.</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-300 mb-1">
-                    Authenticated Phone Number <span className="text-red-400">*</span>
+                  <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                    First Name <span className="text-red-400">*</span>
                   </label>
-                  <div className="flex gap-2">
-                    {/* Dialing Code Searchable Dropdown */}
-                    <div className="relative w-36">
-                      <button
-                        type="button"
-                        onClick={() => setDialCodeDropdownOpen(!dialCodeDropdownOpen)}
-                        className="w-full h-10 bg-[#0b0f19] border border-gray-800 rounded-xl px-3 flex items-center justify-between text-xs text-white"
-                      >
-                        <span>{selectedCountry.flag} {selectedCountry.dialCode}</span>
-                        <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-                      </button>
-
-                      {dialCodeDropdownOpen && (
-                        <div className="absolute top-full left-0 mt-1 w-64 bg-gray-900 border border-gray-800 rounded-xl p-2 z-50 shadow-2xl">
-                          <input
-                            type="text"
-                            value={dialCodeSearch}
-                            onChange={(e) => setDialCodeSearch(e.target.value)}
-                            placeholder="Search code or country..."
-                            className="w-full bg-gray-950 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white mb-2 focus:outline-none"
-                          />
-                          <div className="max-h-48 overflow-y-auto space-y-1">
-                            {filteredDialCodes.map((c) => (
-                              <button
-                                key={c.code}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedCountry(c);
-                                  setSelectedState(c.states[0] || '');
-                                  setDialCodeDropdownOpen(false);
-                                  setDialCodeSearch('');
-                                }}
-                                className="w-full flex items-center justify-between px-2 py-1.5 rounded text-xs text-left text-gray-300 hover:bg-gray-800 hover:text-white"
-                              >
-                                <span>{c.flag} {c.name}</span>
-                                <span className="font-mono text-brand-400">{c.dialCode}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Phone Number Input */}
-                    <div className="flex-1 relative">
-                      <Phone className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="tel"
-                        required
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="803 123 4567"
-                        className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
-                      />
-                    </div>
-                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="John"
+                    className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500"
+                  />
                 </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                    Last Name <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Doe"
+                    className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+              </div>
 
-                {/* 6. SEARCHABLE COUNTRY & DYNAMICALLY POPULATED STATE & CITY */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  
-                  {/* Searchable Country Dropdown */}
-                  <div className="relative">
-                    <label className="block text-xs font-semibold text-gray-300 mb-1">
-                      {selectedRole === 'developer' || selectedRole === 'dealer' ? 'Operating Country' : 'Residence Country'} <span className="text-red-400">*</span>
-                    </label>
+              {(selectedRole === 'agent' || selectedRole === 'developer' || selectedRole === 'dealer') && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                    {selectedRole === 'dealer'
+                      ? 'Dealership / Showroom Name (Optional)'
+                      : selectedRole === 'developer'
+                      ? 'Development Company Name (Optional)'
+                      : 'Agency / Brokerage Name (Optional)'}
+                  </label>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="e.g. Apex Properties & Autos Ltd"
+                    className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={() => setStep(4)}
+                  className="text-xs text-gray-400 hover:text-white flex items-center gap-1.5"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back</span>
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-bold text-sm flex items-center gap-2"
+                >
+                  <span>Continue</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* STEP 6: PHONE CODE + NUMBER, COUNTRY + STATE + CITY, OPTIONAL PROFILE PICTURE */}
+          {step === 6 && (
+            <form key="step6" onSubmit={handleCompleteRegistration} className="fly-in-box space-y-5">
+              <div>
+                <h2 className="text-xl font-bold text-white">Contact, Location &amp; Profile Photo</h2>
+                <p className="text-xs text-gray-400 mt-1">Complete your phone number, location, and optional profile picture.</p>
+              </div>
+
+              {/* Phone Code + Number */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                  Phone Number <span className="text-red-400">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative w-36">
                     <button
                       type="button"
-                      onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
-                      className="w-full h-10 bg-[#0b0f19] border border-gray-800 rounded-xl px-3 flex items-center justify-between text-xs text-white"
+                      onClick={() => {
+                        setDialCodeDropdownOpen(!dialCodeDropdownOpen);
+                        setCountryDropdownOpen(false);
+                        setStateDropdownOpen(false);
+                      }}
+                      className="w-full h-11 bg-[#0b0f19] border border-gray-800 rounded-xl px-3 flex items-center justify-between text-xs text-white"
                     >
-                      <span className="truncate">{selectedCountry.flag} {selectedCountry.name}</span>
-                      <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
+                      <span>{dialCountry.flag} {dialCountry.dialCode}</span>
+                      <ChevronDown className="w-3.5 h-3.5 opacity-60" />
                     </button>
 
-                    {countryDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-72 bg-gray-900 border border-gray-800 rounded-xl p-2 z-50 shadow-2xl">
-                        <input
-                          type="text"
-                          value={countrySearch}
-                          onChange={(e) => setCountrySearch(e.target.value)}
-                          placeholder="Type country name to search..."
-                          className="w-full bg-gray-950 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white mb-2 focus:outline-none"
-                        />
-                        <div className="max-h-48 overflow-y-auto space-y-1">
-                          {filteredCountries.map((c) => (
-                            <button
-                              key={c.code}
-                              type="button"
-                              onClick={() => handleSelectCountry(c)}
-                              className="w-full flex items-center justify-between px-2 py-1.5 rounded text-xs text-left text-gray-300 hover:bg-gray-800 hover:text-white"
-                            >
-                              <span>{c.flag} {c.name}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Searchable State / Province Dropdown (Populated immediately) */}
-                  <div className="relative">
-                    <label className="block text-xs font-semibold text-gray-300 mb-1">
-                      State / Province / Region <span className="text-red-400">*</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setStateDropdownOpen(!stateDropdownOpen)}
-                      className="w-full h-10 bg-[#0b0f19] border border-gray-800 rounded-xl px-3 flex items-center justify-between text-xs text-white"
-                    >
-                      <span className="truncate">{selectedState || 'Select State'}</span>
-                      <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
-                    </button>
-
-                    {stateDropdownOpen && (
+                    {dialCodeDropdownOpen && (
                       <div className="absolute top-full left-0 mt-1 w-64 bg-gray-900 border border-gray-800 rounded-xl p-2 z-50 shadow-2xl">
                         <input
                           type="text"
-                          value={stateSearch}
-                          onChange={(e) => setStateSearch(e.target.value)}
-                          placeholder="Search state/region..."
+                          value={dialCodeSearch}
+                          onChange={(e) => setDialCodeSearch(e.target.value)}
+                          placeholder="Search code or country..."
                           className="w-full bg-gray-950 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white mb-2 focus:outline-none"
                         />
                         <div className="max-h-48 overflow-y-auto space-y-1">
-                          {filteredStates.map((st) => (
+                          {filteredDialCodes.map((c) => (
                             <button
-                              key={st}
+                              key={c.code}
                               type="button"
                               onClick={() => {
-                                setSelectedState(st);
-                                setStateDropdownOpen(false);
-                                setStateSearch('');
+                                setDialCountry(c);
+                                setDialCodeDropdownOpen(false);
+                                setDialCodeSearch('');
                               }}
-                              className="w-full px-2 py-1.5 rounded text-xs text-left text-gray-300 hover:bg-gray-800 hover:text-white"
+                              className="w-full flex items-center justify-between px-2 py-1.5 rounded text-xs text-left text-gray-300 hover:bg-gray-800 hover:text-white"
                             >
-                              {st}
+                              <span>{c.flag} {c.name}</span>
+                              <span className="font-mono text-brand-400">{c.dialCode}</span>
                             </button>
                           ))}
                         </div>
@@ -887,64 +720,205 @@ export default function RegisterPage() {
                     )}
                   </div>
 
-                  {/* City Text Input (Manual) */}
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-300 mb-1">
-                      City / Town <span className="text-red-400">*</span>
-                    </label>
+                  <div className="flex-1 relative">
+                    <Phone className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
-                      type="text"
+                      type="tel"
                       required
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      placeholder="e.g. Lekki, Ikoyi, Ikeja"
-                      className="w-full h-10 bg-[#0b0f19] border border-gray-800 rounded-xl px-3 text-xs text-white focus:outline-none focus:border-brand-500"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="803 123 4567"
+                      className="w-full h-11 bg-[#0b0f19] border border-gray-800 rounded-xl pl-9 pr-3 text-xs text-white focus:outline-none focus:border-brand-500"
                     />
                   </div>
                 </div>
+              </div>
 
-                {/* 7. PROFILE PHOTO OR COMPANY LOGO (OPTIONAL) */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-300 mb-1">
-                    {selectedRole === 'developer' || selectedRole === 'dealer' ? 'Company / Showroom Logo URL' : 'Profile Picture URL'} <span className="text-gray-500">(Optional)</span>
+              {/* Country, State & City */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Searchable Country */}
+                <div className="relative">
+                  <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                    Country <span className="text-red-400">*</span>
                   </label>
-                  <div className="relative">
-                    <Upload className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="url"
-                      value={selectedRole === 'developer' || selectedRole === 'dealer' ? logoUrl : avatarUrl}
-                      onChange={(e) => {
-                        if (selectedRole === 'developer' || selectedRole === 'dealer') {
-                          setLogoUrl(e.target.value);
-                        } else {
-                          setAvatarUrl(e.target.value);
-                        }
-                      }}
-                      placeholder="https://images.unsplash.com/... or company logo link"
-                      className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCountryDropdownOpen(!countryDropdownOpen);
+                      setStateDropdownOpen(false);
+                      setDialCodeDropdownOpen(false);
+                    }}
+                    className="w-full h-11 bg-[#0b0f19] border border-gray-800 rounded-xl px-3 flex items-center justify-between text-xs text-white"
+                  >
+                    <span className="truncate">{selectedCountry.flag} {selectedCountry.name}</span>
+                    <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
+                  </button>
+
+                  {countryDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-gray-900 border border-gray-800 rounded-xl p-2 z-50 shadow-2xl">
+                      <input
+                        type="text"
+                        value={countrySearch}
+                        onChange={(e) => setCountrySearch(e.target.value)}
+                        placeholder="Search country..."
+                        className="w-full bg-gray-950 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white mb-2 focus:outline-none"
+                      />
+                      <div className="max-h-48 overflow-y-auto space-y-1">
+                        {filteredCountries.map((c) => (
+                          <button
+                            key={c.code}
+                            type="button"
+                            onClick={() => handleSelectCountry(c)}
+                            className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs text-left text-gray-300 hover:bg-gray-800 hover:text-white"
+                          >
+                            <span>{c.flag}</span>
+                            <span>{c.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* SUBMIT BUTTON */}
+                {/* Searchable State */}
+                <div className="relative">
+                  <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                    State / Region <span className="text-red-400">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStateDropdownOpen(!stateDropdownOpen);
+                      setCountryDropdownOpen(false);
+                      setDialCodeDropdownOpen(false);
+                    }}
+                    className="w-full h-11 bg-[#0b0f19] border border-gray-800 rounded-xl px-3 flex items-center justify-between text-xs text-white"
+                  >
+                    <span className="truncate">{selectedState || 'Select State'}</span>
+                    <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
+                  </button>
+
+                  {stateDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1 w-60 bg-gray-900 border border-gray-800 rounded-xl p-2 z-50 shadow-2xl">
+                      <input
+                        type="text"
+                        value={stateSearch}
+                        onChange={(e) => setStateSearch(e.target.value)}
+                        placeholder="Search state..."
+                        className="w-full bg-gray-950 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-white mb-2 focus:outline-none"
+                      />
+                      <div className="max-h-48 overflow-y-auto space-y-1">
+                        {filteredStates.map((st) => (
+                          <button
+                            key={st}
+                            type="button"
+                            onClick={() => {
+                              setSelectedState(st);
+                              setStateDropdownOpen(false);
+                              setStateSearch('');
+                            }}
+                            className="w-full px-2 py-1.5 rounded text-xs text-left text-gray-300 hover:bg-gray-800 hover:text-white"
+                          >
+                            {st}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Manual City / Town */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                    City / Town <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="e.g. Lekki, Ikeja"
+                    className="w-full h-11 bg-[#0b0f19] border border-gray-800 rounded-xl px-3 text-xs text-white focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+              </div>
+
+              {/* Optional Profile Picture Upload */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                  Profile Picture <span className="text-gray-500">(Optional)</span>
+                </label>
+                <div className="flex items-center gap-4 p-3.5 rounded-2xl bg-[#0b0f19] border border-gray-800">
+                  {avatarUrl ? (
+                    <div className="relative">
+                      <img src={avatarUrl} alt="Profile preview" className="w-14 h-14 rounded-xl object-cover border border-gray-700" />
+                      <button
+                        type="button"
+                        onClick={() => setAvatarUrl('')}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center"
+                        aria-label="Remove profile picture"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl bg-gray-900 border border-dashed border-gray-700 flex items-center justify-center text-gray-500">
+                      <Camera className="w-5 h-5" />
+                    </div>
+                  )}
+
+                  <div className="flex-1">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      disabled={uploadingAvatar}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-white inline-flex items-center gap-2 border border-gray-700"
+                    >
+                      {uploadingAvatar ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Upload className="w-3.5 h-3.5" />
+                      )}
+                      <span>{uploadingAvatar ? 'Uploading...' : avatarUrl ? 'Change Picture' : 'Upload Profile Picture'}</span>
+                    </button>
+                    <p className="text-[11px] text-gray-500 mt-1">PNG, JPG or WEBP (optional)</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={() => setStep(5)}
+                  className="text-xs text-gray-400 hover:text-white flex items-center gap-1.5"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back</span>
+                </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 rounded-xl bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-bold text-sm shadow-xl shadow-brand-500/25 flex items-center justify-center gap-2 transition-all disabled:opacity-50 mt-6"
+                  className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-bold text-sm shadow-xl shadow-brand-500/25 flex items-center gap-2 transition-all disabled:opacity-50"
                 >
                   {loading ? (
                     <RefreshCw className="w-4 h-4 animate-spin text-white" />
                   ) : (
                     <>
-                      <span>Complete Onboarding & Enter Dashboard</span>
+                      <span>Complete Onboarding &amp; Enter Dashboard</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
                 </button>
-              </form>
-            </div>
+              </div>
+            </form>
           )}
-
         </div>
       </div>
     </div>
