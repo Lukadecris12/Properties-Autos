@@ -1103,7 +1103,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                               try {
                                 await _apiService.sendMessage({
                                   'listing_id': widget.listing.id,
-                                  if (widget.listing.userId != null) 'receiver_id': widget.listing.userId,
+                                  if (widget.listing.ownerId > 0) 'receiver_id': widget.listing.ownerId,
                                   'subject': 'Offer on ${widget.listing.title}',
                                   'content':
                                       'Offer Amount: ${widget.listing.currency} $amount\n${noteController.text.trim().isNotEmpty ? noteController.text.trim() : 'Interested in purchasing this asset.'}',
