@@ -17,6 +17,8 @@ COPY . .
 # Ensure public directory exists
 RUN mkdir -p /app/public
 
+ARG BACKEND_INTERNAL_URL=http://backend:8000
+ENV BACKEND_INTERNAL_URL=${BACKEND_INTERNAL_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
