@@ -83,7 +83,7 @@ export default function AdminDashboardPage() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
-  const checkAdminAuthAndLoad = async () => {
+  const checkAdminAuthAndLoad = async (): Promise<boolean> => {
     setLoading(true);
     try {
       const statsRes = await api.getAdminStats();
@@ -108,9 +108,11 @@ export default function AdminDashboardPage() {
       if (settingsRes.data?.default_boost_duration_hours) {
         setBoostDurationSetting(settingsRes.data.default_boost_duration_hours);
       }
+      return true;
     } catch (err) {
       console.warn('User not authenticated as admin');
       setIsAdmin(false);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -131,7 +133,10 @@ export default function AdminDashboardPage() {
       const res = await api.login(formData);
       if (res.access_token) {
         localStorage.setItem('propertyhub_token', res.access_token);
-        await checkAdminAuthAndLoad();
+        const loaded = await checkAdminAuthAndLoad();
+        if (!loaded) {
+          setLoginError('Signed in, but failed to load Admin Console data. Please refresh or check server logs.');
+        }
       }
     } catch (err: any) {
       setLoginError(err.message || 'Invalid admin credentials');

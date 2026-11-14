@@ -74,10 +74,17 @@ async def get_admin_stats(
     await ensure_admin_exists(db)
     verify_admin(current_user)
 
-    # 1. User metrics
-    users_count = (await db.execute(select(func.count(User.id)))).scalar() or 0
-    agents_count = (await db.execute(select(func.count(User.id)).where(User.roles.contains(["agent"])))).scalar() or 0
-    developers_count = (await db.execute(select(func.count(User.id)).where(User.roles.contains(["developer"])))).scalar() or 0
+    # 1. User metrics (compute role counts in Python to avoid PostgreSQL JSON @> operator errors)
+    all_user_roles = (await db.execute(select(User.roles, User.entity_type, User.active_mode))).all()
+    users_count = len(all_user_roles)
+    agents_count = sum(
+        1 for roles, entity, mode in all_user_roles
+        if "agent" in [r.lower() for r in (roles or [])] or entity == "agent" or mode == "agent"
+    )
+    developers_count = sum(
+        1 for roles, entity, mode in all_user_roles
+        if "developer" in [r.lower() for r in (roles or [])] or entity == "developer" or mode == "developer"
+    )
     verified_users_count = (await db.execute(select(func.count(User.id)).where(User.verification_badge != "Unverified"))).scalar() or 0
 
     # 2. Listing metrics
