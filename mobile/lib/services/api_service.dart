@@ -584,10 +584,14 @@ class ApiService {
   // --- Direct In-App Messaging ---
   Future<Map<String, dynamic>> sendMessage(Map<String, dynamic> data) async {
     try {
+      final token = await getToken();
       final uri = Uri.parse('${ApiConstants.messagesEndpoint}/send');
       final response = await client.post(
         uri,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
         body: json.encode(data),
       ).timeout(const Duration(seconds: 6));
       if (response.statusCode == 200 || response.statusCode == 201) {

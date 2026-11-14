@@ -771,7 +771,9 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                   item.transactionType == 'RENT' ? 'Reserve' : 'Make Offer',
                   style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                 ),
-                onPressed: () => _showBookingDialog(context),
+                onPressed: () => item.transactionType == 'RENT'
+                    ? _showBookingDialog(context)
+                    : _showMakeOfferDialog(context),
               ),
             ),
           ],
@@ -997,14 +999,156 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
     });
   }
 
+  void _showMakeOfferDialog(BuildContext context) {
+    final offerController = TextEditingController(
+      text: widget.listing.price.toStringAsFixed(0),
+    );
+    final noteController = TextEditingController();
+    bool submitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF111827),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Make an Offer',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.listing.title,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: offerController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                    decoration: InputDecoration(
+                      labelText: 'Your Offer Amount (${widget.listing.currency})',
+                      labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                      prefixText: '${widget.listing.currency == 'NGN' ? '₦' : '${widget.listing.currency} '} ',
+                      prefixStyle: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold),
+                      filled: true,
+                      fillColor: const Color(0xFF0B0F19),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF1F2937)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: noteController,
+                    maxLines: 3,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'Terms or Message to Seller (Optional)',
+                      labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                      hintText: 'e.g. Ready for immediate inspection and payment...',
+                      hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                      filled: true,
+                      fillColor: const Color(0xFF0B0F19),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF1F2937)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF059669),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: submitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          : const Icon(Icons.flash_on, color: Colors.white, size: 18),
+                      label: Text(
+                        submitting ? 'Sending Offer...' : 'Submit Offer',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      onPressed: submitting
+                          ? null
+                          : () async {
+                              final amount = offerController.text.trim();
+                              if (amount.isEmpty) return;
+                              setModalState(() => submitting = true);
+                              try {
+                                await _apiService.sendMessage({
+                                  'listing_id': widget.listing.id,
+                                  if (widget.listing.userId != null) 'receiver_id': widget.listing.userId,
+                                  'subject': 'Offer on ${widget.listing.title}',
+                                  'content':
+                                      'Offer Amount: ${widget.listing.currency} $amount\n${noteController.text.trim().isNotEmpty ? noteController.text.trim() : 'Interested in purchasing this asset.'}',
+                                });
+                                if (mounted) {
+                                  Navigator.pop(ctx);
+                                  ScaffoldMessenger.of(this.context).showSnackBar(
+                                    SnackBar(
+                                      backgroundColor: const Color(0xFF059669),
+                                      content: Text('Offer of ${widget.listing.currency} $amount sent to the seller!'),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                setModalState(() => submitting = false);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(this.context).showSnackBar(
+                                    SnackBar(
+                                      backgroundColor: Colors.redAccent,
+                                      content: Text('Failed to submit offer: $e'),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showBookingDialog(BuildContext context) {
     final now = DateTime.now();
-    DateTimeRange? selectedRange;
 
     showDateRangePicker(
       context: context,
       firstDate: now,
       lastDate: now.add(const Duration(days: 180)),
+      helpText: 'Select Check-in & Check-out Dates',
+      saveText: 'Reserve',
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
