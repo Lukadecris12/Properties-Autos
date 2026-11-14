@@ -89,7 +89,7 @@ async def get_admin_stats(
 
     # 2. Listing metrics
     listings_count = (await db.execute(select(func.count(Listing.id)))).scalar() or 0
-    verified_listings_count = (await db.execute(select(func.count(Listing.id)).where(Listing.is_verified == True))).scalar() or 0
+    verified_listings_count = (await db.execute(select(func.count(Listing.id)).where(Listing.is_verified_asset == True))).scalar() or 0
 
     # 3. Investment metrics
     inv_count = (await db.execute(select(func.count(InvestmentProperty.id)))).scalar() or 0
