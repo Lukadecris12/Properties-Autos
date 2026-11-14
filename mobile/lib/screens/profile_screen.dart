@@ -1199,7 +1199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 14),
                   Expanded(
                     child: FutureBuilder<List<Map<String, dynamic>>>(
-                      future: _apiService.fetchMyBookings(),
+                      future: ApiService().fetchMyBookings(),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)));
