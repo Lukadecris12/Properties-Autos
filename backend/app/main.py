@@ -58,13 +58,15 @@ async def lifespan(app: FastAPI):
         async with AsyncSessionLocal() as session:
             await SubscriptionService.ensure_plans_seeded(session)
             admin_res = await session.execute(select(User).where(User.email == "admin@propertyhub.ng"))
-            if not admin_res.scalars().first():
+            existing_admin = admin_res.scalars().first()
+            if not existing_admin:
                 session.add(User(
                     email="admin@propertyhub.ng",
                     phone_number="+2348011112222",
                     hashed_password=get_password_hash("AdminPass123!"),
-                    first_name="Babajide",
-                    last_name="Alabi",
+                    first_name="Platform",
+                    last_name="Administrator",
+                    company_name="PropertyHub Corporate HQ",
                     country="Nigeria",
                     state="Lagos",
                     city="Lagos",
@@ -77,6 +79,11 @@ async def lifespan(app: FastAPI):
                     is_business_verified=True,
                     verification_badge="Platform Administrator",
                 ))
+                await session.commit()
+            elif existing_admin.first_name == "Babajide" and existing_admin.last_name == "Alabi":
+                existing_admin.first_name = "Platform"
+                existing_admin.last_name = "Administrator"
+                existing_admin.company_name = existing_admin.company_name or "PropertyHub Corporate HQ"
                 await session.commit()
     except Exception as e:
         print(f"Warning: Failed to seed startup data: {e}")

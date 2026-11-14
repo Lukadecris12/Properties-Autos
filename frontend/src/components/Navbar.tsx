@@ -237,7 +237,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* Directory Links: Agents & Developers, Messages, Saved, Plans, Investments, FAQ */}
-          <div className="hidden xl:flex items-center gap-0.5 2xl:gap-1.5 text-xs font-medium text-gray-300 shrink-0">
+          <div className="hidden xl:flex items-center gap-0.5 2xl:gap-1.5 text-[11px] 2xl:text-xs font-medium text-gray-300 min-w-0 overflow-x-auto no-scrollbar">
             <Link 
               href="/agents" 
               className="flex items-center gap-1 hover:text-brand-400 transition-colors py-1 px-1.5 2xl:px-2 rounded-lg hover:bg-gray-800/50 whitespace-nowrap"
@@ -321,19 +321,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setBuyDropdownOpen(false);
                   setRentDropdownOpen(false);
                 }}
-                className={`flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 rounded-2xl border transition-all shrink-0 ${
+                className={`flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 rounded-2xl border transition-all shrink-0 ${
                   profileDropdownOpen
                     ? 'bg-brand-950/90 border-brand-500 text-white shadow-lg shadow-brand-500/20 ring-1 ring-brand-500'
                     : 'bg-gray-900 border-gray-800 text-gray-300 hover:text-white hover:border-gray-700'
                 }`}
               >
                 <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-brand-500 to-emerald-600 flex items-center justify-center font-bold text-white text-xs shadow-md shadow-brand-500/25 shrink-0">
-                  {currentUser ? (currentUser.first_name || currentUser.company_name || 'U')[0].toUpperCase() : <UserIcon className="w-3.5 h-3.5" />}
+                  {currentUser
+                    ? (currentUser.is_superuser ? 'A' : (currentUser.first_name || currentUser.company_name || 'U')[0].toUpperCase())
+                    : <UserIcon className="w-3.5 h-3.5" />}
                 </div>
                 <div className="text-left hidden 2xl:block">
                   <div className="text-xs font-bold text-white leading-tight flex items-center gap-1">
-                    <span className="max-w-[85px] truncate">
-                      {currentUser ? (currentUser.first_name || currentUser.company_name) : 'Profile'}
+                    <span className="max-w-[95px] truncate">
+                      {currentUser ? (currentUser.is_superuser ? 'Admin' : (currentUser.first_name || currentUser.company_name)) : 'Profile'}
                     </span>
                     {currentUser?.is_verified && <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />}
                   </div>
@@ -347,7 +349,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Profile Dropdown Menu Card */}
               {profileDropdownOpen && (
                 <div className="absolute right-0 top-full pt-2 w-72 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="bg-gray-900/95 border border-gray-800 rounded-2xl p-3 shadow-2xl backdrop-blur-2xl divide-y divide-gray-800/80">
+                  <div className="bg-gray-900/95 border border-gray-800 rounded-2xl p-3 shadow-2xl backdrop-blur-2xl divide-y divide-gray-800/80 max-h-[calc(100vh-5.5rem)] overflow-y-auto">
                     
                     {/* User Header */}
                     <div className="pb-3 px-1">
@@ -355,7 +357,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <div>
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-white truncate max-w-[170px]">
-                              {currentUser.first_name} {currentUser.last_name}
+                              {currentUser.is_superuser
+                                ? 'Platform Administrator'
+                                : `${currentUser.first_name} ${currentUser.last_name}`}
                             </span>
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/30 font-bold">
                               Verified
