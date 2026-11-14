@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/geo_data.dart';
 import '../services/api_service.dart';
 import 'home_screen.dart';
 
@@ -36,33 +37,148 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _cityController = TextEditingController();
   final _logoUrlController = TextEditingController();
 
-  String _countryCode = '+234';
-  String _selectedCountry = 'Nigeria';
-  String _selectedState = 'Lagos';
+  CountryGeoData _selectedCountryData = allCountries.first;
+  String _countryCode = allCountries.first.dialCode;
+  String _countryFlag = allCountries.first.flag;
+  String _selectedCountry = allCountries.first.name;
+  String _selectedState = allCountries.first.states.first;
 
-  final Map<String, List<String>> _countryStates = {
-    'Nigeria': [
-      'Lagos', 'Abuja FCT', 'Rivers', 'Ogun', 'Oyo', 'Kano', 'Kaduna', 'Delta', 'Edo', 'Enugu', 'Anambra', 'Akwa Ibom'
-    ],
-    'United States': [
-      'California', 'New York', 'Texas', 'Florida', 'Washington', 'Illinois', 'Georgia', 'Virginia'
-    ],
-    'United Kingdom': [
-      'Greater London', 'Greater Manchester', 'West Midlands', 'Scotland', 'Wales'
-    ],
-    'United Arab Emirates': [
-      'Dubai', 'Abu Dhabi', 'Sharjah'
-    ],
-    'Canada': [
-      'Ontario', 'British Columbia', 'Quebec', 'Alberta'
-    ],
-    'Ghana': [
-      'Greater Accra', 'Ashanti', 'Western'
-    ],
-    'South Africa': [
-      'Gauteng (Johannesburg)', 'Western Cape (Cape Town)', 'KwaZulu-Natal'
-    ],
-  };
+  Future<void> _showSearchablePicker<T>({
+    required String title,
+    required String searchHint,
+    required List<T> items,
+    required String Function(T) labelBuilder,
+    required String Function(T) searchKeyBuilder,
+    required void Function(T) onSelected,
+  }) async {
+    String query = '';
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1F2937),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final filtered = query.isEmpty
+                ? items
+                : items
+                    .where((item) => searchKeyBuilder(item).toLowerCase().contains(query.toLowerCase()))
+                    .toList();
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.72,
+              minChildSize: 0.45,
+              maxChildSize: 0.9,
+              builder: (_, scrollController) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 16,
+                    bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        autofocus: true,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: searchHint,
+                          hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                          prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 18),
+                          filled: true,
+                          fillColor: const Color(0xFF111827),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFF374151)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFF374151)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Color(0xFF38BDF8)),
+                          ),
+                        ),
+                        onChanged: (val) => setModalState(() => query = val.trim()),
+                      ),
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: filtered.isEmpty
+                            ? const Center(
+                                child: Text('No matches found', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                              )
+                            : ListView.builder(
+                                controller: scrollController,
+                                itemCount: filtered.length,
+                                itemBuilder: (_, idx) {
+                                  final item = filtered[idx];
+                                  return ListTile(
+                                    dense: true,
+                                    title: Text(
+                                      labelBuilder(item),
+                                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                                    ),
+                                    onTap: () {
+                                      onSelected(item);
+                                      Navigator.of(sheetCtx).pop();
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPickerField({
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111827),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFF374151)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+              ),
+            ),
+            const Icon(Icons.arrow_drop_down, color: Colors.grey, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
 
   bool _loading = false;
   String? _errorMsg;
@@ -466,29 +582,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF111827),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF374151)),
-                    ),
-                    child: DropdownButton<String>(
-                      value: _countryCode,
-                      dropdownColor: const Color(0xFF1F2937),
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
-                      underline: const SizedBox(),
-                      items: const [
-                        DropdownMenuItem(value: '+234', child: Text('🇳🇬 +234')),
-                        DropdownMenuItem(value: '+1', child: Text('🇺🇸 +1')),
-                        DropdownMenuItem(value: '+44', child: Text('🇬🇧 +44')),
-                        DropdownMenuItem(value: '+971', child: Text('🇦🇪 +971')),
-                        DropdownMenuItem(value: '+233', child: Text('🇬🇭 +233')),
-                        DropdownMenuItem(value: '+27', child: Text('🇿🇦 +27')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) setState(() => _countryCode = val);
-                      },
+                  SizedBox(
+                    width: 112,
+                    child: _buildPickerField(
+                      label: '$_countryFlag $_countryCode',
+                      onTap: () => _showSearchablePicker<CountryGeoData>(
+                        title: 'Select Phone Code',
+                        searchHint: 'Search country or code (e.g. +234, Nigeria)...',
+                        items: allCountries,
+                        labelBuilder: (c) => '${c.flag}  ${c.name} (${c.dialCode})',
+                        searchKeyBuilder: (c) => '${c.name} ${c.dialCode} ${c.code}',
+                        onSelected: (c) {
+                          setState(() {
+                            _countryCode = c.dialCode;
+                            _countryFlag = c.flag;
+                          });
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -502,34 +612,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               // 5. Country & Dynamic State
               Row(
                 children: [
-                  // Country Dropdown
+                  // Searchable Country Picker
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text('Country *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
                         const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF111827),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFF374151)),
-                          ),
-                          child: DropdownButton<String>(
-                            isExpanded: true,
-                            value: _selectedCountry,
-                            dropdownColor: const Color(0xFF1F2937),
-                            style: const TextStyle(color: Colors.white, fontSize: 13),
-                            underline: const SizedBox(),
-                            items: _countryStates.keys.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                            onChanged: (val) {
-                              if (val != null) {
-                                setState(() {
-                                  _selectedCountry = val;
-                                  _selectedState = _countryStates[val]!.first;
-                                });
-                              }
+                        _buildPickerField(
+                          label: '${_selectedCountryData.flag} $_selectedCountry',
+                          onTap: () => _showSearchablePicker<CountryGeoData>(
+                            title: 'Select Country',
+                            searchHint: 'Type country name...',
+                            items: allCountries,
+                            labelBuilder: (c) => '${c.flag}  ${c.name}',
+                            searchKeyBuilder: (c) => '${c.name} ${c.code}',
+                            onSelected: (c) {
+                              setState(() {
+                                _selectedCountryData = c;
+                                _selectedCountry = c.name;
+                                _selectedState = c.states.isNotEmpty ? c.states.first : 'Other';
+                                _countryCode = c.dialCode;
+                                _countryFlag = c.flag;
+                              });
                             },
                           ),
                         ),
@@ -538,29 +643,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   const SizedBox(width: 10),
 
-                  // State Dropdown (Dynamically Populated)
+                  // Searchable State Picker (Dynamically Populated)
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text('State / Region *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
                         const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF111827),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFF374151)),
-                          ),
-                          child: DropdownButton<String>(
-                            isExpanded: true,
-                            value: _selectedState,
-                            dropdownColor: const Color(0xFF1F2937),
-                            style: const TextStyle(color: Colors.white, fontSize: 13),
-                            underline: const SizedBox(),
-                            items: (_countryStates[_selectedCountry] ?? ['Other']).map((st) => DropdownMenuItem(value: st, child: Text(st))).toList(),
-                            onChanged: (val) {
-                              if (val != null) setState(() => _selectedState = val);
+                        _buildPickerField(
+                          label: _selectedState,
+                          onTap: () => _showSearchablePicker<String>(
+                            title: 'Select State / Region',
+                            searchHint: 'Type state or region...',
+                            items: _selectedCountryData.states.isNotEmpty ? _selectedCountryData.states : ['Other'],
+                            labelBuilder: (st) => st,
+                            searchKeyBuilder: (st) => st,
+                            onSelected: (st) {
+                              setState(() => _selectedState = st);
                             },
                           ),
                         ),
