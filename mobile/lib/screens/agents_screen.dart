@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/auto_hide_app_bar_scaffold.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import 'agent_storefront_screen.dart';
@@ -72,7 +73,7 @@ class _AgentsScreenState extends State<AgentsScreen> {
       return name.contains(q) || company.contains(q) || city.contains(q) || state.contains(q);
     }).toList();
 
-    return Scaffold(
+    return AutoHideAppBarScaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: widget.showAppBar
           ? AppBar(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/auto_hide_app_bar_scaffold.dart';
 import '../services/api_service.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -67,7 +68,7 @@ class _AdminScreenState extends State<AdminScreen> {
   Widget build(BuildContext context) {
     final isAdmin = ApiService.isLoggedIn && ApiService.currentUser?['is_superuser'] == true;
     if (!isAdmin) {
-      return Scaffold(
+      return AutoHideAppBarScaffold(
         backgroundColor: const Color(0xFF0B0F19),
         appBar: AppBar(
           backgroundColor: const Color(0xFF111827),
@@ -91,7 +92,7 @@ class _AdminScreenState extends State<AdminScreen> {
       );
     }
 
-    return Scaffold(
+    return AutoHideAppBarScaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: AppBar(
         backgroundColor: const Color(0xFF111827),

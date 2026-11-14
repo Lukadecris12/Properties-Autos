@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/auto_hide_app_bar_scaffold.dart';
 import '../core/constants.dart';
 import '../models/listing_model.dart';
 import '../services/api_service.dart';
@@ -66,7 +67,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AutoHideAppBarScaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: AppBar(
         backgroundColor: const Color(0xFF111827),

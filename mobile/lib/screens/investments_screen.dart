@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/auto_hide_app_bar_scaffold.dart';
 import '../services/api_service.dart';
 
 class InvestmentsScreen extends StatefulWidget {
@@ -234,7 +235,7 @@ class _InvestmentsScreenState extends State<InvestmentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AutoHideAppBarScaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: AppBar(
         backgroundColor: const Color(0xFF111827),

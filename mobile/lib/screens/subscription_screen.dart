@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/auto_hide_app_bar_scaffold.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../models/subscription_model.dart';
@@ -483,7 +484,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AutoHideAppBarScaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: AppBar(
         title: const Text('Plans & Boost Engine', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),

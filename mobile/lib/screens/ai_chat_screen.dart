@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/auto_hide_app_bar_scaffold.dart';
 import '../services/api_service.dart';
 
 class AIChatScreen extends StatefulWidget {
@@ -116,7 +117,7 @@ class _AIChatScreenState extends State<AIChatScreen> with WidgetsBindingObserver
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AutoHideAppBarScaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: widget.showAppBar
           ? AppBar(

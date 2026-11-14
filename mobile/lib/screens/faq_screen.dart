@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/auto_hide_app_bar_scaffold.dart';
 import 'contact_support_screen.dart';
 
 class FaqScreen extends StatefulWidget {
@@ -95,7 +96,7 @@ class _FaqScreenState extends State<FaqScreen> {
       return matchCategory && matchSearch;
     }).toList();
 
-    return Scaffold(
+    return AutoHideAppBarScaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: AppBar(
         title: const Text('Frequently Asked Questions', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),

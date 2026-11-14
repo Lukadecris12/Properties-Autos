@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../widgets/auto_hide_app_bar_scaffold.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../core/constants.dart';
@@ -97,7 +98,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AutoHideAppBarScaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: AppBar(
         title: const Text('Contact & Support Desk', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/auto_hide_app_bar_scaffold.dart';
 import '../core/constants.dart';
 import '../services/api_service.dart';
 import '../models/listing_model.dart';
@@ -135,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AutoHideAppBarScaffold(
       backgroundColor: const Color(0xFF0B0F19),
       // Clean, professional native mobile AppBar (No web-like buttons at the top)
       appBar: AppBar(

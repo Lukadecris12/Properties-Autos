@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/auto_hide_app_bar_scaffold.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 
@@ -247,7 +248,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
       return name.contains(_searchQuery.toLowerCase()) || subject.contains(_searchQuery.toLowerCase());
     }).toList();
 
-    return Scaffold(
+    return AutoHideAppBarScaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: AppBar(
         backgroundColor: const Color(0xFF111827),

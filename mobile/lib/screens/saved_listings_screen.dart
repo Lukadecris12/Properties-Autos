@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/auto_hide_app_bar_scaffold.dart';
 import '../core/constants.dart';
 import '../models/listing_model.dart';
 import '../services/api_service.dart';
@@ -61,7 +62,7 @@ class _SavedListingsScreenState extends State<SavedListingsScreen> {
         ? _savedListings
         : _savedListings.where((l) => l.assetCategory.toUpperCase() == _selectedCategory).toList();
 
-    return Scaffold(
+    return AutoHideAppBarScaffold(
       backgroundColor: const Color(0xFF0B0F19),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0B0F19),
