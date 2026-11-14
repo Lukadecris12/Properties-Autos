@@ -98,3 +98,81 @@ async def upload_images(
         images=uploaded,
         message=f"Successfully uploaded {len(uploaded)} image(s)."
     )
+
+
+ALLOWED_DOC_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".webp", ".doc", ".docx"}
+MAX_DOC_SIZE = 15 * 1024 * 1024  # 15 MB per document
+
+
+class UploadedDocumentResponse(BaseModel):
+    url: str
+    filename: str
+    original_name: str
+    size: int
+
+
+class MultiDocumentUploadResponse(BaseModel):
+    documents: List[UploadedDocumentResponse]
+    message: str
+
+
+@router.post("/upload-document", response_model=MultiDocumentUploadResponse)
+async def upload_documents(
+    files: List[UploadFile] = File(...)
+):
+    """Upload optional property or vehicle supporting documents (PDF, images, DOCX)."""
+    if not files:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No document files provided for upload."
+        )
+    if len(files) > 5:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You can upload at most 5 documents at once."
+        )
+
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    uploaded = []
+
+    for file in files:
+        content_type = file.content_type or ""
+        ext = os.path.splitext(file.filename or "")[1].lower()
+        if not ext and content_type == "application/pdf":
+            ext = ".pdf"
+        if ext not in ALLOWED_DOC_EXTENSIONS and not content_type.startswith("image/") and content_type != "application/pdf":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported document format: {file.filename}. Accepted: PDF, JPG, PNG, WebP, DOC, DOCX."
+            )
+
+        unique_name = f"doc_{uuid.uuid4().hex}{ext or '.pdf'}"
+        dest_path = os.path.join(settings.UPLOAD_DIR, unique_name)
+
+        size = 0
+        with open(dest_path, "wb") as buffer:
+            while chunk := await file.read(1024 * 1024):
+                size += len(chunk)
+                if size > MAX_DOC_SIZE:
+                    buffer.close()
+                    if os.path.exists(dest_path):
+                        os.remove(dest_path)
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Document {file.filename} exceeds maximum size limit of 15MB."
+                    )
+                buffer.write(chunk)
+
+        uploaded.append(
+            UploadedDocumentResponse(
+                url=f"/uploads/{unique_name}",
+                filename=unique_name,
+                original_name=file.filename or unique_name,
+                size=size
+            )
+        )
+
+    return MultiDocumentUploadResponse(
+        documents=uploaded,
+        message=f"Successfully uploaded {len(uploaded)} document(s)."
+    )

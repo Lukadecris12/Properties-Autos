@@ -459,6 +459,23 @@ class ApiClient {
     return res.json();
   }
 
+  async uploadDocuments(files: File[]): Promise<{ documents: Array<{ url: string; filename: string; original_name: string; size: number }>; message: string }> {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+
+    const res = await fetch(`${API_BASE_URL}/media/upload-document`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to upload document(s)');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
   // --- Contact & Customer Support ---
   async submitSupportTicket(data: {
     full_name?: string;

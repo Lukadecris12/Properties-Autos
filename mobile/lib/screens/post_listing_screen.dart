@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
 import 'subscription_screen.dart';
 
@@ -22,8 +23,48 @@ class _PostListingScreenState extends State<PostListingScreen> {
   final _specsController = TextEditingController();
   final _imageUrlController = TextEditingController();
   final List<String> _photos = [];
+  final List<Map<String, String>> _documents = [];
+  bool _uploadingDoc = false;
   bool _submitting = false;
   final ApiService _apiService = ApiService();
+
+  Future<void> _pickAndUploadDocument() async {
+    if (_documents.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum 5 supporting documents allowed.')),
+      );
+      return;
+    }
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: ImageSource.gallery);
+      if (picked == null) return;
+      setState(() => _uploadingDoc = true);
+      final uploadedUrl = await _apiService.uploadDocumentFile(picked.path);
+      if (mounted) {
+        setState(() {
+          _documents.add({
+            'url': uploadedUrl,
+            'name': picked.name,
+          });
+          _uploadingDoc = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _uploadingDoc = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Document upload failed: $e')),
+        );
+      }
+    }
+  }
+
+  void _removeDocument(int index) {
+    setState(() {
+      _documents.removeAt(index);
+    });
+  }
 
   void _addPhoto() {
     final url = _imageUrlController.text.trim();
@@ -112,6 +153,7 @@ class _PostListingScreenState extends State<PostListingScreen> {
       photos: _photos,
       attributes: {
         'specs': _specsController.text.trim(),
+        if (_documents.isNotEmpty) 'documents': _documents,
       },
     );
 
@@ -123,6 +165,7 @@ class _PostListingScreenState extends State<PostListingScreen> {
       _specsController.clear();
       _imageUrlController.clear();
       _photos.clear();
+      _documents.clear();
 
       showDialog(
         context: context,
@@ -552,6 +595,94 @@ class _PostListingScreenState extends State<PostListingScreen> {
                 filled: true,
                 fillColor: const Color(0xFF111827),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1F2937))),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Supporting Documents (Optional)
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF111827),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF1F2937)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.description_outlined, color: Color(0xFF10B981), size: 18),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Supporting Documents (Optional)',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _assetType == 'PROPERTY'
+                        ? 'Optionally attach Title Deed, C of O, or Survey Plan (up to 5 files).'
+                        : 'Optionally attach Vehicle Registration, Customs Papers, or Insurance (up to 5 files).',
+                    style: const TextStyle(color: Colors.grey, fontSize: 11),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF374151)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                    onPressed: (_uploadingDoc || _documents.length >= 5) ? null : _pickAndUploadDocument,
+                    icon: _uploadingDoc
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981)),
+                          )
+                        : const Icon(Icons.upload_file, size: 16, color: Color(0xFF10B981)),
+                    label: Text(
+                      _uploadingDoc ? 'Uploading Document...' : 'Attach Document Image / Scan',
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                  if (_documents.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    ..._documents.asMap().entries.map((entry) {
+                      final idx = entry.key;
+                      final doc = entry.value;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0B1220),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF1F2937)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.insert_drive_file_outlined, size: 16, color: Color(0xFF10B981)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                doc['name'] ?? 'Document ${idx + 1}',
+                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () => _removeDocument(idx),
+                              child: const Icon(Icons.close, size: 16, color: Colors.redAccent),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ],
               ),
             ),
             const SizedBox(height: 20),

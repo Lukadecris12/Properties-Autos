@@ -27,7 +27,8 @@ import {
   Camera,
   Loader2,
   UploadCloud,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 
 import { Navbar } from '@/components/Navbar';
@@ -108,6 +109,46 @@ export default function NewListingPage() {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [imagesList, setImagesList] = useState<Array<{ url: string; caption: string; is_cover: boolean }>>([]);
+
+  // Optional Supporting Documents (PDF, Images, DOCX)
+  const docInputRef = useRef<HTMLInputElement>(null);
+  const [documentsList, setDocumentsList] = useState<Array<{ url: string; name: string }>>([]);
+  const [uploadingDocs, setUploadingDocs] = useState(false);
+  const [docError, setDocError] = useState<string | null>(null);
+
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setDocError(null);
+    const remaining = 5 - documentsList.length;
+    if (remaining <= 0) {
+      setDocError('Maximum 5 supporting documents allowed per listing.');
+      if (docInputRef.current) docInputRef.current.value = '';
+      return;
+    }
+    const selected = Array.from(files).slice(0, remaining);
+    const oversize = selected.find(f => f.size > 15 * 1024 * 1024);
+    if (oversize) {
+      setDocError(`File "${oversize.name}" exceeds the 15MB document limit.`);
+      if (docInputRef.current) docInputRef.current.value = '';
+      return;
+    }
+    setUploadingDocs(true);
+    try {
+      const res = await api.uploadDocuments(selected);
+      if (res.documents && res.documents.length > 0) {
+        setDocumentsList(prev => [
+          ...prev,
+          ...res.documents.map(d => ({ url: d.url, name: d.original_name || d.filename })),
+        ]);
+      }
+    } catch (err: any) {
+      setDocError(err.message || 'Failed to upload document(s).');
+    } finally {
+      setUploadingDocs(false);
+      if (docInputRef.current) docInputRef.current.value = '';
+    }
+  };
 
   const toggleAmenity = (item: string) => {
     if (selectedAmenities.includes(item)) {
@@ -299,6 +340,10 @@ export default function NewListingPage() {
         condition,
         rental_service_type: vehicleServiceType,
       };
+    }
+
+    if (documentsList.length > 0) {
+      attributes.documents = documentsList;
     }
 
     const payload: any = {
@@ -1288,6 +1333,70 @@ export default function NewListingPage() {
                     })}
                   </div>
                 </div>
+              </div>
+
+              {/* Optional Supporting Documents Upload */}
+              <div className="p-5 rounded-2xl bg-gray-900/50 border border-gray-800 space-y-3">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div>
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-brand-400" />
+                      <span>Supporting Documents <span className="text-xs font-normal text-gray-400">(Optional)</span></span>
+                    </h4>
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      {assetCategory === 'VEHICLE'
+                        ? 'Optionally upload Vehicle Registration, Customs Duty Papers, Proof of Ownership, Insurance, or Roadworthiness (PDF, JPG, PNG, DOCX).'
+                        : 'Optionally upload Title Deed, Certificate of Occupancy (C of O), Survey Plan, Governor’s Consent, or Tenancy Agreement (PDF, JPG, PNG, DOCX).'}
+                    </p>
+                  </div>
+                  <div>
+                    <input
+                      ref={docInputRef}
+                      type="file"
+                      multiple
+                      accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx"
+                      onChange={handleDocumentUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      disabled={uploadingDocs || documentsList.length >= 5}
+                      onClick={() => docInputRef.current?.click()}
+                      className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-xs font-semibold text-white border border-gray-700 inline-flex items-center gap-2"
+                    >
+                      {uploadingDocs ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5 text-brand-400" />}
+                      <span>{uploadingDocs ? 'Uploading...' : 'Upload Documents'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {docError && (
+                  <p className="text-xs text-red-400">{docError}</p>
+                )}
+
+                {documentsList.length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    {documentsList.map((doc, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-[#0b0f19] border border-gray-800 text-xs"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span className="text-gray-200 truncate">{doc.name}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDocumentsList(prev => prev.filter((_, i) => i !== idx))}
+                          className="text-gray-400 hover:text-red-400 shrink-0"
+                          aria-label={`Remove ${doc.name}`}
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Final Submit & Publish Button */}

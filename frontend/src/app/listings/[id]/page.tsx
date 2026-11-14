@@ -44,7 +44,7 @@ import { BookingModal } from '@/components/BookingModal';
 import { Listing } from '@/lib/types';
 import { api } from '@/lib/api';
 import { isWishlistSaved, toggleWishlistId } from '@/lib/wishlist';
-import { getAllListingImages, getFallbackImage } from '@/lib/media';
+import { getAllListingImages, getFallbackImage, resolveImageUrl } from '@/lib/media';
 
 export default function ListingDetailPage() {
   const params = useParams();
@@ -650,6 +650,44 @@ export default function ListingDetailPage() {
                       <span>{item}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Supporting Documents */}
+            {Array.isArray(listing.attributes?.documents) && listing.attributes.documents.length > 0 && (
+              <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-gray-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-bold text-white flex items-center gap-2">
+                    <FileCheck className="w-4 h-4 text-brand-400" /> Supporting Documents
+                  </h2>
+                  <span className="text-[11px] text-gray-400">
+                    {listing.attributes.documents.length} file{listing.attributes.documents.length === 1 ? '' : 's'} attached
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {listing.attributes.documents.map((doc: { url: string; name?: string }, idx: number) => {
+                    const href = doc.url?.startsWith('http') || doc.url?.startsWith('/')
+                      ? doc.url
+                      : resolveImageUrl(doc.url);
+                    return (
+                      <a
+                        key={`${doc.url}-${idx}`}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-950/60 border border-gray-800 hover:border-brand-500/50 transition-colors group"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <FileCheck className="w-4 h-4 text-brand-400 shrink-0" />
+                          <span className="text-xs text-gray-200 truncate group-hover:text-white">
+                            {doc.name || `Document ${idx + 1}`}
+                          </span>
+                        </div>
+                        <ExternalLink className="w-3.5 h-3.5 text-gray-400 group-hover:text-brand-400 shrink-0" />
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             )}

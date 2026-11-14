@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../core/constants.dart';
 import '../models/listing_model.dart';
 import '../services/api_service.dart';
 import 'agent_storefront_screen.dart';
@@ -533,6 +534,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                   ),
                   const SizedBox(height: 24),
 
+                  _buildDocumentsSection(item),
+
                   // Verified Publisher & Direct Contact Card
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -771,6 +774,84 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                 onPressed: () => _showBookingDialog(context),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDocumentsSection(ListingModel item) {
+    final rawDocs = item.attributes['documents'];
+    if (rawDocs is! List || rawDocs.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111827),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF1F2937)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.description_outlined, color: Color(0xFF10B981), size: 18),
+                SizedBox(width: 8),
+                Text(
+                  'Supporting Documents',
+                  style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...rawDocs.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final doc = entry.value;
+              final urlStr = doc is Map ? (doc['url']?.toString() ?? '') : '';
+              final nameStr = doc is Map && doc['name'] != null
+                  ? doc['name'].toString()
+                  : 'Document ${idx + 1}';
+              if (urlStr.isEmpty) return const SizedBox.shrink();
+              final resolved = ApiConstants.resolveImageUrl(urlStr);
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () async {
+                    final uri = Uri.tryParse(resolved);
+                    if (uri != null) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0B1220),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF1F2937)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.insert_drive_file_outlined, color: Color(0xFF10B981), size: 16),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            nameStr,
+                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const Icon(Icons.open_in_new, color: Colors.grey, size: 15),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
           ],
         ),
       ),
