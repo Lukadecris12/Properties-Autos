@@ -56,7 +56,8 @@ export default function RegisterPage() {
 
   // Step 2-4: Intent, Asset & Role
   const [accountIntent, setAccountIntent] = useState<'seeker' | 'seller'>('seeker');
-  const [selectedAsset, setSelectedAsset] = useState<AssetOption>('residential');
+  const [selectedAssets, setSelectedAssets] = useState<AssetOption[]>(['residential']);
+  const [assetDropdownOpen, setAssetDropdownOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<RoleOption>('seeker');
 
   // Step 5: Names
@@ -88,21 +89,28 @@ export default function RegisterPage() {
   const [successMsg, setSuccessMsg] = useState('');
 
   const roleOptions = useMemo<Array<{ value: RoleOption; label: string }>>(() => {
-    if (selectedAsset === 'vehicle') {
-      return [
-        { value: 'seeker', label: 'Seeker' },
-        { value: 'owner', label: 'Owner' },
-        { value: 'agent', label: 'Agent' },
-        { value: 'dealer', label: 'Auto/Car Dealer' },
-      ];
-    }
-    return [
+    const hasProperty = selectedAssets.includes('residential') || selectedAssets.includes('land');
+    const hasVehicle = selectedAssets.includes('vehicle');
+    const options: Array<{ value: RoleOption; label: string }> = [
       { value: 'seeker', label: 'Seeker' },
       { value: 'owner', label: 'Owner' },
       { value: 'agent', label: 'Agent' },
-      { value: 'developer', label: 'Property Developer' },
     ];
-  }, [selectedAsset]);
+    if (hasProperty) {
+      options.push({ value: 'developer', label: 'Property Developer' });
+    }
+    if (hasVehicle) {
+      options.push({ value: 'dealer', label: 'Auto/Car Dealer' });
+    }
+    return options;
+  }, [selectedAssets]);
+
+  const toggleAssetOption = (asset: AssetOption) => {
+    setErrorMsg('');
+    setSelectedAssets((prev) =>
+      prev.includes(asset) ? prev.filter((a) => a !== asset) : [...prev, asset]
+    );
+  };
 
   const filteredCountries = useMemo(() => {
     const q = countrySearch.toLowerCase();
@@ -177,13 +185,15 @@ export default function RegisterPage() {
   const handleAssetContinue = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    // Ensure selectedRole matches the new asset's valid options
-    const validValues = (selectedAsset === 'vehicle'
-      ? ['seeker', 'owner', 'agent', 'dealer']
-      : ['seeker', 'owner', 'agent', 'developer']) as RoleOption[];
+    if (selectedAssets.length === 0) {
+      setErrorMsg('Please select at least one category.');
+      return;
+    }
+    const validValues = roleOptions.map((r) => r.value);
     if (!validValues.includes(selectedRole)) {
       setSelectedRole(accountIntent === 'seeker' ? 'seeker' : 'owner');
     }
+    setAssetDropdownOpen(false);
     setStep(4);
   };
 
@@ -241,7 +251,7 @@ export default function RegisterPage() {
         verification_token: verificationToken || 'direct_onboarding',
         user_type: selectedRole === 'seeker' ? 'buyer' : 'seller',
         entity_type: selectedRole,
-        asset_interests: [selectedAsset],
+        asset_interests: selectedAssets,
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         company_name: companyName.trim() || undefined,
@@ -486,34 +496,80 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {/* STEP 3: CATEGORY PULL-DOWN LIST */}
+          {/* STEP 3: MULTI-SELECT CATEGORY PULL-DOWN LIST */}
           {step === 3 && (
             <form key="step3" onSubmit={handleAssetContinue} className="fly-in-box space-y-5">
               <div>
                 <h2 className="text-xl font-bold text-white">Select What You Are Interested In</h2>
                 <p className="text-xs text-gray-400 mt-1">
-                  Choose a category from the pull-down list below.
+                  Open the pull-down list below to choose one, two, or all three categories.
                 </p>
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block text-xs font-semibold text-gray-300 mb-2">
-                  Category <span className="text-red-400">*</span>
+                  Categories (Select one or more) <span className="text-red-400">*</span>
                 </label>
-                <div className="relative">
-                  <select
-                    value={selectedAsset}
-                    onChange={(e) => setSelectedAsset(e.target.value as AssetOption)}
-                    className="w-full appearance-none bg-[#0b0f19] border border-gray-700 rounded-xl px-4 py-3.5 pr-10 text-sm text-white focus:outline-none focus:border-brand-500"
-                  >
-                    {ASSET_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value} className="bg-gray-900 text-white">
-                        {opt.label}
-                      </option>
+                <button
+                  type="button"
+                  onClick={() => setAssetDropdownOpen(!assetDropdownOpen)}
+                  className="w-full min-h-[48px] bg-[#0b0f19] border border-gray-700 rounded-xl px-4 py-3 text-sm text-white flex items-center justify-between gap-2 text-left focus:outline-none focus:border-brand-500"
+                >
+                  <span className="truncate">
+                    {selectedAssets.length === 0
+                      ? 'Select categories...'
+                      : ASSET_OPTIONS.filter((o) => selectedAssets.includes(o.value))
+                          .map((o) => o.label)
+                          .join(', ')}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${assetDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {assetDropdownOpen && (
+                  <div className="mt-2 bg-gray-900 border border-gray-700 rounded-xl p-2 space-y-1 shadow-2xl">
+                    {ASSET_OPTIONS.map((opt) => {
+                      const checked = selectedAssets.includes(opt.value);
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => toggleAssetOption(opt.value)}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs text-left transition-colors ${
+                            checked ? 'bg-brand-950/70 text-white border border-brand-500/40' : 'text-gray-300 hover:bg-gray-800'
+                          }`}
+                        >
+                          <span className="font-medium">{opt.label}</span>
+                          <span className={`w-4 h-4 rounded flex items-center justify-center border ${
+                            checked ? 'bg-brand-500 border-brand-500 text-white' : 'border-gray-600'
+                          }`}>
+                            {checked && <CheckCircle2 className="w-3 h-3" />}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {selectedAssets.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {ASSET_OPTIONS.filter((o) => selectedAssets.includes(o.value)).map((o) => (
+                      <span
+                        key={o.value}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-950/70 border border-brand-500/40 text-brand-300 text-[11px] font-semibold"
+                      >
+                        <span>{o.label}</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleAssetOption(o.value)}
+                          className="hover:text-white"
+                          aria-label={`Remove ${o.label}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
                     ))}
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between pt-2">
@@ -542,7 +598,10 @@ export default function RegisterPage() {
               <div>
                 <h2 className="text-xl font-bold text-white">Select Your Role</h2>
                 <p className="text-xs text-gray-400 mt-1">
-                  Options tailored to <span className="text-brand-400 font-semibold">{ASSET_OPTIONS.find((a) => a.value === selectedAsset)?.label}</span>.
+                  Options tailored to{' '}
+                  <span className="text-brand-400 font-semibold">
+                    {ASSET_OPTIONS.filter((a) => selectedAssets.includes(a.value)).map((a) => a.label).join(', ')}
+                  </span>.
                 </p>
               </div>
 

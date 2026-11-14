@@ -35,7 +35,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   // Steps 2-4
   String _accountIntent = 'seeker'; // 'seeker' | 'seller'
-  String _selectedAsset = 'residential'; // 'residential' | 'land' | 'vehicle'
+  List<String> _selectedAssets = ['residential']; // 'residential', 'land', 'vehicle'
   String _selectedRole = 'seeker'; // 'seeker' | 'owner' | 'agent' | 'developer' | 'dealer'
 
   // Step 5
@@ -64,20 +64,97 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   ];
 
   List<Map<String, String>> get _roleOptions {
-    if (_selectedAsset == 'vehicle') {
-      return const [
-        {'value': 'seeker', 'label': 'Seeker'},
-        {'value': 'owner', 'label': 'Owner'},
-        {'value': 'agent', 'label': 'Agent'},
-        {'value': 'dealer', 'label': 'Auto/Car Dealer'},
-      ];
-    }
-    return const [
+    final hasProperty = _selectedAssets.contains('residential') || _selectedAssets.contains('land');
+    final hasVehicle = _selectedAssets.contains('vehicle');
+    final options = <Map<String, String>>[
       {'value': 'seeker', 'label': 'Seeker'},
       {'value': 'owner', 'label': 'Owner'},
       {'value': 'agent', 'label': 'Agent'},
-      {'value': 'developer', 'label': 'Property Developer'},
     ];
+    if (hasProperty) {
+      options.add({'value': 'developer', 'label': 'Property Developer'});
+    }
+    if (hasVehicle) {
+      options.add({'value': 'dealer', 'label': 'Auto/Car Dealer'});
+    }
+    return options;
+  }
+
+  String get _selectedAssetLabels {
+    if (_selectedAssets.isEmpty) return 'Select categories...';
+    return _assetOptions
+        .where((opt) => _selectedAssets.contains(opt['value']))
+        .map((opt) => opt['label']!)
+        .join(', ');
+  }
+
+  Future<void> _showMultiAssetPicker() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF1F2937),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Select Categories (1, 2, or all 3)',
+                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  ..._assetOptions.map((opt) {
+                    final val = opt['value']!;
+                    final label = opt['label']!;
+                    final checked = _selectedAssets.contains(val);
+                    return CheckboxListTile(
+                      value: checked,
+                      activeColor: const Color(0xFF10B981),
+                      checkColor: Colors.white,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(label, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                      onChanged: (_) {
+                        setState(() {
+                          if (checked) {
+                            _selectedAssets.remove(val);
+                          } else {
+                            _selectedAssets.add(val);
+                          }
+                          final valid = _roleOptions.map((r) => r['value']).toList();
+                          if (!valid.contains(_selectedRole)) {
+                            _selectedRole = _accountIntent == 'seeker' ? 'seeker' : 'owner';
+                          }
+                        });
+                        setModalState(() {});
+                      },
+                    );
+                  }),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF059669),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () => Navigator.of(sheetCtx).pop(),
+                      child: const Text('Done', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _showSearchablePicker<T>({
@@ -293,7 +370,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'verification_token': _verificationToken,
       'user_type': _selectedRole == 'seeker' ? 'buyer' : 'seller',
       'entity_type': _selectedRole,
-      'asset_interests': [_selectedAsset],
+      'asset_interests': _selectedAssets,
       'first_name': _firstNameController.text.trim(),
       'last_name': _lastNameController.text.trim(),
       'company_name': _companyNameController.text.trim(),
@@ -516,46 +593,44 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Select Category',
+              'Select Categories',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 6),
             const Text(
-              'Choose what you are interested in from the pull-down list.',
+              'Tap the pull-down list below to choose one, two, or all three categories.',
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 20),
-            const Text('Category *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+            const Text('Categories (Select one or more) *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
             const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF111827),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF374151)),
-              ),
-              child: DropdownButton<String>(
-                isExpanded: true,
-                value: _selectedAsset,
-                dropdownColor: const Color(0xFF1F2937),
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                underline: const SizedBox(),
-                items: _assetOptions
-                    .map((opt) => DropdownMenuItem(value: opt['value'], child: Text(opt['label']!)))
-                    .toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _selectedAsset = val;
-                      final valid = _roleOptions.map((r) => r['value']).toList();
-                      if (!valid.contains(_selectedRole)) {
-                        _selectedRole = _accountIntent == 'seeker' ? 'seeker' : 'owner';
-                      }
-                    });
-                  }
-                },
-              ),
+            _buildPickerField(
+              label: _selectedAssetLabels,
+              onTap: _showMultiAssetPicker,
             ),
+            if (_selectedAssets.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _assetOptions
+                    .where((opt) => _selectedAssets.contains(opt['value']))
+                    .map((opt) => Chip(
+                          label: Text(opt['label']!, style: const TextStyle(color: Color(0xFF34D399), fontSize: 11)),
+                          backgroundColor: const Color(0xFF064E3B),
+                          side: const BorderSide(color: Color(0xFF10B981)),
+                          deleteIcon: const Icon(Icons.close, size: 14, color: Color(0xFF34D399)),
+                          onDeleted: () => setState(() {
+                            _selectedAssets.remove(opt['value']);
+                            final valid = _roleOptions.map((r) => r['value']).toList();
+                            if (!valid.contains(_selectedRole)) {
+                              _selectedRole = _accountIntent == 'seeker' ? 'seeker' : 'owner';
+                            }
+                          }),
+                        ))
+                    .toList(),
+              ),
+            ],
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -565,7 +640,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   backgroundColor: const Color(0xFF059669),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: () => setState(() => _step = 4),
+                onPressed: () {
+                  if (_selectedAssets.isEmpty) {
+                    setState(() => _errorMsg = 'Please select at least one category.');
+                    return;
+                  }
+                  setState(() {
+                    _errorMsg = null;
+                    _step = 4;
+                  });
+                },
                 child: const Text('Continue', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
               ),
             ),
@@ -582,7 +666,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Options for ${_assetOptions.firstWhere((e) => e['value'] == _selectedAsset)['label']}',
+              'Options for $_selectedAssetLabels',
               style: const TextStyle(fontSize: 12, color: Color(0xFF34D399)),
             ),
             const SizedBox(height: 20),
