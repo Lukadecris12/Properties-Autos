@@ -33,7 +33,9 @@ import {
   Rocket,
   Zap,
   CreditCard,
-  Settings
+  Settings,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -75,8 +77,9 @@ export default function AdminDashboardPage() {
   const [savingSetting, setSavingSetting] = useState(false);
 
   // Admin Credentials
-  const [adminEmail, setAdminEmail] = useState('admin@propertyhub.ng');
-  const [adminPassword, setAdminPassword] = useState('AdminPass123!');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
@@ -290,22 +293,6 @@ export default function AdminDashboardPage() {
               Please authenticate with administrator credentials to access platform controls.
             </p>
 
-            {/* Display Credentials for user convenience */}
-            <div className="p-3.5 mb-5 rounded-xl bg-gray-900 border border-gray-800 text-xs space-y-1.5">
-              <div className="font-bold text-white flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>Admin Login Credentials:</span>
-              </div>
-              <div className="flex justify-between text-gray-400">
-                <span>Email:</span>
-                <span className="text-brand-300 font-mono font-semibold">admin@propertyhub.ng</span>
-              </div>
-              <div className="flex justify-between text-gray-400">
-                <span>Password:</span>
-                <span className="text-brand-300 font-mono font-semibold">AdminPass123!</span>
-              </div>
-            </div>
-
             {loginError && (
               <div className="mb-4 p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-200 text-xs">
                 {loginError}
@@ -317,19 +304,33 @@ export default function AdminDashboardPage() {
                 <label className="block text-xs font-semibold text-gray-300 mb-1">Admin Email</label>
                 <input
                   type="email"
+                  required
                   value={adminEmail}
                   onChange={(e) => setAdminEmail(e.target.value)}
+                  placeholder="Enter administrator email"
                   className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-red-500"
                 />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-300 mb-1">Master Password</label>
-                <input
-                  type="password"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-red-500"
-                />
+                <div className="relative">
+                  <input
+                    type={showAdminPassword ? 'text' : 'password'}
+                    required
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="Enter master password"
+                    className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl pl-4 pr-10 py-2.5 text-xs text-white focus:outline-none focus:border-red-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminPassword(!showAdminPassword)}
+                    aria-label={showAdminPassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
               <button
                 type="submit"

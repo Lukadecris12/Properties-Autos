@@ -48,14 +48,38 @@ async def lifespan(app: FastAPI):
     # Ensure uploads directory exists
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     
-    # Ensure default subscription catalogue and settings are seeded
+    # Ensure default subscription catalogue, settings, and platform admin are seeded
     try:
+        from sqlalchemy import select
         from app.core.database import AsyncSessionLocal
+        from app.core.security import get_password_hash
+        from app.models.user import User
         from app.services.subscription_service import SubscriptionService
         async with AsyncSessionLocal() as session:
             await SubscriptionService.ensure_plans_seeded(session)
+            admin_res = await session.execute(select(User).where(User.email == "admin@propertyhub.ng"))
+            if not admin_res.scalars().first():
+                session.add(User(
+                    email="admin@propertyhub.ng",
+                    phone_number="+2348011112222",
+                    hashed_password=get_password_hash("AdminPass123!"),
+                    first_name="Babajide",
+                    last_name="Alabi",
+                    country="Nigeria",
+                    state="Lagos",
+                    city="Lagos",
+                    roles=["admin", "super_admin", "buyer", "seller", "agent"],
+                    active_mode="admin",
+                    is_active=True,
+                    is_superuser=True,
+                    is_email_verified=True,
+                    is_identity_verified=True,
+                    is_business_verified=True,
+                    verification_badge="Platform Administrator",
+                ))
+                await session.commit()
     except Exception as e:
-        print(f"Warning: Failed to seed subscription catalogue: {e}")
+        print(f"Warning: Failed to seed startup data: {e}")
 
     yield
     # Shutdown
