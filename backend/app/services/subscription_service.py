@@ -30,7 +30,7 @@ def build_default_plans_catalogue() -> List[Dict[str, Any]]:
         "name": "Free Plan",
         "tier_category": "FREE",
         "price_ngn": Decimal("0.00"),
-        "listing_allowance": 1,
+        "listing_allowance": 2,
         "featured_allowance": 0,
         "boost_allowance": 0,
         "duration_days": 30,
@@ -38,7 +38,7 @@ def build_default_plans_catalogue() -> List[Dict[str, Any]]:
         "badge": "Starter",
         "tagline": "Free basic access for individual property & vehicle listers",
         "features": [
-            "1 active published listing",
+            "2 free listing uploads per month",
             "Standard search & AI discovery matching",
             "Direct contact & inquiry messaging",
             "Helpdesk customer support",
@@ -388,6 +388,13 @@ class SubscriptionService:
         
         # Active boosts
         now = utc_now()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        monthly_stmt = select(func.count(Listing.id)).where(
+            Listing.user_id == user_id,
+            Listing.created_at >= month_start
+        )
+        monthly_uploads_count = (await db.execute(monthly_stmt)).scalar() or 0
+
         boost_stmt = (
             select(ListingBoost)
             .where(
@@ -414,7 +421,8 @@ class SubscriptionService:
             })
 
         listing_allowance = plan.listing_allowance
-        remaining_listings = max(0, listing_allowance - active_listings_count)
+        effective_used = max(active_listings_count, monthly_uploads_count) if plan.slug == "free" else active_listings_count
+        remaining_listings = max(0, listing_allowance - effective_used)
         excess_listings_count = max(0, active_listings_count - listing_allowance)
 
         featured_allowance = plan.featured_allowance
@@ -434,6 +442,7 @@ class SubscriptionService:
             # Quotas
             "listing_allowance": listing_allowance,
             "active_listings_count": active_listings_count,
+            "monthly_uploads_count": monthly_uploads_count,
             "remaining_listings": remaining_listings,
             "excess_listings_count": excess_listings_count,
             
@@ -452,6 +461,13 @@ class SubscriptionService:
     async def can_publish_listing(db: AsyncSession, user_id: int) -> Tuple[bool, str, Dict[str, Any]]:
         """Validates if user has available quota to publish an active listing."""
         usage = await SubscriptionService.get_subscription_usage(db, user_id)
+        if usage["plan_slug"] == "free" and usage.get("monthly_uploads_count", 0) >= usage["listing_allowance"]:
+            reason = (
+                f"You have reached your Free Plan limit of {usage['listing_allowance']} "
+                f"listing uploads per month (without featuring or boosting). "
+                f"Please upgrade your subscription to publish more listings."
+            )
+            return False, reason, usage
         if usage["active_listings_count"] >= usage["listing_allowance"]:
             reason = (
                 f"You have reached your listing allowance of {usage['listing_allowance']} "

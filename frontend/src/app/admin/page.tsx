@@ -1134,7 +1134,7 @@ export default function AdminDashboardPage() {
                     className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500"
                   >
                     <optgroup label="Standard Tiers">
-                      <option value="free">Free Plan (1 listing, 0 featured, 0 boosts)</option>
+                      <option value="free">Free Plan (2 listings/month, 0 featured, 0 boosts)</option>
                       <option value="explorer">Explorer (5 listings, 1 featured, 0 boosts)</option>
                       <option value="starter">Starter (10 listings, 3 featured, 1 boost)</option>
                       <option value="growth">Growth (40 listings, 10 featured, 5 boosts)</option>
