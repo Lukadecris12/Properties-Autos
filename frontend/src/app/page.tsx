@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { 
   Building2, 
   Car, 
@@ -30,7 +31,8 @@ import { Footer } from '@/components/Footer';
 import { Listing, TransactionType, AssetCategory } from '@/lib/types';
 import { api } from '@/lib/api';
 
-export default function HomePage() {
+function HomePageContent() {
+  const searchParams = useSearchParams();
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionType>('SALE');
   const [selectedCategory, setSelectedCategory] = useState<AssetCategory>('RESIDENTIAL');
   const [listings, setListings] = useState<Listing[]>([]);
@@ -39,12 +41,18 @@ export default function HomePage() {
   const [selectedBookingListing, setSelectedBookingListing] = useState<Listing | null>(null);
 
   // Fetch listings from backend
-  const fetchMarketplaceListings = async (tx: TransactionType, cat?: AssetCategory) => {
+  const fetchMarketplaceListings = async (
+    tx: TransactionType,
+    cat?: AssetCategory,
+    extra?: { subtype?: string; keyword?: string }
+  ) => {
     setLoading(true);
     try {
       const res = await api.getListings({
         transaction_type: tx,
         asset_category: cat,
+        subtype: extra?.subtype,
+        keyword: extra?.keyword,
         page_size: 50,
       });
       setListings(res.items || []);
@@ -56,15 +64,41 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    fetchMarketplaceListings(selectedTransaction, selectedCategory);
-  }, [selectedTransaction, selectedCategory]);
+    const txParam = searchParams.get('tx')?.toUpperCase();
+    const catParam = searchParams.get('cat')?.toUpperCase();
+    const typeParam = searchParams.get('type');
+    const serviceParam = searchParams.get('service');
+
+    const validTx: TransactionType =
+      txParam === 'SALE' || txParam === 'RENT' || txParam === 'LEASE' ? txParam : 'SALE';
+    const validCat: AssetCategory =
+      catParam === 'RESIDENTIAL' || catParam === 'COMMERCIAL' || catParam === 'LAND' || catParam === 'VEHICLE'
+        ? catParam
+        : 'RESIDENTIAL';
+
+    const extra: { subtype?: string; keyword?: string } = {};
+    if (typeParam === 'short_let') extra.subtype = 'Short-let Apartment';
+    if (serviceParam === 'chauffeur') extra.keyword = 'chauffeur';
+
+    setSelectedTransaction(validTx);
+    setSelectedCategory(validCat);
+    fetchMarketplaceListings(validTx, validCat, extra);
+
+    if (txParam || catParam || typeParam || serviceParam) {
+      setTimeout(() => {
+        document.getElementById('marketplace-listings')?.scrollIntoView({ behavior: 'smooth' });
+      }, 150);
+    }
+  }, [searchParams]);
 
   const handleTransactionChange = (tx: TransactionType) => {
     setSelectedTransaction(tx);
+    fetchMarketplaceListings(tx, selectedCategory);
   };
 
   const handleCategoryChange = (cat: AssetCategory) => {
     setSelectedCategory(cat);
+    fetchMarketplaceListings(selectedTransaction, cat);
   };
 
   const handleNLPSearch = async (query: string) => {
@@ -131,7 +165,7 @@ export default function HomePage() {
         />
 
         {/* 3. Live Marketplace Listings Feed */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <section id="marketplace-listings" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div>
@@ -340,5 +374,13 @@ export default function HomePage() {
       <Footer />
 
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0b0f19]" />}>
+      <HomePageContent />
+    </Suspense>
   );
 }

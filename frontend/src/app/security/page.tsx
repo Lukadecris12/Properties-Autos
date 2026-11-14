@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { ChangePasswordCard } from '@/components/ChangePasswordCard';
 import { 
   ShieldCheck, 
   Lock, 
@@ -133,6 +134,8 @@ export default function SecurityDisclosuresPage() {
               <p className="mt-1 text-gray-400">Please include detailed steps to reproduce, HTTP requests/responses, and allow our team reasonable time to remediate before public disclosure.</p>
             </div>
           </section>
+
+          <ChangePasswordCard />
 
         </div>
 

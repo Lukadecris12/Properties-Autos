@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants.dart';
 import '../models/listing_model.dart';
 import '../models/subscription_model.dart';
@@ -7,24 +8,69 @@ import '../models/subscription_model.dart';
 class ApiService {
   final http.Client client;
   static String? _authToken;
-  static bool _isLoggedIn = true;
-  static Map<String, dynamic>? _currentUser = {
-    'name': 'Senator / Investor',
-    'email': 'investor@properties-autos.ng',
-    'phone': '+234 803 123 4567',
-    'role': 'BUYER',
-  };
+  static bool _isLoggedIn = false;
+  static Map<String, dynamic>? _currentUser;
+  static String _savedEmail = '';
+  static String _savedPassword = '';
 
   ApiService({http.Client? client}) : client = client ?? http.Client();
+
+  static Future<void> initSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _savedEmail = prefs.getString('saved_email') ?? '';
+      _savedPassword = prefs.getString('saved_password') ?? '';
+      final token = prefs.getString('auth_token');
+      final userJson = prefs.getString('current_user');
+      if (token != null && token.isNotEmpty) {
+        _authToken = token;
+        _isLoggedIn = true;
+        if (userJson != null && userJson.isNotEmpty) {
+          _currentUser = json.decode(userJson) as Map<String, dynamic>;
+        }
+      }
+    } catch (_) {}
+  }
+
+  static String get savedEmail => _savedEmail;
+  static String get savedPassword => _savedPassword;
+
+  static Future<void> saveCredentials(String email, String password) async {
+    _savedEmail = email;
+    _savedPassword = password;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_email', email);
+      await prefs.setString('saved_password', password);
+    } catch (_) {}
+  }
+
+  static Future<void> _persistSession(String token, Map<String, dynamic>? user) async {
+    _authToken = token;
+    _isLoggedIn = true;
+    if (user != null) _currentUser = user;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', token);
+      if (user != null) {
+        await prefs.setString('current_user', json.encode(user));
+      }
+    } catch (_) {}
+  }
 
   static void setToken(String? token) {
     _authToken = token;
   }
 
-  static void clearToken() {
+  static Future<void> clearToken() async {
     _authToken = null;
     _isLoggedIn = false;
     _currentUser = null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('auth_token');
+      await prefs.remove('current_user');
+    } catch (_) {}
   }
 
   static bool get isLoggedIn => _isLoggedIn;
@@ -1016,23 +1062,153 @@ class ApiService {
     };
   }
 
-  Future<Map<String, dynamic>> onboardingComplete(Map<String, dynamic> payload) async {
+  Future<Map<String, dynamic>> onboardingComplete(
+    Map<String, dynamic> payload, {
+    String? password,
+  }) async {
+    final uri = Uri.parse(ApiConstants.onboardingCompleteEndpoint);
+    final response = await client
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode(payload),
+        )
+        .timeout(const Duration(seconds: 15));
+
+    final decoded = json.decode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200) {
+      final data = (decoded['data'] is Map<String, dynamic>)
+          ? decoded['data'] as Map<String, dynamic>
+          : decoded;
+      final token = (data['access_token'] ?? decoded['access_token'])?.toString() ?? '';
+      final user = (data['user'] is Map<String, dynamic>)
+          ? data['user'] as Map<String, dynamic>
+          : Map<String, dynamic>.from(payload);
+
+      if (token.isNotEmpty) {
+        await _persistSession(token, user);
+      } else {
+        setLoggedIn(true, user);
+      }
+      if (password != null && password.isNotEmpty) {
+        await saveCredentials((payload['email'] ?? '').toString().trim(), password);
+      }
+      return decoded;
+    }
+    throw Exception(decoded['detail'] ?? 'Onboarding failed');
+  }
+
+  Future<Map<String, dynamic>> login(String email, String password) async {
+    final uri = Uri.parse('${ApiConstants.authEndpoint}/login');
+    final response = await client
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: {
+            'username': email.trim(),
+            'password': password,
+          },
+        )
+        .timeout(const Duration(seconds: 15));
+
+    final decoded = json.decode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200 && decoded['access_token'] != null) {
+      final token = decoded['access_token'].toString();
+      _authToken = token;
+      final user = await fetchCurrentUser();
+      await _persistSession(token, user);
+      await saveCredentials(email.trim(), password);
+      return user ?? {};
+    }
+    throw Exception(decoded['detail'] ?? 'Incorrect email or password');
+  }
+
+  Future<Map<String, dynamic>?> fetchCurrentUser() async {
+    if (_authToken == null || _authToken!.isEmpty) return _currentUser;
     try {
-      final uri = Uri.parse(ApiConstants.onboardingCompleteEndpoint);
-      final response = await client.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(payload),
-      ).timeout(const Duration(seconds: 5));
+      final uri = Uri.parse('${ApiConstants.authEndpoint}/me');
+      final response = await client
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $_authToken',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final decoded = json.decode(response.body) as Map<String, dynamic>;
+        final data = decoded['data'];
+        if (data is Map<String, dynamic>) {
+          _currentUser = data;
+          _isLoggedIn = true;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('current_user', json.encode(data));
+          return data;
+        }
       }
     } catch (_) {}
-    return {
-      'status': 'success',
-      'access_token': 'simulated_jwt_token',
-      'user': payload,
-    };
+    return _currentUser;
+  }
+
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    final uri = Uri.parse('${ApiConstants.authEndpoint}/change-password');
+    final response = await client
+        .post(
+          uri,
+          headers: {
+            'Content-Type': 'application/json',
+            if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+          },
+          body: json.encode({
+            'current_password': currentPassword,
+            'new_password': newPassword,
+          }),
+        )
+        .timeout(const Duration(seconds: 15));
+    final decoded = json.decode(response.body) as Map<String, dynamic>;
+    if (response.statusCode != 200) {
+      throw Exception(decoded['detail'] ?? 'Failed to change password');
+    }
+    if (_savedEmail.isNotEmpty) {
+      await saveCredentials(_savedEmail, newPassword);
+    }
+  }
+
+  Future<String?> forgotPassword(String email) async {
+    final uri = Uri.parse('${ApiConstants.authEndpoint}/forgot-password');
+    final response = await client
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({'email': email.trim()}),
+        )
+        .timeout(const Duration(seconds: 15));
+    final decoded = json.decode(response.body) as Map<String, dynamic>;
+    if (response.statusCode != 200) {
+      throw Exception(decoded['detail'] ?? 'Could not send reset code');
+    }
+    return decoded['data']?['otp_debug']?.toString();
+  }
+
+  Future<void> resetPassword(String email, String otpCode, String newPassword) async {
+    final uri = Uri.parse('${ApiConstants.authEndpoint}/reset-password');
+    final response = await client
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'email': email.trim(),
+            'otp_code': otpCode.trim(),
+            'new_password': newPassword,
+          }),
+        )
+        .timeout(const Duration(seconds: 15));
+    final decoded = json.decode(response.body) as Map<String, dynamic>;
+    if (response.statusCode != 200) {
+      throw Exception(decoded['detail'] ?? 'Invalid or expired reset code');
+    }
+    await saveCredentials(email.trim(), newPassword);
   }
 
   // --- Property Investments ---

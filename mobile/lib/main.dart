@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
+import 'services/api_service.dart';
 import 'services/revenuecat_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ApiService.initSession();
   await RevenueCatService.init();
   runApp(const PropertyHubApp());
 }

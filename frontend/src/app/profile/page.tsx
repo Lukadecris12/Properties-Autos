@@ -38,6 +38,7 @@ import {
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { AIAssistantModal } from '@/components/AIAssistantModal';
+import { ChangePasswordCard } from '@/components/ChangePasswordCard';
 import { api } from '@/lib/api';
 
 export default function ProfilePage() {
@@ -621,6 +622,9 @@ export default function ProfilePage() {
                 })}
               </div>
             </div>
+
+            {/* SECTION 3.5: CHANGE PASSWORD */}
+            <ChangePasswordCard />
 
             {/* Master Admin Console link if superuser */}
             {currentUser?.is_superuser && (

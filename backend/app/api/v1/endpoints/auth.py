@@ -2,6 +2,7 @@ from datetime import timedelta
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -490,4 +491,115 @@ async def block_user(
     return ResponseModel(
         message=f"User {target_user_id} has been blocked. They will not be able to contact you.",
         data={"blocked_user_id": target_user_id, "status": "BLOCKED"}
+    )
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=6)
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    otp_code: str = Field(..., min_length=6, max_length=6)
+    new_password: str = Field(..., min_length=6)
+
+
+@router.post("/change-password", response_model=ResponseModel[dict])
+async def change_password(
+    req: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Allows an authenticated user to change their password."""
+    if not verify_password(req.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect."
+        )
+    current_user.hashed_password = get_password_hash(req.new_password)
+    await db.commit()
+    return ResponseModel(
+        message="Password updated successfully.",
+        data={"updated": True}
+    )
+
+
+@router.post("/forgot-password", response_model=ResponseModel[dict])
+async def forgot_password(
+    req: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Sends a 6-digit OTP code to reset a forgotten password."""
+    stmt = select(User).where(User.email == req.email)
+    user = (await db.execute(stmt)).scalars().first()
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No active account found with that email address."
+        )
+
+    otp_code = generate_otp_code()
+    expires_at = utc_now() + timedelta(minutes=15)
+    otp_record = OTPVerification(
+        email=req.email,
+        otp_code=otp_code,
+        expires_at=expires_at,
+        is_verified=False,
+    )
+    db.add(otp_record)
+    await db.commit()
+
+    email_sent = await send_verification_otp_email(req.email, otp_code)
+    return ResponseModel(
+        message="A 6-digit password reset code has been sent to your email.",
+        data={
+            "email": req.email,
+            "otp_debug": otp_code if (not email_sent or settings.DEBUG) else None,
+        }
+    )
+
+
+@router.post("/reset-password", response_model=ResponseModel[dict])
+async def reset_password(
+    req: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Verifies the 6-digit reset OTP and sets a new password."""
+    stmt_otp = (
+        select(OTPVerification)
+        .where(
+            OTPVerification.email == req.email,
+            OTPVerification.is_verified == False,
+        )
+        .order_by(OTPVerification.created_at.desc())
+    )
+    otp_record = (await db.execute(stmt_otp)).scalars().first()
+    if not otp_record or otp_record.otp_code != req.otp_code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid password reset code."
+        )
+    if otp_record.expires_at < utc_now():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset code has expired. Please request a new one."
+        )
+
+    stmt_user = select(User).where(User.email == req.email)
+    user = (await db.execute(stmt_user)).scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User account not found.")
+
+    user.hashed_password = get_password_hash(req.new_password)
+    otp_record.is_verified = True
+    await db.commit()
+
+    return ResponseModel(
+        message="Password has been reset successfully. You can now sign in with your new password.",
+        data={"reset": True}
     )

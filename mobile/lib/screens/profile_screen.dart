@@ -9,6 +9,7 @@ import 'saved_listings_screen.dart';
 import 'contact_support_screen.dart';
 import 'subscription_screen.dart';
 import 'faq_screen.dart';
+import '../core/constants.dart';
 import '../widgets/legal_dialog.dart';
 import '../services/api_service.dart';
 
@@ -22,9 +23,54 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String _activeMode = 'BUYER'; // BUYER, SELLER, AGENT, DEVELOPER
+  String _activeMode = ApiService.currentUser?['active_mode'] ?? 'BUYER';
   String _selectedCurrency = 'NGN (₦)';
-  bool _isLoggedIn = true;
+  bool _isLoggedIn = ApiService.isLoggedIn;
+  Map<String, dynamic>? _user = ApiService.currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncUser();
+  }
+
+  Future<void> _syncUser() async {
+    if (ApiService.isLoggedIn) {
+      final fresh = await ApiService().fetchCurrentUser();
+      if (mounted) {
+        setState(() {
+          _isLoggedIn = ApiService.isLoggedIn;
+          _user = fresh ?? ApiService.currentUser;
+          _activeMode = _user?['active_mode'] ?? _activeMode;
+        });
+      }
+    }
+  }
+
+  String get _displayName {
+    if (!_isLoggedIn || _user == null) return 'Guest User';
+    final first = (_user?['first_name'] ?? '').toString().trim();
+    final last = (_user?['last_name'] ?? '').toString().trim();
+    final full = '$first $last'.trim();
+    if (full.isNotEmpty) return full;
+    final company = (_user?['company_name'] ?? '').toString().trim();
+    if (company.isNotEmpty) return company;
+    final name = (_user?['name'] ?? '').toString().trim();
+    if (name.isNotEmpty) return name;
+    return (_user?['email'] ?? 'Verified Member').toString();
+  }
+
+  String get _displayEmail {
+    if (!_isLoggedIn || _user == null) return 'Sign in to access your portfolio';
+    return (_user?['email'] ?? '').toString();
+  }
+
+  String? get _avatarUrl {
+    if (!_isLoggedIn || _user == null) return null;
+    final raw = (_user?['avatar_url'] ?? _user?['logo_url'] ?? '').toString().trim();
+    if (raw.isEmpty) return null;
+    return ApiConstants.resolveImageUrl(raw);
+  }
 
   void _showDeleteAccountDialog() {
     showDialog(
@@ -84,8 +130,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showSignInDialog() {
-    final emailController = TextEditingController();
-    final passController = TextEditingController();
+    final emailController = TextEditingController(text: ApiService.savedEmail);
+    final passController = TextEditingController(text: ApiService.savedPassword);
+    bool obscurePassword = true;
+    bool submitting = false;
+    String? errorMsg;
 
     showModalBottomSheet(
       context: context,
@@ -95,71 +144,473 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Sign In to Properties & Autos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                  IconButton(icon: const Icon(Icons.close, color: Colors.grey), onPressed: () => Navigator.pop(ctx)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Sign In to Properties & Autos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                      IconButton(icon: const Icon(Icons.close, color: Colors.grey), onPressed: () => Navigator.pop(ctx)),
+                    ],
+                  ),
+                  const Text('Access your unified portfolio, saved listings, and AI matched requests.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  const SizedBox(height: 16),
+                  if (errorMsg != null)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF450A0A),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.redAccent),
+                      ),
+                      child: Text(errorMsg!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+                    ),
+                  TextField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'Email Address',
+                      labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                      filled: true,
+                      fillColor: const Color(0xFF0B0F19),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF374151))),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: passController,
+                    obscureText: obscurePassword,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                      filled: true,
+                      fillColor: const Color(0xFF0B0F19),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF374151))),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.grey,
+                          size: 18,
+                        ),
+                        onPressed: () => setModalState(() => obscurePassword = !obscurePassword),
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showForgotPasswordDialog(initialEmail: emailController.text.trim());
+                      },
+                      child: const Text('Forgot password?', style: TextStyle(color: Color(0xFF10B981), fontSize: 12)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF059669),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: submitting
+                          ? null
+                          : () async {
+                              if (emailController.text.trim().isEmpty || passController.text.isEmpty) {
+                                setModalState(() => errorMsg = 'Please enter your email and password.');
+                                return;
+                              }
+                              setModalState(() {
+                                submitting = true;
+                                errorMsg = null;
+                              });
+                              try {
+                                final user = await ApiService().login(
+                                  emailController.text.trim(),
+                                  passController.text,
+                                );
+                                if (mounted) {
+                                  Navigator.pop(ctx);
+                                  setState(() {
+                                    _isLoggedIn = true;
+                                    _user = user;
+                                    _activeMode = user['active_mode'] ?? _activeMode;
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(backgroundColor: const Color(0xFF065F46), content: Text('Signed in as $_displayName')),
+                                  );
+                                }
+                              } catch (e) {
+                                setModalState(() {
+                                  submitting = false;
+                                  errorMsg = e.toString().replaceFirst('Exception: ', '');
+                                });
+                              }
+                            },
+                      child: submitting
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text('Sign In', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                    ),
+                  ),
                 ],
               ),
-              const Text('Access your unified portfolio, saved listings, and AI matched requests.', style: TextStyle(fontSize: 12, color: Colors.grey)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: emailController,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                decoration: InputDecoration(
-                  labelText: 'Email Address',
-                  labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
-                  filled: true,
-                  fillColor: const Color(0xFF0B0F19),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF374151))),
-                ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showForgotPasswordDialog({String initialEmail = ''}) {
+    final emailController = TextEditingController(text: initialEmail.isNotEmpty ? initialEmail : ApiService.savedEmail);
+    final otpController = TextEditingController();
+    final newPassController = TextEditingController();
+    int step = 1;
+    bool obscureNew = true;
+    bool submitting = false;
+    String? errorMsg;
+    String? otpDebug;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF111827),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: passController,
-                obscureText: true,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
-                  filled: true,
-                  fillColor: const Color(0xFF0B0F19),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF374151))),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF059669),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Reset Password', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                      IconButton(icon: const Icon(Icons.close, color: Colors.grey), onPressed: () => Navigator.pop(ctx)),
+                    ],
                   ),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    setState(() => _isLoggedIn = true);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(backgroundColor: Color(0xFF065F46), content: Text('Signed in successfully as Verified User')),
-                    );
-                  },
-                  child: const Text('Sign In', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                ),
+                  Text(
+                    step == 1
+                        ? 'Enter your email address to receive a 6-digit reset code.'
+                        : 'Enter the 6-digit code and choose a new password.',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 14),
+                  if (errorMsg != null)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF450A0A),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.redAccent),
+                      ),
+                      child: Text(errorMsg!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+                    ),
+                  if (otpDebug != null)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF451A03),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFF59E0B)),
+                      ),
+                      child: Text('Reset Code: $otpDebug', style: const TextStyle(color: Color(0xFFFBBF24), fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  if (step == 1) ...[
+                    TextField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      decoration: InputDecoration(
+                        labelText: 'Email Address',
+                        labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                        filled: true,
+                        fillColor: const Color(0xFF0B0F19),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF374151))),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
+                        onPressed: submitting
+                            ? null
+                            : () async {
+                                setModalState(() {
+                                  submitting = true;
+                                  errorMsg = null;
+                                });
+                                try {
+                                  final dbg = await ApiService().forgotPassword(emailController.text.trim());
+                                  setModalState(() {
+                                    submitting = false;
+                                    otpDebug = dbg;
+                                    step = 2;
+                                  });
+                                } catch (e) {
+                                  setModalState(() {
+                                    submitting = false;
+                                    errorMsg = e.toString().replaceFirst('Exception: ', '');
+                                  });
+                                }
+                              },
+                        child: Text(submitting ? 'Sending...' : 'Send 6-Digit Code', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ] else ...[
+                    TextField(
+                      controller: otpController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      decoration: InputDecoration(
+                        labelText: '6-Digit Code',
+                        labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                        filled: true,
+                        fillColor: const Color(0xFF0B0F19),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF374151))),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: newPassController,
+                      obscureText: obscureNew,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      decoration: InputDecoration(
+                        labelText: 'New Password (min 6 chars)',
+                        labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                        filled: true,
+                        fillColor: const Color(0xFF0B0F19),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF374151))),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureNew ? Icons.visibility_off : Icons.visibility, color: Colors.grey, size: 18),
+                          onPressed: () => setModalState(() => obscureNew = !obscureNew),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
+                        onPressed: submitting
+                            ? null
+                            : () async {
+                                if (newPassController.text.length < 6) {
+                                  setModalState(() => errorMsg = 'Password must be at least 6 characters.');
+                                  return;
+                                }
+                                setModalState(() {
+                                  submitting = true;
+                                  errorMsg = null;
+                                });
+                                try {
+                                  await ApiService().resetPassword(
+                                    emailController.text.trim(),
+                                    otpController.text.trim(),
+                                    newPassController.text,
+                                  );
+                                  if (mounted) {
+                                    Navigator.pop(ctx);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(backgroundColor: Color(0xFF065F46), content: Text('Password reset! You can now sign in.')),
+                                    );
+                                    _showSignInDialog();
+                                  }
+                                } catch (e) {
+                                  setModalState(() {
+                                    submitting = false;
+                                    errorMsg = e.toString().replaceFirst('Exception: ', '');
+                                  });
+                                }
+                              },
+                        child: Text(submitting ? 'Saving...' : 'Save New Password', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showChangePasswordDialog() {
+    final currentController = TextEditingController();
+    final newController = TextEditingController();
+    final confirmController = TextEditingController();
+    bool obscureCur = true;
+    bool obscureNew = true;
+    bool obscureConf = true;
+    bool submitting = false;
+    String? errorMsg;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF111827),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Change Password', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                      IconButton(icon: const Icon(Icons.close, color: Colors.grey), onPressed: () => Navigator.pop(ctx)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (errorMsg != null)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF450A0A),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.redAccent),
+                      ),
+                      child: Text(errorMsg!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+                    ),
+                  TextField(
+                    controller: currentController,
+                    obscureText: obscureCur,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'Current Password',
+                      labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                      filled: true,
+                      fillColor: const Color(0xFF0B0F19),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF374151))),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureCur ? Icons.visibility_off : Icons.visibility, color: Colors.grey, size: 18),
+                        onPressed: () => setModalState(() => obscureCur = !obscureCur),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: newController,
+                    obscureText: obscureNew,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'New Password (min 6 chars)',
+                      labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                      filled: true,
+                      fillColor: const Color(0xFF0B0F19),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF374151))),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureNew ? Icons.visibility_off : Icons.visibility, color: Colors.grey, size: 18),
+                        onPressed: () => setModalState(() => obscureNew = !obscureNew),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: confirmController,
+                    obscureText: obscureConf,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'Confirm New Password',
+                      labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                      filled: true,
+                      fillColor: const Color(0xFF0B0F19),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF374151))),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureConf ? Icons.visibility_off : Icons.visibility, color: Colors.grey, size: 18),
+                        onPressed: () => setModalState(() => obscureConf = !obscureConf),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
+                      onPressed: submitting
+                          ? null
+                          : () async {
+                              if (newController.text.length < 6) {
+                                setModalState(() => errorMsg = 'New password must be at least 6 characters.');
+                                return;
+                              }
+                              if (newController.text != confirmController.text) {
+                                setModalState(() => errorMsg = 'New passwords do not match.');
+                                return;
+                              }
+                              setModalState(() {
+                                submitting = true;
+                                errorMsg = null;
+                              });
+                              try {
+                                await ApiService().changePassword(currentController.text, newController.text);
+                                if (mounted) {
+                                  Navigator.pop(ctx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(backgroundColor: Color(0xFF065F46), content: Text('Password updated successfully.')),
+                                  );
+                                }
+                              } catch (e) {
+                                setModalState(() {
+                                  submitting = false;
+                                  errorMsg = e.toString().replaceFirst('Exception: ', '');
+                                });
+                              }
+                            },
+                      child: Text(submitting ? 'Updating...' : 'Update Password', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -194,12 +645,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         height: 56,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
+                          color: const Color(0xFF064E3B),
                           border: Border.all(color: const Color(0xFF10B981), width: 2),
-                          image: const DecorationImage(
-                            image: NetworkImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400'),
-                            fit: BoxFit.cover,
-                          ),
+                          image: _avatarUrl != null
+                              ? DecorationImage(
+                                  image: NetworkImage(_avatarUrl!),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                         ),
+                        child: _avatarUrl == null
+                            ? Center(
+                                child: Text(
+                                  _displayName.isNotEmpty ? _displayName[0].toUpperCase() : 'G',
+                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                              )
+                            : null,
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -207,19 +669,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              children: const [
-                                Text(
-                                  'Senator / Investor',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    _displayName,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                                  ),
                                 ),
-                                SizedBox(width: 6),
-                                Icon(Icons.verified, color: Color(0xFF10B981), size: 16),
+                                if (_isLoggedIn) ...[
+                                  const SizedBox(width: 6),
+                                  const Icon(Icons.verified, color: Color(0xFF10B981), size: 16),
+                                ],
                               ],
                             ),
                             const SizedBox(height: 2),
-                            const Text(
-                              'investor.prime@propertyhub.ng',
-                              style: TextStyle(fontSize: 11, color: Colors.grey),
+                            Text(
+                              _displayEmail,
+                              style: const TextStyle(fontSize: 11, color: Colors.grey),
                             ),
                             const SizedBox(height: 6),
                             Container(
@@ -496,6 +963,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                   _buildDivider(),
+                  if (_isLoggedIn) ...[
+                    _buildMenuItem(
+                      icon: Icons.lock_reset,
+                      iconColor: const Color(0xFF10B981),
+                      title: 'Change Password',
+                      subtitle: 'Update your account password securely',
+                      onTap: _showChangePasswordDialog,
+                    ),
+                    _buildDivider(),
+                  ],
                   if (!_isLoggedIn)
                     _buildMenuItem(
                       icon: Icons.login,
@@ -509,12 +986,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: Icons.logout,
                       iconColor: Colors.redAccent,
                       title: 'Log Out',
-                      subtitle: 'Signed in as investor.prime@propertyhub.ng',
-                      onTap: () {
-                        setState(() => _isLoggedIn = false);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Logged out of Properties & Autos')),
-                        );
+                      subtitle: 'Signed in as $_displayEmail',
+                      onTap: () async {
+                        await ApiService.clearToken();
+                        if (mounted) {
+                          setState(() {
+                            _isLoggedIn = false;
+                            _user = null;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Logged out of Properties & Autos')),
+                          );
+                        }
                       },
                     ),
                 ],

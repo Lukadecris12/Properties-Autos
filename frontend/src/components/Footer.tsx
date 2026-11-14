@@ -203,10 +203,6 @@ export const Footer: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
             <p>© {new Date().getFullYear()} Clean Connect. All rights reserved.</p>
             <div className="flex items-center gap-6 flex-wrap">
-              <Link href="/contact" className="inline-flex items-center gap-1.5 text-gray-300 hover:text-white font-medium">
-                <Headphones className="w-3.5 h-3.5 text-brand-400" />
-                <span>Support</span>
-              </Link>
               <Link href="/terms" className="hover:text-gray-400">Terms of Service</Link>
               <Link href="/privacy" className="hover:text-gray-400">Privacy Policy</Link>
               <Link href="/security" className="hover:text-gray-400">Security Disclosures</Link>

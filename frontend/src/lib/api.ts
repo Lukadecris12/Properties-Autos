@@ -215,6 +215,45 @@ class ApiClient {
     return res.json();
   }
 
+  async changePassword(current_password: string, new_password: string) {
+    const res = await fetch(`${API_BASE_URL}/auth/change-password`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ current_password, new_password }),
+    });
+    if (!res.ok) {
+      const msg = await this.parseErrorResponse(res, 'Failed to change password.');
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+
+  async forgotPassword(email: string) {
+    const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const msg = await this.parseErrorResponse(res, 'Could not initiate password reset.');
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+
+  async resetPassword(email: string, otp_code: string, new_password: string) {
+    const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp_code, new_password }),
+    });
+    if (!res.ok) {
+      const msg = await this.parseErrorResponse(res, 'Invalid or expired reset code.');
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+
   async getAgentsAndDevelopers(role?: string) {
     const query = role ? `?role=${role}` : '';
     const res = await fetch(`${API_BASE_URL}/auth/agents-developers${query}`);

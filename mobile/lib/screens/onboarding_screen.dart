@@ -15,6 +15,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _step = 1; // 1 = credentials, 2 = 6-digit OTP, 3 = onboarding details
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
   final _confirmPasswordController = TextEditingController();
 
   // OTP
@@ -175,16 +176,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'logo_url': _logoUrlController.text.trim(),
     };
 
-    await _apiService.onboardingComplete(payload);
-
-    setState(() => _loading = false);
-
-    if (mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-        (route) => false,
+    try {
+      await _apiService.onboardingComplete(
+        payload,
+        password: _passwordController.text.trim(),
       );
+
+      setState(() => _loading = false);
+
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _errorMsg = e.toString().replaceFirst('Exception: ', '');
+      });
     }
   }
 
@@ -233,7 +244,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
               _buildTextField('Email Address', _emailController, Icons.email, keyboardType: TextInputType.emailAddress),
               const SizedBox(height: 14),
-              _buildTextField('Password (min 6 characters)', _passwordController, Icons.lock, obscure: true),
+              _buildTextField(
+                'Password (min 6 characters)',
+                _passwordController,
+                Icons.lock,
+                obscure: _obscurePassword,
+                onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
               const SizedBox(height: 14),
               _buildTextField('Confirm Password', _confirmPasswordController, Icons.lock_outline, obscure: true),
               const SizedBox(height: 24),
@@ -615,6 +632,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     TextEditingController controller,
     IconData icon, {
     bool obscure = false,
+    VoidCallback? onToggleObscure,
     TextInputType keyboardType = TextInputType.text,
   }) {
     return TextField(
@@ -626,6 +644,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         labelText: label,
         labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
         prefixIcon: Icon(icon, color: Colors.grey, size: 18),
+        suffixIcon: onToggleObscure != null
+            ? IconButton(
+                icon: Icon(
+                  obscure ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey,
+                  size: 18,
+                ),
+                onPressed: onToggleObscure,
+              )
+            : null,
         filled: true,
         fillColor: const Color(0xFF111827),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF374151))),
