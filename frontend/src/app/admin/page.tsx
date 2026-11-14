@@ -35,7 +35,8 @@ import {
   CreditCard,
   Settings,
   Eye,
-  EyeOff
+  EyeOff,
+  Trash2
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -162,6 +163,20 @@ export default function AdminDashboardPage() {
       setUsers(updated.data || []);
     } catch (err) {
       console.error('Failed to toggle active status:', err);
+    }
+  };
+
+  const handleDeleteUser = async (userId: number, label: string) => {
+    if (!window.confirm(`Permanently delete user account "${label}"? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      await api.deleteAdminUser(userId);
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      const statsRes = await api.getAdminStats().catch(() => null);
+      if (statsRes?.data) setStats(statsRes.data);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete user account.');
     }
   };
 
@@ -502,6 +517,7 @@ export default function AdminDashboardPage() {
                           <th className="py-3 px-4">Participant</th>
                           <th className="py-3 px-4">Assigned Roles</th>
                           <th className="py-3 px-4">Contact &amp; Location</th>
+                          <th className="py-3 px-4">Subscription</th>
                           <th className="py-3 px-4">Verification</th>
                           <th className="py-3 px-4">Account Access</th>
                           <th className="py-3 px-4 text-right">Admin Controls</th>
@@ -529,6 +545,18 @@ export default function AdminDashboardPage() {
                             <td className="py-3 px-4">
                               <div className="text-gray-300 font-medium">{u.phone_number || 'N/A'}</div>
                               <div className="text-[11px] text-gray-500">{u.city || 'Lagos'}, {u.state || 'Lagos'}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="font-semibold text-amber-300 text-xs">
+                                {u.subscription_plan || 'Free Plan'}
+                              </div>
+                              <span className={`inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                u.subscription_status === 'ACTIVE'
+                                  ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30'
+                                  : 'bg-gray-800 text-gray-400'
+                              }`}>
+                                {u.subscription_status || 'FREE'}
+                              </span>
                             </td>
                             <td className="py-3 px-4">
                               {u.verification_badge === 'Verified' || u.is_identity_verified ? (
@@ -569,6 +597,16 @@ export default function AdminDashboardPage() {
                                 >
                                   {u.is_active ? 'Suspend' : 'Activate'}
                                 </button>
+                                {!u.is_superuser && (
+                                  <button
+                                    onClick={() => handleDeleteUser(u.id, u.email || `${u.first_name} ${u.last_name}`)}
+                                    title="Delete User Account"
+                                    className="px-2 py-1 rounded text-[11px] font-semibold bg-red-950/60 border border-red-700/70 text-red-300 hover:bg-red-700 hover:text-white transition-all inline-flex items-center gap-1"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    <span>Delete</span>
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>

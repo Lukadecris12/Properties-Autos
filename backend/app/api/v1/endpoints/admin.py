@@ -152,6 +152,23 @@ async def list_all_users(
             or (u.city and s in u.city.lower())
         ]
 
+    # Attach active/latest subscription plan info for each user
+    sub_stmt = (
+        select(UserSubscription.user_id, SubscriptionPlan.name, UserSubscription.status)
+        .join(SubscriptionPlan, UserSubscription.plan_id == SubscriptionPlan.id)
+        .order_by(UserSubscription.id.desc())
+    )
+    sub_rows = (await db.execute(sub_stmt)).all()
+    sub_map: Dict[int, tuple] = {}
+    for uid, plan_name, sub_status in sub_rows:
+        if uid not in sub_map or sub_status == "ACTIVE":
+            sub_map[uid] = (plan_name, sub_status)
+
+    for u in users:
+        plan_name, sub_status = sub_map.get(u.id, ("Free Plan", "FREE"))
+        u.subscription_plan = plan_name
+        u.subscription_status = sub_status
+
     return ResponseModel(data=users)
 
 @router.put("/users/{user_id}/toggle-verify", response_model=ResponseModel[UserResponse])
@@ -202,6 +219,29 @@ async def toggle_user_active(
     await db.refresh(user)
 
     return ResponseModel(message=f"User account has been {status_msg}.", data=user)
+
+@router.delete("/users/{user_id}")
+async def delete_user_account(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Permanently delete a user account and its cascaded records."""
+    verify_admin(current_user)
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="You cannot delete your own active admin account.")
+
+    stmt = select(User).where(User.id == user_id)
+    user = (await db.execute(stmt)).scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.is_superuser:
+        raise HTTPException(status_code=400, detail="Administrator accounts cannot be deleted.")
+
+    deleted_email = user.email
+    await db.delete(user)
+    await db.commit()
+    return ResponseModel(message=f"User account {deleted_email} has been deleted.", data={"deleted_user_id": user_id})
 
 @router.get("/activity-logs")
 async def get_activity_logs(

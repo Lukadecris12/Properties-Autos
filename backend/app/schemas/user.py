@@ -40,6 +40,8 @@ class UserResponse(UserBase):
     is_identity_verified: bool = False
     is_business_verified: bool = False
     verification_badge: str = "Unverified"
+    subscription_plan: Optional[str] = None
+    subscription_status: Optional[str] = None
     created_at: datetime
 
     class Config:

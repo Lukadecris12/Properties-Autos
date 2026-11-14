@@ -391,6 +391,18 @@ class ApiClient {
     return res.json();
   }
 
+  async deleteAdminUser(userId: number) {
+    const res = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) {
+      const msg = await this.parseErrorResponse(res, 'Failed to delete user account');
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+
   async getAdminActivityLogs() {
     const res = await fetch(`${API_BASE_URL}/admin/activity-logs`, {
       headers: this.getAuthHeaders(),
