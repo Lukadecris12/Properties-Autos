@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../widgets/auto_hide_app_bar_scaffold.dart';
 
 class RequestsScreen extends StatefulWidget {
   const RequestsScreen({Key? key}) : super(key: key);
@@ -248,76 +249,83 @@ class _RequestsScreenState extends State<RequestsScreen> {
       backgroundColor: const Color(0xFF0B0F19),
       body: Column(
         children: [
-          // Top AI Matching Banner
-          Container(
-            padding: const EdgeInsets.all(16),
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF064E3B), Color(0xFF0F172A)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF059669).withOpacity(0.4)),
-            ),
-            child: Row(
+          AutoHideCollapsibleSection(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
+                // Top AI Matching Banner
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF064E3B), Color(0xFF0F172A)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF059669).withOpacity(0.4)),
                   ),
-                  child: const Icon(Icons.auto_awesome, color: Color(0xFF10B981), size: 24),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'AI Smart Matching',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.auto_awesome, color: Color(0xFF10B981), size: 24),
                       ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Post what you want to buy or rent. Verified agents will match your exact budget & location.',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'AI Smart Matching',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Post what you want to buy or rent. Verified agents will match your exact budget & location.',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: _showPostRequestDialog,
+                        child: const Text('Post Request', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
                       ),
                     ],
                   ),
                 ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: _showPostRequestDialog,
-                  child: const Text('Post Request', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
-                ),
-              ],
-            ),
-          ),
 
-          // Category Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                _buildCategoryFilter('ALL', 'All Requests'),
-                const SizedBox(width: 8),
-                _buildCategoryFilter('RESIDENTIAL', 'Houses & Apartments'),
-                const SizedBox(width: 8),
-                _buildCategoryFilter('LAND', 'Land'),
-                const SizedBox(width: 8),
-                _buildCategoryFilter('VEHICLE', 'Autos & Vehicles'),
+                // Category Chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      _buildCategoryFilter('ALL', 'All Requests'),
+                      const SizedBox(width: 8),
+                      _buildCategoryFilter('RESIDENTIAL', 'Houses & Apartments'),
+                      const SizedBox(width: 8),
+                      _buildCategoryFilter('LAND', 'Land'),
+                      const SizedBox(width: 8),
+                      _buildCategoryFilter('VEHICLE', 'Autos & Vehicles'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
               ],
             ),
           ),
-          const SizedBox(height: 12),
 
           // Requests List
           Expanded(

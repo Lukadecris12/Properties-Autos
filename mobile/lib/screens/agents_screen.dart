@@ -94,50 +94,56 @@ class _AgentsScreenState extends State<AgentsScreen> {
       body: Column(
         children: [
           // Search & Filter Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          AutoHideCollapsibleSection(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Search Bar
-                TextField(
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                  onChanged: (val) => setState(() => _searchQuery = val),
-                  decoration: InputDecoration(
-                    hintText: 'Search by agency, developer, auto dealer, or city...',
-                    hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFF10B981), size: 20),
-                    filled: true,
-                    fillColor: const Color(0xFF111827),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: Color(0xFF1F2937)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: Color(0xFF1F2937)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Role Filter Tabs
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(
                     children: [
-                      _buildFilterChip('all', 'All Partners'),
-                      _buildFilterChip('agent', 'Real Estate Agents'),
-                      _buildFilterChip('developer', 'Certified Developers'),
-                      _buildFilterChip('dealer', 'Cars & Vehicles Dealers'),
+                      // Search Bar
+                      TextField(
+                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                        onChanged: (val) => setState(() => _searchQuery = val),
+                        decoration: InputDecoration(
+                          hintText: 'Search by agency, developer, auto dealer, or city...',
+                          hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                          prefixIcon: const Icon(Icons.search, color: Color(0xFF10B981), size: 20),
+                          filled: true,
+                          fillColor: const Color(0xFF111827),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: Color(0xFF1F2937)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: Color(0xFF1F2937)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Role Filter Tabs
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildFilterChip('all', 'All Partners'),
+                            _buildFilterChip('agent', 'Real Estate Agents'),
+                            _buildFilterChip('developer', 'Certified Developers'),
+                            _buildFilterChip('dealer', 'Cars & Vehicles Dealers'),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
+                const SizedBox(height: 8),
               ],
             ),
           ),
-
-          const SizedBox(height: 8),
 
           // Agents List
           Expanded(

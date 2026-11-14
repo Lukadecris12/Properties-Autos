@@ -56,7 +56,6 @@ class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
   }
 
   bool _onScrollNotification(ScrollNotification notification) {
-    if (widget.appBar == null) return false;
     if (notification.metrics.axis != Axis.vertical) return false;
 
     if (notification is ScrollStartNotification) {
@@ -103,40 +102,95 @@ class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
         },
         child: NotificationListener<ScrollNotification>(
           onNotification: _onScrollNotification,
-          child: Column(
-            children: [
-              if (bar != null)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  height: _headerVisible ? (topPadding + barHeight) : topPadding,
-                  color: barBg,
-                  child: ClipRect(
-                    child: OverflowBox(
-                      alignment: Alignment.topCenter,
-                      minHeight: topPadding + barHeight,
-                      maxHeight: topPadding + barHeight,
-                      child: AnimatedOpacity(
-                        opacity: _headerVisible ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 180),
-                        curve: Curves.easeOut,
-                        child: SizedBox(
-                          height: topPadding + barHeight,
-                          child: bar,
+          child: AutoHideHeaderScope(
+            isHeaderVisible: _headerVisible,
+            child: Column(
+              children: [
+                if (bar != null)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    height: _headerVisible ? (topPadding + barHeight) : topPadding,
+                    color: barBg,
+                    child: ClipRect(
+                      child: OverflowBox(
+                        alignment: Alignment.topCenter,
+                        minHeight: topPadding + barHeight,
+                        maxHeight: topPadding + barHeight,
+                        child: AnimatedOpacity(
+                          opacity: _headerVisible ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOut,
+                          child: SizedBox(
+                            height: topPadding + barHeight,
+                            child: bar,
+                          ),
                         ),
                       ),
                     ),
                   ),
+                Expanded(
+                  child: MediaQuery.removePadding(
+                    context: context,
+                    removeTop: bar != null,
+                    child: widget.body,
+                  ),
                 ),
-              Expanded(
-                child: MediaQuery.removePadding(
-                  context: context,
-                  removeTop: bar != null,
-                  child: widget.body,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Provides the current header visibility state from [AutoHideAppBarScaffold]
+/// to descendant widgets such as [AutoHideCollapsibleSection].
+class AutoHideHeaderScope extends InheritedWidget {
+  final bool isHeaderVisible;
+
+  const AutoHideHeaderScope({
+    super.key,
+    required this.isHeaderVisible,
+    required super.child,
+  });
+
+  static bool isVisibleOf(BuildContext context) {
+    final scope = context.dependOnInheritedWidgetOfExactType<AutoHideHeaderScope>();
+    return scope?.isHeaderVisible ?? true;
+  }
+
+  @override
+  bool updateShouldNotify(AutoHideHeaderScope oldWidget) {
+    return oldWidget.isHeaderVisible != isHeaderVisible;
+  }
+}
+
+/// Smoothly fades out and collapses its [child] in sync with [AutoHideAppBarScaffold]
+/// whenever the user touches and slides vertically, then restores it when released.
+class AutoHideCollapsibleSection extends StatelessWidget {
+  final Widget child;
+
+  const AutoHideCollapsibleSection({
+    super.key,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = AutoHideHeaderScope.isVisibleOf(context);
+    return AnimatedOpacity(
+      opacity: visible ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      child: ClipRect(
+        child: AnimatedAlign(
+          alignment: Alignment.topCenter,
+          heightFactor: visible ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          child: child,
         ),
       ),
     );
