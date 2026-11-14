@@ -834,11 +834,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     iconColor: const Color(0xFF10B981),
                     title: 'Title Verification & Legal Documentation',
                     subtitle: 'Verify C of O, Governor\'s Consent & Custom duty papers',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Title verification guidance active')),
-                      );
-                    },
+                    onTap: () => _showTitleVerificationSheet(context),
                   ),
                   _buildDivider(),
                   _buildMenuItem(
@@ -846,11 +842,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     iconColor: const Color(0xFF60A5FA),
                     title: 'My Bookings & Inspection Schedule',
                     subtitle: 'Manage upcoming physical & virtual inspections',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('You have 2 upcoming property inspections in Lekki & Ikoyi')),
-                      );
-                    },
+                    onTap: () => _showMyBookingsSheet(context),
                   ),
                   _buildDivider(),
                   _buildMenuItem(
@@ -858,20 +850,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     iconColor: const Color(0xFFFBBF24),
                     title: 'Marketplace Currency',
                     subtitle: _selectedCurrency,
-                    onTap: () {
-                      setState(() {
-                        if (_selectedCurrency.contains('NGN')) {
-                          _selectedCurrency = 'USD (\$)';
-                        } else if (_selectedCurrency.contains('USD')) {
-                          _selectedCurrency = 'GBP (£)';
-                        } else {
-                          _selectedCurrency = 'NGN (₦)';
-                        }
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Currency display switched to $_selectedCurrency')),
-                      );
-                    },
+                    onTap: () => _showCurrencyPickerSheet(context),
                   ),
                   _buildDivider(),
                   _buildMenuItem(
@@ -1100,5 +1079,270 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildDivider() {
     return const Divider(color: Color(0xFF1F2937), height: 1, indent: 56);
+  }
+
+  void _showTitleVerificationSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF111827),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.gavel, color: Color(0xFF10B981), size: 22),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Title Verification & Legal Documentation',
+                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Verify property and vehicle authenticity before committing funds:',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+              const SizedBox(height: 12),
+              _buildVerificationBullet('Properties', 'Certificate of Occupancy (C of O), Governor\'s Consent, Registered Survey Plan & Deed of Assignment.'),
+              const SizedBox(height: 8),
+              _buildVerificationBullet('Vehicles & Autos', 'Customs Duty Papers, Vehicle License, Proof of Ownership, VIN History & Roadworthiness.'),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF059669),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.support_agent, color: Colors.white, size: 18),
+                  label: const Text(
+                    'Request Legal / Title Verification',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ContactSupportScreen()),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildVerificationBullet(String title, String desc) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B0F19),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF1F2937)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(desc, style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.4)),
+        ],
+      ),
+    );
+  }
+
+  void _showMyBookingsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF111827),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.55,
+          minChildSize: 0.35,
+          maxChildSize: 0.85,
+          builder: (_, scrollController) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.calendar_month, color: Color(0xFF60A5FA), size: 22),
+                      SizedBox(width: 10),
+                      Text(
+                        'My Bookings & Inspection Schedule',
+                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Expanded(
+                    child: FutureBuilder<List<Map<String, dynamic>>>(
+                      future: _apiService.fetchMyBookings(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)));
+                        }
+                        final bookings = snapshot.data ?? [];
+                        if (bookings.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(Icons.event_busy, color: Colors.grey, size: 42),
+                                SizedBox(height: 10),
+                                Text(
+                                  'No bookings or inspections scheduled yet.',
+                                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return ListView.separated(
+                          controller: scrollController,
+                          itemCount: bookings.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (_, idx) {
+                            final b = bookings[idx];
+                            final status = (b['status'] ?? 'PENDING').toString().toUpperCase();
+                            final start = (b['start_date'] ?? '').toString();
+                            final end = (b['end_date'] ?? '').toString();
+                            final notes = (b['guest_notes'] ?? '').toString();
+                            return Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0B0F19),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFF1F2937)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Booking #${b['id'] ?? idx + 1}',
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF064E3B),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          status,
+                                          style: const TextStyle(color: Color(0xFF34D399), fontSize: 10, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (start.isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'Dates: ${start.length > 10 ? start.substring(0, 10) : start} → ${end.length > 10 ? end.substring(0, 10) : end}',
+                                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                    ),
+                                  ],
+                                  if (notes.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(notes, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                                  ],
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showCurrencyPickerSheet(BuildContext context) {
+    const currencies = [
+      {'label': 'NGN (₦)', 'name': 'Nigerian Naira'},
+      {'label': 'USD (\$)', 'name': 'US Dollar'},
+      {'label': 'GBP (£)', 'name': 'British Pound'},
+      {'label': 'EUR (€)', 'name': 'Euro'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF111827),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.currency_exchange, color: Color(0xFFFBBF24), size: 22),
+                  SizedBox(width: 10),
+                  Text(
+                    'Select Marketplace Currency',
+                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ...currencies.map((c) {
+                final label = c['label']!;
+                final name = c['name']!;
+                final selected = _selectedCurrency == label;
+                return ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  tileColor: selected ? const Color(0xFF064E3B).withOpacity(0.4) : null,
+                  title: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: Text(name, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                  trailing: selected ? const Icon(Icons.check_circle, color: Color(0xFF10B981)) : null,
+                  onTap: () {
+                    setState(() => _selectedCurrency = label);
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(this.context).showSnackBar(
+                      SnackBar(content: Text('Currency display switched to $label')),
+                    );
+                  },
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

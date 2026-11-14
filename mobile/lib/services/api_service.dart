@@ -285,6 +285,27 @@ class ApiService {
     };
   }
 
+  Future<List<Map<String, dynamic>>> fetchMyBookings() async {
+    try {
+      final token = await getToken();
+      if (token == null) return [];
+      final uri = Uri.parse('${ApiConstants.bookingsEndpoint}/my-bookings');
+      final response = await client.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 6));
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        final List items = decoded['data'] ?? [];
+        return items.cast<Map<String, dynamic>>();
+      }
+    } catch (_) {}
+    return [];
+  }
+
   Future<String> queryAIConcierge(
     String message, {
     List<Map<String, String>>? history,
