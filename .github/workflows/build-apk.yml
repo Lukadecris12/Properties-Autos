@@ -74,15 +74,15 @@ jobs:
           gradle = re.sub(r"targetSdk\s*=?\s*flutter\.targetSdkVersion", "targetSdk = 35", gradle)
           gradle = re.sub(r"minSdk\s*=?\s*flutter\.minSdkVersion", "minSdk = 23", gradle)
 
-          signing_block = """
-          def keystorePropertiesFile = rootProject.file("key.properties")
+          signing_block = """def keystorePropertiesFile = rootProject.file("key.properties")
           def keystoreProperties = new Properties()
           if (keystorePropertiesFile.exists()) {
               keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
           }
-          """
+
+          android {"""
           if "keystorePropertiesFile" not in gradle:
-              gradle = signing_block + "\n" + gradle
+              gradle = gradle.replace("android {", signing_block, 1)
 
           release_signing_cfg = """    signingConfigs {
                   release {
