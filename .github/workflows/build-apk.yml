@@ -1,4 +1,4 @@
-name: Build Android APK (PropertyHub Mobile)
+name: Build Android APK & Play Store AAB (PropertyHub Mobile)
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build-android-apk:
-    name: Compile Release APK for Android
+    name: Compile Release APK & Play Store AAB
     runs-on: ubuntu-latest
 
     steps:
@@ -30,7 +30,7 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generate Android Platform Wrapper & Custom PropertyHub Icon
+      - name: Generate Android Platform Wrapper, SDK 35 Config & Custom Icon
         run: |
           cp -r mobile/lib /tmp/lib_backup
           cp -r mobile/assets /tmp/assets_backup
@@ -47,12 +47,92 @@ jobs:
           cp /tmp/generate_icon.py generate_icon.py
           python3 generate_icon.py
 
-      - name: Install Flutter Dependencies & Build Release APK
+          python3 - << 'EOF'
+          import pathlib, re
+
+          # 1. Configure AndroidManifest.xml permissions & cleartext HTTP support
+          manifest_path = pathlib.Path("android/app/src/main/AndroidManifest.xml")
+          manifest = manifest_path.read_text()
+          if "android.permission.INTERNET" not in manifest:
+              manifest = manifest.replace(
+                  "<application",
+                  '    <uses-permission android:name="android.permission.INTERNET"/>\n    <application',
+                  1,
+              )
+          if "android:usesCleartextTraffic" not in manifest:
+              manifest = manifest.replace(
+                  "<application",
+                  '<application\n        android:usesCleartextTraffic="true"',
+                  1,
+              )
+          manifest_path.write_text(manifest)
+
+          # 2. Configure compileSdk 35, targetSdk 35, minSdk 23, and release signing
+          gradle_path = pathlib.Path("android/app/build.gradle")
+          gradle = gradle_path.read_text()
+          gradle = re.sub(r"compileSdk\s*=?\s*flutter\.compileSdkVersion", "compileSdk = 35", gradle)
+          gradle = re.sub(r"targetSdk\s*=?\s*flutter\.targetSdkVersion", "targetSdk = 35", gradle)
+          gradle = re.sub(r"minSdk\s*=?\s*flutter\.minSdkVersion", "minSdk = 23", gradle)
+
+          signing_block = """
+          def keystorePropertiesFile = rootProject.file("key.properties")
+          def keystoreProperties = new Properties()
+          if (keystorePropertiesFile.exists()) {
+              keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+          }
+          """
+          if "keystorePropertiesFile" not in gradle:
+              gradle = signing_block + "\n" + gradle
+
+          release_signing_cfg = """    signingConfigs {
+                  release {
+                      if (keystorePropertiesFile.exists()) {
+                          keyAlias keystoreProperties['keyAlias']
+                          keyPassword keystoreProperties['keyPassword']
+                          storeFile file(keystoreProperties['storeFile'])
+                          storePassword keystoreProperties['storePassword']
+                      }
+                  }
+              }
+              buildTypes {"""
+          gradle = gradle.replace("    buildTypes {", release_signing_cfg, 1)
+          gradle = re.sub(
+              r"signingConfig\s*=?\s*signingConfigs\.debug",
+              "signingConfig = keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug",
+              gradle,
+          )
+          gradle_path.write_text(gradle)
+          EOF
+
+      - name: Configure Play Store Release Keystore (if secrets provided)
+        working-directory: ./mobile/android
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > app/upload-keystore.jks
+            cat <<EOF > key.properties
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+            echo "Release upload keystore configured for Play Store signing."
+          else
+            echo "::warning::ANDROID_KEYSTORE_BASE64 secret not set — building with debug signing (add secrets before uploading .aab to Play Console)."
+          fi
+
+      - name: Install Flutter Dependencies & Build Release APK + Play Store AAB
         working-directory: ./mobile
         run: |
           flutter pub get
           flutter build apk --release
+          flutter build appbundle --release
           cp build/app/outputs/flutter-apk/app-release.apk ../PropertyHub.apk
+          cp build/app/outputs/bundle/release/app-release.aab ../PropertyHub.aab
 
       - name: Upload APK as Workflow Artifact
         uses: actions/upload-artifact@v4
@@ -60,13 +140,21 @@ jobs:
           name: PropertyHub-Android-APK
           path: PropertyHub.apk
 
-      - name: Publish Direct Download APK to GitHub Releases
+      - name: Upload Play Store AAB as Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PropertyHub-Android-PlayStore-AAB
+          path: PropertyHub.aab
+
+      - name: Publish APK & AAB to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.9
-          name: "Properties & Autos Android App v1.0.9 (Granular Property, Land & Car Search Filters)"
-          body: "Direct Android APK installer featuring granular search provisions for Houses & Apartments, Commercial Properties, Land categories, and Car conditions, brands, models, years, and pricing."
-          files: PropertyHub.apk
+          name: "Properties & Autos Android App v1.0.9 (Play Store AAB + Direct APK)"
+          body: "Release APK and Google Play Store App Bundle (.aab) featuring Property & Auto document uploads, smooth auto-hide headers, Make Offer modal, and real-time marketplace data."
+          files: |
+            PropertyHub.apk
+            PropertyHub.aab
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
