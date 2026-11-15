@@ -25,7 +25,11 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
     # CORS
-    ALLOWED_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000"
+    ALLOWED_ORIGINS: str = (
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,"
+        "https://propertiesandautos.online,https://www.propertiesandautos.online,"
+        "http://propertiesandautos.online,http://www.propertiesandautos.online"
+    )
 
     # Storage
     STORAGE_TYPE: str = "local"
