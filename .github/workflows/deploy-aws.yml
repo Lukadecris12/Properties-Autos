@@ -142,4 +142,10 @@ jobs:
             fi
             docker compose up -d --build --force-recreate --renew-anon-volumes
             docker image prune -f
+            if [ ! -f /etc/letsencrypt/live/propertiesandautos.online/fullchain.pem ]; then
+              sudo sed -i 's/server_name _;/server_name propertiesandautos.online www.propertiesandautos.online;/g' /etc/nginx/sites-enabled/* || true
+              sudo apt-get update -y
+              sudo apt-get install -y certbot python3-certbot-nginx
+              sudo certbot --nginx -d propertiesandautos.online -d www.propertiesandautos.online --non-interactive --agree-tos --email support@propertiesandautos.online --redirect || true
+            fi
           "
