@@ -4,12 +4,12 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, delete, update
 
 from app.core.database import get_db, utc_now
 from app.core.dependencies import get_current_user
 from app.core.security import get_password_hash
-from app.models.user import User
+from app.models.user import User, VerificationDocument
 from app.models.listing import Listing
 from app.models.investment import InvestmentProperty, UserInvestment
 from app.models.subscription import (
@@ -239,7 +239,13 @@ async def delete_user_account(
         raise HTTPException(status_code=400, detail="Administrator accounts cannot be deleted.")
 
     deleted_email = user.email
-    await db.delete(user)
+    # Clear non-cascading reviewer references and use Core DELETE to avoid async ORM lazy-load errors
+    await db.execute(
+        update(VerificationDocument)
+        .where(VerificationDocument.reviewed_by == user_id)
+        .values(reviewed_by=None)
+    )
+    await db.execute(delete(User).where(User.id == user_id))
     await db.commit()
     return ResponseModel(message=f"User account {deleted_email} has been deleted.", data={"deleted_user_id": user_id})
 
