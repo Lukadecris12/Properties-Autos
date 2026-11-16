@@ -8,7 +8,7 @@ on:
 jobs:
   build-ios:
     name: Compile iOS Release & Package Ready Folder
-    runs-on: macos-latest
+    runs-on: macos-15-intel
 
     steps:
       - name: Checkout Repository
