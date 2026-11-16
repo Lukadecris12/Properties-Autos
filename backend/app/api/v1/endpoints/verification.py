@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,8 +12,12 @@ from app.models.user import User, VerificationDocument
 from app.models.enums import VerificationStatus
 from app.schemas.user import VerificationDocumentCreate, VerificationDocumentResponse
 from app.schemas.common import ResponseModel
+from app.services.ai_service import AIService
 
 router = APIRouter()
+
+IDENTITY_DOC_TYPES = {"NATIONAL_ID", "PASSPORT", "DRIVERS_LICENSE"}
+BUSINESS_DOC_TYPES = {"CAC_CERTIFICATE", "TAX_CLEARANCE", "BUSINESS_REG"}
 
 @router.post("/documents", response_model=ResponseModel[VerificationDocumentResponse], status_code=status.HTTP_201_CREATED)
 async def upload_verification_document(
@@ -20,17 +25,62 @@ async def upload_verification_document(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    doc = VerificationDocument(
-        user_id=current_user.id,
-        document_type=doc_in.document_type,
+    doc_type = doc_in.document_type.strip().upper()
+    if doc_type not in IDENTITY_DOC_TYPES and doc_type not in BUSINESS_DOC_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported document type. Use NATIONAL_ID, PASSPORT, DRIVERS_LICENSE, CAC_CERTIFICATE, TAX_CLEARANCE, or BUSINESS_REG."
+        )
+
+    # Run autonomous AI KYC verification
+    ai_verdict = await asyncio.to_thread(
+        AIService.verify_kyc_document,
+        document_type=doc_type,
         document_number=doc_in.document_number,
         file_url=doc_in.file_url,
-        status=VerificationStatus.PENDING
+        first_name=current_user.first_name,
+        last_name=current_user.last_name,
+        company_name=current_user.company_name,
+        is_email_verified=bool(current_user.is_email_verified),
+    )
+
+    decision = ai_verdict.get("decision", "PENDING")
+    reason = ai_verdict.get("reason", "")
+
+    if decision == "APPROVED":
+        doc_status = VerificationStatus.APPROVED
+        if doc_type in IDENTITY_DOC_TYPES:
+            current_user.is_identity_verified = True
+        elif doc_type in BUSINESS_DOC_TYPES:
+            current_user.is_business_verified = True
+
+        if current_user.is_identity_verified and current_user.is_business_verified:
+            current_user.verification_badge = "Fully Verified"
+        elif current_user.is_business_verified:
+            current_user.verification_badge = "Business Verified"
+        else:
+            current_user.verification_badge = "Identity Verified"
+        response_msg = f"AI Verified: {reason}"
+    elif decision == "REJECTED":
+        doc_status = VerificationStatus.REJECTED
+        response_msg = f"Verification Rejected: {reason}"
+    else:
+        doc_status = VerificationStatus.PENDING
+        response_msg = reason or "Verification document queued."
+
+    doc = VerificationDocument(
+        user_id=current_user.id,
+        document_type=doc_type,
+        document_number=doc_in.document_number,
+        file_url=doc_in.file_url,
+        status=doc_status,
+        reviewer_notes=reason,
+        reviewed_at=utc_now() if doc_status != VerificationStatus.PENDING else None,
     )
     db.add(doc)
     await db.commit()
     await db.refresh(doc)
-    return ResponseModel(message="Verification document submitted for review", data=doc)
+    return ResponseModel(message=response_msg, data=doc)
 
 @router.get("/my-documents", response_model=ResponseModel[List[VerificationDocumentResponse]])
 async def get_my_verification_documents(

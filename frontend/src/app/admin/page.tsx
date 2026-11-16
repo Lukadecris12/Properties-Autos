@@ -146,16 +146,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleToggleVerify = async (userId: number) => {
-    try {
-      await api.toggleUserVerify(userId);
-      const updated = await api.getAdminUsers(selectedRole, searchQuery);
-      setUsers(updated.data || []);
-    } catch (err) {
-      console.error('Failed to toggle verification:', err);
-    }
-  };
-
   const handleToggleActive = async (userId: number) => {
     try {
       await api.toggleUserActive(userId);
@@ -559,13 +549,13 @@ export default function AdminDashboardPage() {
                               </span>
                             </td>
                             <td className="py-3 px-4">
-                              {u.verification_badge === 'Verified' || u.is_identity_verified ? (
+                              {u.is_identity_verified || u.is_business_verified || (u.verification_badge && u.verification_badge !== 'Unverified' && u.verification_badge !== 'Basic') ? (
                                 <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold">
                                   <BadgeCheck className="w-4 h-4" />
-                                  <span>Verified</span>
+                                  <span>{u.verification_badge || 'AI Verified'}</span>
                                 </span>
                               ) : (
-                                <span className="text-gray-500 font-medium">Unverified</span>
+                                <span className="text-gray-500 font-medium">{u.verification_badge || 'Unverified'}</span>
                               )}
                             </td>
                             <td className="py-3 px-4">
@@ -577,16 +567,6 @@ export default function AdminDashboardPage() {
                             </td>
                             <td className="py-3 px-4 text-right">
                               <div className="flex items-center justify-end gap-2">
-                                <button
-                                  onClick={() => handleToggleVerify(u.id)}
-                                  className={`px-2.5 py-1 rounded text-[11px] font-semibold border transition-all ${
-                                    u.verification_badge === 'Verified' || u.is_identity_verified
-                                      ? 'border-gray-700 text-gray-400 hover:text-white'
-                                      : 'border-emerald-600 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50'
-                                  }`}
-                                >
-                                  {u.verification_badge === 'Verified' || u.is_identity_verified ? 'Revoke Verify' : 'Approve Verify'}
-                                </button>
                                 <button
                                   onClick={() => handleToggleActive(u.id)}
                                   className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${

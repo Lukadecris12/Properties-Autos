@@ -1,5 +1,8 @@
+import base64
 import json
 import logging
+import mimetypes
+import os
 import re
 import time
 from typing import Dict, Any, List, Optional
@@ -353,4 +356,165 @@ class AIService:
             "answer": response_text,
             "suggested_actions": suggested_actions,
             "disclaimer": "Marketplace suggestions are provided for advisory convenience."
+        }
+
+    @classmethod
+    def verify_kyc_document(
+        cls,
+        *,
+        document_type: str,
+        document_number: Optional[str],
+        file_url: str,
+        first_name: str,
+        last_name: str,
+        company_name: Optional[str],
+        is_email_verified: bool,
+    ) -> Dict[str, Any]:
+        """
+        Autonomously verifies an uploaded KYC identity or business document using
+        deterministic rules + Google Gemini Vision multimodal analysis.
+        Returns: {"decision": "APPROVED" | "REJECTED" | "PENDING", "reason": str, "confidence": float}
+        """
+        if not is_email_verified:
+            return {
+                "decision": "REJECTED",
+                "reason": "Your email address must be verified before submitting KYC documents.",
+                "confidence": 1.0,
+            }
+
+        clean_number = re.sub(r"[^A-Za-z0-9]", "", (document_number or "").strip())
+        if len(clean_number) < 5:
+            return {
+                "decision": "REJECTED",
+                "reason": "Please provide a valid document number (at least 5 characters).",
+                "confidence": 1.0,
+            }
+
+        full_name = f"{first_name or ''} {last_name or ''}".strip()
+        if not full_name:
+            return {
+                "decision": "REJECTED",
+                "reason": "Your profile must have a full name before submitting KYC documents.",
+                "confidence": 1.0,
+            }
+
+        # Load document image bytes from local uploads or remote URL
+        image_bytes: Optional[bytes] = None
+        mime_type = mimetypes.guess_type(file_url.split("?")[0])[0] or "image/jpeg"
+        if not mime_type.startswith("image/"):
+            mime_type = "image/jpeg"
+
+        try:
+            if "/uploads/" in file_url:
+                filename = os.path.basename(file_url.split("?")[0])
+                local_path = os.path.join(settings.UPLOAD_DIR, filename)
+                if os.path.isfile(local_path):
+                    with open(local_path, "rb") as f:
+                        image_bytes = f.read()
+            elif file_url.startswith(("http://", "https://")):
+                with httpx.Client(timeout=15.0) as client:
+                    resp = client.get(file_url)
+                    if resp.status_code == 200:
+                        image_bytes = resp.content
+                        ct = resp.headers.get("content-type", "").split(";")[0].strip()
+                        if ct.startswith("image/"):
+                            mime_type = ct
+        except Exception as e:
+            logger.warning(f"Failed to load KYC document image from {file_url}: {e}")
+
+        if not image_bytes or len(image_bytes) < 512:
+            return {
+                "decision": "REJECTED",
+                "reason": "The uploaded document image could not be read or is invalid. Please upload a clear photo.",
+                "confidence": 1.0,
+            }
+
+        if not settings.GEMINI_API_KEY:
+            return {
+                "decision": "PENDING",
+                "reason": "AI verification engine is not configured on this server; document saved as pending.",
+                "confidence": 0.0,
+            }
+
+        b64_data = base64.b64encode(image_bytes).decode("utf-8")
+        is_business_doc = document_type in {"CAC_CERTIFICATE", "TAX_CLEARANCE", "BUSINESS_REG"}
+
+        system_instruction = (
+            "You are an autonomous KYC compliance and document verification AI for Properties & Autos. "
+            "Inspect the attached document image strictly and objectively. "
+            "Return ONLY valid JSON with keys: "
+            "is_valid_document (bool), matches_document_type (bool), is_legible (bool), "
+            "extracted_name (string), extracted_number (string), "
+            "name_matches_profile (bool), number_matches (bool), "
+            "decision ('APPROVED' or 'REJECTED'), confidence (float 0.0-1.0), reason (concise 1-2 sentence string)."
+        )
+
+        prompt_text = (
+            f"Verify this {document_type} submission:\n"
+            f"- Expected Document Type: {document_type}\n"
+            f"- Submitted Document Number: {document_number}\n"
+            f"- Registered User Full Name: {full_name}\n"
+            f"- Registered Company Name: {company_name or 'N/A'}\n\n"
+            "Rules:\n"
+            "1. Confirm the image is an authentic-looking government ID or business registration document (not a blank image, screenshot of text, or unrelated photo).\n"
+            "2. Confirm it is legible enough to read the name and document/registration number.\n"
+            f"3. {'Match either Registered Company Name or Registered User Full Name' if is_business_doc else 'Match Registered User Full Name (allow middle name or word-order variations)'}.\n"
+            "4. Confirm the submitted document number matches the number visible on the document (ignore spaces/dashes).\n"
+            "5. Set decision='APPROVED' only if all checks pass; otherwise set decision='REJECTED' and explain clearly in reason."
+        )
+
+        contents = [
+            {
+                "role": "user",
+                "parts": [
+                    {"text": prompt_text},
+                    {"inlineData": {"mimeType": mime_type, "data": b64_data}},
+                ],
+            }
+        ]
+
+        raw = cls._call_gemini(
+            system_instruction=system_instruction,
+            json_mode=True,
+            contents=contents,
+            timeout=30.0,
+        )
+        if not raw:
+            return {
+                "decision": "PENDING",
+                "reason": "AI verification service is temporarily busy. Your document is queued.",
+                "confidence": 0.0,
+            }
+
+        parsed = cls._parse_json_response(raw)
+        if not parsed:
+            return {
+                "decision": "PENDING",
+                "reason": "AI verification returned an unreadable response. Your document is queued.",
+                "confidence": 0.0,
+            }
+
+        confidence = float(parsed.get("confidence", 0.0) or 0.0)
+        passed = (
+            str(parsed.get("decision", "")).upper() == "APPROVED"
+            and bool(parsed.get("is_valid_document"))
+            and bool(parsed.get("is_legible"))
+            and bool(parsed.get("matches_document_type"))
+            and bool(parsed.get("name_matches_profile"))
+            and bool(parsed.get("number_matches"))
+            and confidence >= 0.7
+        )
+
+        reason = str(parsed.get("reason") or "").strip()
+        if passed:
+            return {
+                "decision": "APPROVED",
+                "reason": reason or f"AI verified {document_type} matching {full_name}.",
+                "confidence": confidence,
+            }
+
+        return {
+            "decision": "REJECTED",
+            "reason": reason or "Document did not match your profile details or was not clearly legible.",
+            "confidence": confidence,
         }

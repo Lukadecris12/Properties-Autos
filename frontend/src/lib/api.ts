@@ -373,6 +373,32 @@ class ApiClient {
     return res.json();
   }
 
+  // --- Autonomous AI KYC Verification ---
+  async submitVerificationDocument(payload: {
+    document_type: string;
+    document_number: string;
+    file_url: string;
+  }) {
+    const res = await fetch(`${API_BASE_URL}/verification/documents`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const msg = await this.parseErrorResponse(res, 'Failed to submit verification document.');
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+
+  async getMyVerificationDocuments() {
+    const res = await fetch(`${API_BASE_URL}/verification/my-documents`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch verification documents');
+    return res.json();
+  }
+
   async toggleUserVerify(userId: number) {
     const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/toggle-verify`, {
       method: 'PUT',

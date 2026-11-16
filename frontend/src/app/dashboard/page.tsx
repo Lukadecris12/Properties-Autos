@@ -69,7 +69,8 @@ function DashboardPageContent() {
   const [docNumber, setDocNumber] = useState('');
   const [docFileUrl, setDocFileUrl] = useState('');
   const [docUploading, setDocUploading] = useState(false);
-  const [docSuccess, setDocSuccess] = useState(false);
+  const [docFileUploading, setDocFileUploading] = useState(false);
+  const [docFeedback, setDocFeedback] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const [myDocs, setMyDocs] = useState<any[]>([]);
 
   useEffect(() => {
@@ -189,34 +190,55 @@ function DashboardPageContent() {
     return user?.user_type === 'seller' ? 'Seller' : 'Seeker';
   };
 
+  const handleDocFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDocFileUploading(true);
+    setDocFeedback(null);
+    try {
+      const res = await api.uploadMedia([file]);
+      const uploadedUrl = res?.images?.[0]?.url;
+      if (uploadedUrl) {
+        setDocFileUrl(uploadedUrl);
+      }
+    } catch (err: any) {
+      setDocFeedback({ type: 'error', text: err.message || 'Failed to upload document image.' });
+    } finally {
+      setDocFileUploading(false);
+    }
+  };
+
   const handleDocumentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!docFileUrl.trim()) return;
+    if (!docNumber.trim()) {
+      setDocFeedback({ type: 'error', text: 'Please enter the document identification number.' });
+      return;
+    }
+    if (!docFileUrl.trim()) {
+      setDocFeedback({ type: 'error', text: 'Please upload a clear photo of your document first.' });
+      return;
+    }
 
     setDocUploading(true);
+    setDocFeedback(null);
     try {
-      const token = localStorage.getItem('propertyhub_token');
-      const res = await fetch('/api/v1/verification/documents', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          document_type: docType,
-          document_number: docNumber || undefined,
-          file_url: docFileUrl.trim()
-        })
+      const res = await api.submitVerificationDocument({
+        document_type: docType,
+        document_number: docNumber.trim(),
+        file_url: docFileUrl.trim(),
       });
-
-      if (res.ok) {
-        setDocSuccess(true);
+      const statusVal = res?.data?.status;
+      setDocFeedback({
+        type: statusVal === 'APPROVED' ? 'success' : statusVal === 'REJECTED' ? 'error' : 'info',
+        text: res?.message || 'Document processed by AI verification.',
+      });
+      if (statusVal === 'APPROVED') {
         setDocFileUrl('');
         setDocNumber('');
-        loadDashboardData();
       }
-    } catch (err) {
-      console.error(err);
+      await loadDashboardData();
+    } catch (err: any) {
+      setDocFeedback({ type: 'error', text: err.message || 'Failed to verify document.' });
     } finally {
       setDocUploading(false);
     }
@@ -869,13 +891,23 @@ function DashboardPageContent() {
                 Submit Verification Documents
               </h2>
               <p className="text-xs text-gray-400 leading-relaxed">
-                Unlock the <strong className="text-white">Identity Verified</strong> or <strong className="text-white">Trusted Agent</strong> badge. Verified accounts receive up to 4× more inquiries and priority placement in AI matching.
+                Upload your government ID or CAC certificate for <strong className="text-white">instant autonomous AI verification</strong>. Verified accounts receive up to 4× more inquiries and priority placement in AI matching.
               </p>
 
-              {docSuccess && (
-                <div className="p-3.5 rounded-xl bg-brand-950/60 border border-brand-500/40 text-brand-300 text-xs flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-brand-400" />
-                  <span>Document submitted successfully. Status: Under review by verification officers.</span>
+              {docFeedback && (
+                <div className={`p-3.5 rounded-xl border text-xs flex items-start gap-2 ${
+                  docFeedback.type === 'success'
+                    ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+                    : docFeedback.type === 'error'
+                    ? 'bg-red-950/60 border-red-500/40 text-red-300'
+                    : 'bg-brand-950/60 border-brand-500/40 text-brand-300'
+                }`}>
+                  {docFeedback.type === 'error' ? (
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+                  )}
+                  <span>{docFeedback.text}</span>
                 </div>
               )}
 
@@ -891,13 +923,15 @@ function DashboardPageContent() {
                     <option value="PASSPORT">International Passport</option>
                     <option value="DRIVERS_LICENSE">FRSC Driver's License</option>
                     <option value="CAC_CERTIFICATE">CAC Business Registration (Corporate)</option>
+                    <option value="BUSINESS_REG">Business Registration Certificate</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-gray-400 mb-1">Document Identification Number</label>
+                  <label className="block text-[11px] text-gray-400 mb-1">Document Identification Number *</label>
                   <input
                     type="text"
+                    required
                     value={docNumber}
                     onChange={(e) => setDocNumber(e.target.value)}
                     placeholder="e.g. NIN-12345678901 or RC-987654"
@@ -906,23 +940,28 @@ function DashboardPageContent() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-gray-400 mb-1">Secure Document Image / PDF URL *</label>
-                  <input
-                    type="url"
-                    required
-                    value={docFileUrl}
-                    onChange={(e) => setDocFileUrl(e.target.value)}
-                    placeholder="https://... (Cloud storage or verified S3 upload link)"
-                    className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
-                  />
+                  <label className="block text-[11px] text-gray-400 mb-1.5">Upload Clear Document Photo *</label>
+                  <label className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-gray-950 border border-dashed border-gray-700 hover:border-brand-500 text-xs text-gray-300 cursor-pointer transition-colors">
+                    <Upload className="w-4 h-4 text-brand-400" />
+                    <span>{docFileUploading ? 'Uploading Photo...' : docFileUrl ? 'Photo Uploaded — Click to Replace' : 'Choose Document Image (JPG, PNG, WEBP)'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleDocFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  {docFileUrl && (
+                    <p className="text-[11px] text-emerald-400 mt-1.5 truncate">Ready: {docFileUrl}</p>
+                  )}
                 </div>
 
                 <button
                   type="submit"
-                  disabled={docUploading}
+                  disabled={docUploading || docFileUploading}
                   className="w-full py-3 rounded-2xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-xs font-bold shadow-md shadow-brand-600/30 transition-all"
                 >
-                  {docUploading ? 'Submitting to Review Queue...' : 'Submit Document for Review'}
+                  {docUploading ? 'AI Verifying Document...' : 'Submit for Instant AI Verification'}
                 </button>
               </form>
             </div>
@@ -933,31 +972,40 @@ function DashboardPageContent() {
               {myDocs.length > 0 ? (
                 <div className="space-y-3">
                   {myDocs.map((doc) => (
-                    <div key={doc.id} className="p-4 rounded-xl bg-gray-950 border border-gray-800 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="font-bold text-white block">{doc.document_type.replace('_', ' ')}</span>
-                        <span className="text-gray-500 text-[11px]">Submitted {new Date(doc.created_at).toLocaleDateString()}</span>
+                    <div key={doc.id} className="p-4 rounded-xl bg-gray-950 border border-gray-800 space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-bold text-white block">{doc.document_type.replace(/_/g, ' ')}</span>
+                          <span className="text-gray-500 text-[11px]">Submitted {new Date(doc.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold ${
+                          doc.status === 'APPROVED' 
+                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
+                            : doc.status === 'REJECTED'
+                            ? 'bg-red-950 text-red-300 border border-red-500/40'
+                            : 'bg-amber-950/80 text-amber-300 border border-amber-500/40'
+                        }`}>
+                          {doc.status}
+                        </span>
                       </div>
-                      <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold ${
-                        doc.status === 'APPROVED' 
-                          ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
-                          : 'bg-amber-950/80 text-amber-300 border border-amber-500/40'
-                      }`}>
-                        {doc.status}
-                      </span>
+                      {doc.reviewer_notes && (
+                        <p className="text-[11px] text-gray-400 pt-1 border-t border-gray-800/70">
+                          {doc.reviewer_notes}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="p-6 rounded-2xl bg-gray-950 border border-gray-800 text-center text-xs text-gray-400">
-                  No documents submitted yet. Submit your ID or business CAC to unlock verified partner privileges.
+                  No documents submitted yet. Upload your ID or business CAC to get verified instantly by AI.
                 </div>
               )}
 
               <div className="p-4 rounded-2xl bg-gray-950 border border-gray-800/60 text-[11px] text-gray-400 space-y-1.5">
-                <span className="font-bold text-white block">Trust & Verification Policy:</span>
+                <span className="font-bold text-white block">Autonomous AI Verification Policy:</span>
                 <p>
-                  Identity and corporate documents are encrypted at rest and reviewed strictly by accredited verification officers. Document uploads do not constitute transfer of title or statutory conveyance.
+                  Our AI KYC engine checks document authenticity, legibility, and cross-matches the name and ID number against your registered profile automatically — no manual waiting required.
                 </p>
               </div>
             </div>
