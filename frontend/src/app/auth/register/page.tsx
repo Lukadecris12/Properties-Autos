@@ -19,7 +19,9 @@ import {
   X,
   Eye,
   EyeOff,
-  Camera
+  Camera,
+  KeyRound,
+  ShieldCheck
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { COUNTRIES, CountryData } from '@/lib/geoData';
@@ -39,12 +41,13 @@ export default function RegisterPage() {
 
   // Multi-step onboarding state:
   // 1 = Email & Password
-  // 2 = Seeker or Seller
-  // 3 = Asset Category pull-down
-  // 4 = Role / Type pull-down (based on Asset Category)
-  // 5 = First & Last Names
-  // 6 = Phone Code + Number, Country + State + City, Optional Profile Picture
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
+  // 2 = 6-Digit Email Verification OTP
+  // 3 = Seeker or Seller
+  // 4 = Asset Category pull-down
+  // 5 = Role / Type pull-down (based on Asset Category)
+  // 6 = First & Last Names
+  // 7 = Phone Code + Number, Country + State + City, Optional Profile Picture
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(1);
 
   // Step 1: Credentials
   const [email, setEmail] = useState('');
@@ -53,6 +56,11 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [verificationToken, setVerificationToken] = useState('');
+
+  // Step 2: 6-Digit Email Verification OTP
+  const [otpCode, setOtpCode] = useState('');
+  const [debugOtp, setDebugOtp] = useState<string | null>(null);
+  const [resendingOtp, setResendingOtp] = useState(false);
 
   // Step 2-4: Intent, Asset & Role
   const [accountIntent, setAccountIntent] = useState<'seeker' | 'seller'>('seeker');
@@ -138,7 +146,7 @@ export default function RegisterPage() {
     setCountrySearch('');
   };
 
-  // Step 1 submit
+  // Step 1 submit -> Sends 6-digit OTP via Resend
   const handleInitiateSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
@@ -163,10 +171,13 @@ export default function RegisterPage() {
         localStorage.setItem('propertyhub_saved_email', email.trim());
         localStorage.setItem('propertyhub_saved_password', password);
       }
+      if (res.otp_debug) {
+        setDebugOtp(res.otp_debug);
+      }
       if (res.verification_token) {
         setVerificationToken(res.verification_token);
       }
-      setSuccessMsg('');
+      setSuccessMsg('A 6-digit verification code has been sent to your email.');
       setStep(2);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to initiate signup. Please check your connection.');
@@ -175,11 +186,52 @@ export default function RegisterPage() {
     }
   };
 
+  // Step 2 submit -> Verifies 6-digit OTP
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    const cleanOtp = otpCode.trim();
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      setErrorMsg('Please enter the full 6-digit verification code.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await api.signupVerifyOtp(email.trim(), cleanOtp);
+      if (res.verification_token) {
+        setVerificationToken(res.verification_token);
+      }
+      setSuccessMsg('Email verified successfully! Please choose your account intent.');
+      setStep(3);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Invalid or expired 6-digit verification code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setErrorMsg('');
+    setResendingOtp(true);
+    try {
+      const res = await api.resendOtp(email.trim());
+      if (res.otp_debug) {
+        setDebugOtp(res.otp_debug);
+      }
+      setSuccessMsg(`A fresh 6-digit code has been sent to ${email.trim()}.`);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to resend verification code.');
+    } finally {
+      setResendingOtp(false);
+    }
+  };
+
   const handleSelectIntent = (intent: 'seeker' | 'seller') => {
     setErrorMsg('');
     setAccountIntent(intent);
     setSelectedRole(intent === 'seeker' ? 'seeker' : 'owner');
-    setStep(3);
+    setStep(4);
   };
 
   const handleAssetContinue = (e: React.FormEvent) => {
@@ -194,13 +246,13 @@ export default function RegisterPage() {
       setSelectedRole(accountIntent === 'seeker' ? 'seeker' : 'owner');
     }
     setAssetDropdownOpen(false);
-    setStep(4);
+    setStep(5);
   };
 
   const handleRoleContinue = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    setStep(5);
+    setStep(6);
   };
 
   const handleNamesContinue = (e: React.FormEvent) => {
@@ -210,7 +262,7 @@ export default function RegisterPage() {
       setErrorMsg('Please enter both your First Name and Last Name.');
       return;
     }
-    setStep(6);
+    setStep(7);
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -319,20 +371,21 @@ export default function RegisterPage() {
           {/* Progress Bar (6 Steps) */}
           <div className="mb-7">
             <div className="flex items-center justify-between text-[11px] font-semibold text-gray-400 mb-2">
-              <span>Step {step} of 6</span>
+              <span>Step {step} of 7</span>
               <span className="text-brand-400">
                 {step === 1 && 'Account Credentials'}
-                {step === 2 && 'Seeker or Seller'}
-                {step === 3 && 'Category Selection'}
-                {step === 4 && 'Account Type'}
-                {step === 5 && 'Full Name'}
-                {step === 6 && 'Phone, Location & Photo'}
+                {step === 2 && 'Email Verification'}
+                {step === 3 && 'Seeker or Seller'}
+                {step === 4 && 'Category Selection'}
+                {step === 5 && 'Account Type'}
+                {step === 6 && 'Full Name'}
+                {step === 7 && 'Phone, Location & Photo'}
               </span>
             </div>
             <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-brand-500 to-emerald-500 transition-all duration-300"
-                style={{ width: `${(step / 6) * 100}%` }}
+                style={{ width: `${(step / 7) * 100}%` }}
               />
             </div>
           </div>
@@ -439,9 +492,81 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {/* STEP 2: SEEKER OR SELLER (FLY-IN BOXES) */}
+          {/* STEP 2: 6-DIGIT EMAIL VERIFICATION */}
           {step === 2 && (
-            <div key="step2" className="fly-in-box space-y-5">
+            <form key="step2" onSubmit={handleVerifyOtp} className="fly-in-box space-y-5">
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-brand-500/20 flex items-center justify-center text-brand-400 mb-3">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h2 className="text-xl font-bold text-white">Verify Your Email</h2>
+                <p className="text-xs text-gray-400 mt-1">
+                  We sent a 6-digit verification code to <span className="text-white font-semibold">{email}</span>.
+                  Enter it below to continue. Check your spam folder if you don&apos;t see it.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1.5">Verification Code</label>
+                <div className="relative">
+                  <KeyRound className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    required
+                    autoFocus
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    className="w-full bg-[#0b0f19] border border-gray-800 rounded-xl pl-10 pr-4 py-3 text-lg tracking-[0.5em] font-mono text-white placeholder-gray-600 focus:outline-none focus:border-brand-500 transition-colors"
+                  />
+                </div>
+                {debugOtp && (
+                  <p className="text-[11px] text-amber-400 mt-2">Dev mode code: {debugOtp}</p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || otpCode.length !== 6}
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white font-bold text-sm shadow-xl shadow-brand-500/25 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+              >
+                {loading ? (
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                ) : (
+                  <>
+                    <span>Verify &amp; Continue</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => { setStep(1); setOtpCode(''); setSuccessMsg(''); }}
+                  className="text-xs text-gray-400 hover:text-white flex items-center gap-1.5"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Change email</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={resendingOtp}
+                  className="text-xs font-semibold text-brand-400 hover:text-brand-300 disabled:opacity-50"
+                >
+                  {resendingOtp ? 'Sending...' : 'Resend code'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* STEP 3: SEEKER OR SELLER (FLY-IN BOXES) */}
+          {step === 3 && (
+            <div key="step3" className="fly-in-box space-y-5">
               <div>
                 <h2 className="text-xl font-bold text-white">Are you joining as a Seeker or a Seller?</h2>
                 <p className="text-xs text-gray-400 mt-1">Select the option that describes how you will use Properties &amp; Autos.</p>
@@ -497,8 +622,8 @@ export default function RegisterPage() {
           )}
 
           {/* STEP 3: MULTI-SELECT CATEGORY PULL-DOWN LIST */}
-          {step === 3 && (
-            <form key="step3" onSubmit={handleAssetContinue} className="fly-in-box space-y-5">
+          {step === 4 && (
+            <form key="step4" onSubmit={handleAssetContinue} className="fly-in-box space-y-5">
               <div>
                 <h2 className="text-xl font-bold text-white">Select What You Are Interested In</h2>
                 <p className="text-xs text-gray-400 mt-1">
@@ -575,7 +700,7 @@ export default function RegisterPage() {
               <div className="flex items-center justify-between pt-2">
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(3)}
                   className="text-xs text-gray-400 hover:text-white flex items-center gap-1.5"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
@@ -593,8 +718,8 @@ export default function RegisterPage() {
           )}
 
           {/* STEP 4: ROLE PULL-DOWN LIST BASED ON STEP 3 */}
-          {step === 4 && (
-            <form key="step4" onSubmit={handleRoleContinue} className="fly-in-box space-y-5">
+          {step === 5 && (
+            <form key="step5" onSubmit={handleRoleContinue} className="fly-in-box space-y-5">
               <div>
                 <h2 className="text-xl font-bold text-white">Select Your Role</h2>
                 <p className="text-xs text-gray-400 mt-1">
@@ -628,7 +753,7 @@ export default function RegisterPage() {
               <div className="flex items-center justify-between pt-2">
                 <button
                   type="button"
-                  onClick={() => setStep(3)}
+                  onClick={() => setStep(4)}
                   className="text-xs text-gray-400 hover:text-white flex items-center gap-1.5"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
@@ -646,8 +771,8 @@ export default function RegisterPage() {
           )}
 
           {/* STEP 5: FIRST & LAST NAMES (FLY-IN TEXT BOXES) */}
-          {step === 5 && (
-            <form key="step5" onSubmit={handleNamesContinue} className="fly-in-box space-y-4">
+          {step === 6 && (
+            <form key="step6" onSubmit={handleNamesContinue} className="fly-in-box space-y-4">
               <div>
                 <h2 className="text-xl font-bold text-white">Your Personal Details</h2>
                 <p className="text-xs text-gray-400 mt-1">Enter your first and last name as you want it displayed on your account.</p>
@@ -704,7 +829,7 @@ export default function RegisterPage() {
               <div className="flex items-center justify-between pt-2">
                 <button
                   type="button"
-                  onClick={() => setStep(4)}
+                  onClick={() => setStep(5)}
                   className="text-xs text-gray-400 hover:text-white flex items-center gap-1.5"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
@@ -722,8 +847,8 @@ export default function RegisterPage() {
           )}
 
           {/* STEP 6: PHONE CODE + NUMBER, COUNTRY + STATE + CITY, OPTIONAL PROFILE PICTURE */}
-          {step === 6 && (
-            <form key="step6" onSubmit={handleCompleteRegistration} className="fly-in-box space-y-5">
+          {step === 7 && (
+            <form key="step7" onSubmit={handleCompleteRegistration} className="fly-in-box space-y-5">
               <div>
                 <h2 className="text-xl font-bold text-white">Contact, Location &amp; Profile Photo</h2>
                 <p className="text-xs text-gray-400 mt-1">Complete your phone number, location, and optional profile picture.</p>
@@ -955,7 +1080,7 @@ export default function RegisterPage() {
               <div className="flex items-center justify-between pt-2">
                 <button
                   type="button"
-                  onClick={() => setStep(5)}
+                  onClick={() => setStep(6)}
                   className="text-xs text-gray-400 hover:text-white flex items-center gap-1.5"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />

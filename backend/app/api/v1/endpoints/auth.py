@@ -59,28 +59,29 @@ async def signup_initiate(req: SignupInitiateRequest, db: AsyncSession = Depends
             detail="A user with this email address is already registered. Please sign in."
         )
 
-    # Direct Onboarding Mode (OTP temporarily disabled pending custom domain setup)
-    token = secrets.token_urlsafe(32)
+    otp_code = generate_otp_code()
     temp_hash = get_password_hash(req.password)
-    expires_at = utc_now() + timedelta(hours=2)
+    expires_at = utc_now() + timedelta(minutes=15)
 
-    # Store pre-verified onboarding record
+    # Store unverified OTP record with temp hashed password
     otp_record = OTPVerification(
         email=req.email,
         temp_hashed_password=temp_hash,
-        otp_code="DIRECT",
-        is_verified=True,
-        verification_token=token,
+        otp_code=otp_code,
+        is_verified=False,
         expires_at=expires_at
     )
     db.add(otp_record)
     await db.commit()
 
+    # Send 6-digit verification code via Resend
+    email_result = await send_verification_otp_email(req.email, otp_code)
+
     return SignupInitiateResponse(
         status="success",
-        message="Credentials accepted. Proceed directly to complete your profile.",
+        message="A 6-digit verification code has been sent to your email address.",
         email=req.email,
-        verification_token=token
+        otp_debug=otp_code if (settings.DEBUG or email_result.get("status") != "sent") else None
     )
 
 @router.post("/signup-verify-otp", response_model=VerifyOtpResponse)
@@ -124,11 +125,25 @@ async def resend_otp(req: ResendOtpRequest, db: AsyncSession = Depends(get_db)):
     if (await db.execute(stmt)).scalars().first():
         raise HTTPException(status_code=400, detail="User already registered.")
 
+    # Carry over the hashed password from the most recent signup attempt
+    prev_stmt = (
+        select(OTPVerification)
+        .where(
+            OTPVerification.email == req.email,
+            OTPVerification.temp_hashed_password.isnot(None)
+        )
+        .order_by(OTPVerification.created_at.desc())
+    )
+    prev_record = (await db.execute(prev_stmt)).scalars().first()
+    if not prev_record:
+        raise HTTPException(status_code=400, detail="No pending signup found for this email. Please start sign up again.")
+
     otp_code = generate_otp_code()
     expires_at = utc_now() + timedelta(minutes=15)
 
     otp_record = OTPVerification(
         email=req.email,
+        temp_hashed_password=prev_record.temp_hashed_password,
         otp_code=otp_code,
         is_verified=False,
         expires_at=expires_at
@@ -142,7 +157,7 @@ async def resend_otp(req: ResendOtpRequest, db: AsyncSession = Depends(get_db)):
         status="success",
         message=f"A fresh verification code has been sent to {req.email}.",
         email=req.email,
-        otp_debug=email_result.get("otp_debug")
+        otp_debug=otp_code if (settings.DEBUG or email_result.get("status") != "sent") else None
     )
 
 @router.post("/onboarding-complete", response_model=Token)
@@ -559,7 +574,7 @@ async def forgot_password(
         message="A 6-digit password reset code has been sent to your email.",
         data={
             "email": req.email,
-            "otp_debug": otp_code if (not email_sent or settings.DEBUG) else None,
+            "otp_debug": otp_code if (email_sent.get("status") != "sent" or settings.DEBUG) else None,
         }
     )
 

@@ -34,6 +34,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _obscureConfirmPassword = true;
   String _verificationToken = '';
 
+  // Step 2: 6-digit email OTP
+  final _otpController = TextEditingController();
+  String? _debugOtp;
+  String? _infoMsg;
+  bool _resendingOtp = false;
+
   // Steps 2-4
   String _accountIntent = 'seeker'; // 'seeker' | 'seller'
   List<String> _selectedAssets = ['residential']; // 'residential', 'land', 'vehicle'
@@ -318,12 +324,73 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _errorMsg = null;
     });
 
-    final res = await _apiService.signupInitiate(email, pass);
+    try {
+      final res = await _apiService.signupInitiate(email, pass);
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _debugOtp = res['otp_debug']?.toString();
+        _infoMsg = 'A 6-digit verification code has been sent to $email.';
+        _otpController.clear();
+        _step = 2;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _errorMsg = e.toString().replaceAll('Exception: ', '');
+      });
+    }
+  }
+
+  void _verifyOtp() async {
+    final code = _otpController.text.trim();
+    if (code.length != 6) {
+      setState(() => _errorMsg = 'Please enter the full 6-digit code.');
+      return;
+    }
     setState(() {
-      _loading = false;
-      _verificationToken = res['verification_token'] ?? 'direct_onboarding';
-      _step = 2;
+      _loading = true;
+      _errorMsg = null;
     });
+    try {
+      final res = await _apiService.signupVerifyOtp(_emailController.text.trim(), code);
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _verificationToken = res['verification_token'] ?? '';
+        _infoMsg = null;
+        _step = 3;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _errorMsg = e.toString().replaceAll('Exception: ', '');
+      });
+    }
+  }
+
+  void _resendOtp() async {
+    setState(() {
+      _resendingOtp = true;
+      _errorMsg = null;
+    });
+    try {
+      final res = await _apiService.resendOtp(_emailController.text.trim());
+      if (!mounted) return;
+      setState(() {
+        _resendingOtp = false;
+        _debugOtp = res['otp_debug']?.toString() ?? _debugOtp;
+        _infoMsg = 'A fresh code has been sent to ${_emailController.text.trim()}.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _resendingOtp = false;
+        _errorMsg = e.toString().replaceAll('Exception: ', '');
+      });
+    }
   }
 
   Future<void> _pickAndUploadAvatar() async {
@@ -437,19 +504,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Step $_step of 6', style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
+                Text('Step $_step of 7', style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
                 Text(
                   _step == 1
                       ? 'Credentials'
                       : _step == 2
-                          ? 'Seeker or Seller'
+                          ? 'Verify Email'
                           : _step == 3
-                              ? 'Category'
+                              ? 'Seeker or Seller'
                               : _step == 4
-                                  ? 'Account Role'
+                                  ? 'Category'
                                   : _step == 5
-                                      ? 'Full Name'
-                                      : 'Contact & Photo',
+                                      ? 'Account Role'
+                                      : _step == 6
+                                          ? 'Full Name'
+                                          : 'Contact & Photo',
                   style: const TextStyle(color: Color(0xFF34D399), fontSize: 12, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -458,7 +527,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
-                value: _step / 6,
+                value: _step / 7,
                 minHeight: 6,
                 backgroundColor: const Color(0xFF1F2937),
                 valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
@@ -553,6 +622,91 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Icon(Icons.verified_user, color: Color(0xFF34D399), size: 40),
+            const SizedBox(height: 12),
+            const Text(
+              'Verify Your Email',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Enter the 6-digit code we sent to ${_emailController.text.trim()}. Check your spam folder if you don\'t see it.',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            if (_infoMsg != null) ...[
+              const SizedBox(height: 12),
+              Text(_infoMsg!, style: const TextStyle(fontSize: 12, color: Color(0xFF34D399))),
+            ],
+            const SizedBox(height: 20),
+            TextField(
+              controller: _otpController,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              textAlign: TextAlign.center,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 12, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                counterText: '',
+                hintText: '000000',
+                hintStyle: const TextStyle(color: Color(0xFF4B5563), letterSpacing: 12),
+                filled: true,
+                fillColor: const Color(0xFF111827),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF374151)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF374151)),
+                ),
+              ),
+            ),
+            if (_debugOtp != null) ...[
+              const SizedBox(height: 8),
+              Text('Dev mode code: $_debugOtp', style: const TextStyle(fontSize: 11, color: Colors.amber)),
+            ],
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF059669),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: _loading ? null : _verifyOtp,
+                child: _loading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Verify & Continue', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed: () => setState(() {
+                    _step = 1;
+                    _infoMsg = null;
+                  }),
+                  child: const Text('Change email', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                ),
+                TextButton(
+                  onPressed: _resendingOtp ? null : _resendOtp,
+                  child: Text(
+                    _resendingOtp ? 'Sending...' : 'Resend code',
+                    style: const TextStyle(color: Color(0xFF34D399), fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+
+      case 3:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             const Text(
               'Are you a Seeker or a Seller?',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
@@ -571,7 +725,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               onTap: () => setState(() {
                 _accountIntent = 'seeker';
                 _selectedRole = 'seeker';
-                _step = 3;
+                _step = 4;
               }),
             ),
             const SizedBox(height: 14),
@@ -583,13 +737,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               onTap: () => setState(() {
                 _accountIntent = 'seller';
                 _selectedRole = 'owner';
-                _step = 3;
+                _step = 4;
               }),
             ),
           ],
         );
 
-      case 3:
+      case 4:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -648,7 +802,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   }
                   setState(() {
                     _errorMsg = null;
-                    _step = 4;
+                    _step = 5;
                   });
                 },
                 child: const Text('Continue', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
@@ -657,7 +811,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ],
         );
 
-      case 4:
+      case 5:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -703,14 +857,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   backgroundColor: const Color(0xFF059669),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: () => setState(() => _step = 5),
+                onPressed: () => setState(() => _step = 6),
                 child: const Text('Continue', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
               ),
             ),
           ],
         );
 
-      case 5:
+      case 6:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -759,7 +913,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   }
                   setState(() {
                     _errorMsg = null;
-                    _step = 6;
+                    _step = 7;
                   });
                 },
                 child: const Text('Continue', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
@@ -768,7 +922,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ],
         );
 
-      case 6:
+      case 7:
       default:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,

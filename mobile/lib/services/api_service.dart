@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants.dart';
@@ -337,41 +337,53 @@ class ApiService {
   }
 
   // --- 6-Digit Resend OTP Onboarding ---
-  Future<Map<String, dynamic>> signupInitiate(String email, String password) async {
+  String _extractError(http.Response response, String fallback) {
     try {
-      final uri = Uri.parse(ApiConstants.signupInitiateEndpoint);
-      final response = await client.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': email, 'password': password}),
-      ).timeout(const Duration(seconds: 5));
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
+      final decoded = json.decode(response.body);
+      final detail = decoded['detail'];
+      if (detail is String && detail.isNotEmpty) return detail;
+      if (detail is List && detail.isNotEmpty) return detail.first['msg']?.toString() ?? fallback;
     } catch (_) {}
-    return {
-      'status': 'success',
-      'message': 'Verification code sent to $email',
-      'otp_debug': '123456',
-    };
+    return fallback;
+  }
+
+  Future<Map<String, dynamic>> signupInitiate(String email, String password) async {
+    final uri = Uri.parse(ApiConstants.signupInitiateEndpoint);
+    final response = await client.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'email': email, 'password': password}),
+    ).timeout(const Duration(seconds: 20));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    throw Exception(_extractError(response, 'Failed to send verification code.'));
   }
 
   Future<Map<String, dynamic>> signupVerifyOtp(String email, String otpCode) async {
-    try {
-      final uri = Uri.parse(ApiConstants.signupVerifyOtpEndpoint);
-      final response = await client.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': email, 'otp_code': otpCode}),
-      ).timeout(const Duration(seconds: 5));
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-    } catch (_) {}
-    return {
-      'status': 'success',
-      'verification_token': 'simulated_token_${DateTime.now().millisecondsSinceEpoch}',
-    };
+    final uri = Uri.parse(ApiConstants.signupVerifyOtpEndpoint);
+    final response = await client.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'email': email, 'otp_code': otpCode}),
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    throw Exception(_extractError(response, 'Invalid or expired verification code.'));
+  }
+
+  Future<Map<String, dynamic>> resendOtp(String email) async {
+    final uri = Uri.parse('${ApiConstants.authEndpoint}/resend-otp');
+    final response = await client.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'email': email}),
+    ).timeout(const Duration(seconds: 20));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    throw Exception(_extractError(response, 'Failed to resend verification code.'));
   }
 
   Future<void> deleteListing(int listingId) async {

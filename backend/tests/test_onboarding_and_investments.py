@@ -13,10 +13,22 @@ async def test_otp_flow_and_onboarding(client: AsyncClient):
     assert res1.status_code == 200
     data1 = res1.json()
     assert data1["status"] == "success"
-    verification_token = data1.get("verification_token")
+    otp_code = data1.get("otp_debug")
+    assert otp_code is not None
+    assert len(otp_code) == 6
+
+    # 2. Verify 6-digit OTP Code
+    res2 = await client.post("/api/v1/auth/signup-verify-otp", json={
+        "email": test_email,
+        "otp_code": otp_code
+    })
+    assert res2.status_code == 200
+    data2 = res2.json()
+    assert data2["status"] == "success"
+    verification_token = data2.get("verification_token")
     assert verification_token is not None
 
-    # 2. Complete Onboarding directly
+    # 3. Complete Onboarding with verified token
     res3 = await client.post("/api/v1/auth/onboarding-complete", json={
         "email": test_email,
         "verification_token": verification_token,
