@@ -1,0 +1,61 @@
+name: Build iOS Ready Folder & Unsigned IPA (PropertyHub Mobile)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Compile iOS Release & Package Ready Folder
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter Dependencies & CocoaPods
+        working-directory: ./mobile
+        run: |
+          flutter pub get
+          cd ios
+          pod install --repo-update
+
+      - name: Build iOS Release (No Codesign)
+        working-directory: ./mobile
+        run: |
+          flutter build ios --release --no-codesign
+
+      - name: Package Unsigned IPA & iOS Ready Folder
+        working-directory: ./mobile
+        run: |
+          mkdir -p dist_ios/Payload
+          cp -R build/ios/iphoneos/Runner.app dist_ios/Payload/
+          cd dist_ios
+          zip -r ../PropertiesAndAutos-iOS-unsigned.ipa Payload
+          cd ..
+
+          mkdir -p ios_ready_bundle
+          cp -R ios lib assets res_icons pubspec.yaml ios_ready_bundle/
+          cp pubspec.lock ios_ready_bundle/ 2>/dev/null || true
+
+      - name: Upload iOS Ready Folder Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: propertyhub-ios-ready-folder
+          path: mobile/ios_ready_bundle
+          retention-days: 30
+
+      - name: Upload Unsigned iOS IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: propertyhub-ios-unsigned-ipa
+          path: mobile/PropertiesAndAutos-iOS-unsigned.ipa
+          retention-days: 30
