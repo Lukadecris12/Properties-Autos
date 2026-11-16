@@ -134,6 +134,28 @@ async def send_verification_otp_email(to_email: str, otp_code: str) -> dict:
                 if response.status_code in [200, 201]:
                     logger.info(f"Resend email sent successfully to {to_email}")
                     return {"status": "sent", "provider": "resend", "data": response.json()}
+                
+                # If custom domain is not yet verified in Resend, fall back to onboarding@resend.dev
+                if response.status_code in [403, 422]:
+                    logger.warning(f"Domain sending failed ({response.status_code}), retrying via onboarding@resend.dev: {response.text}")
+                    fallback_response = await client.post(
+                        "https://api.resend.com/emails",
+                        headers={
+                            "Authorization": f"Bearer {resend_api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "from": "Properties & Autos <onboarding@resend.dev>",
+                            "to": [to_email],
+                            "subject": subject,
+                            "html": html_content,
+                        },
+                    )
+                    if fallback_response.status_code in [200, 201]:
+                        logger.info(f"Resend fallback email sent successfully to {to_email}")
+                        return {"status": "sent", "provider": "resend_onboarding", "data": fallback_response.json()}
+                    else:
+                        logger.warning(f"Resend fallback failed: {fallback_response.text}")
                 else:
                     logger.warning(f"Resend API returned status {response.status_code}: {response.text}")
         except Exception as e:
