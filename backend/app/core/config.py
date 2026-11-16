@@ -50,7 +50,7 @@ class Settings(BaseSettings):
 
     # Resend Email Service
     RESEND_API_KEY: str = ""
-    RESEND_FROM_EMAIL: str = "PropertyHub <onboarding@resend.dev>"
+    RESEND_FROM_EMAIL: str = "Properties & Autos <auth@propertiesandautos.online>"
 
     @property
     def cors_origins(self) -> List[str]:

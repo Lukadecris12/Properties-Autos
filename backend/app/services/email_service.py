@@ -16,7 +16,7 @@ async def send_verification_otp_email(to_email: str, otp_code: str) -> dict:
     Sends a 6-digit OTP verification email via Resend HTTP API.
     Gracefully falls back to local simulation if no RESEND_API_KEY is configured.
     """
-    subject = f"{otp_code} is your PropertyHub Verification Code"
+    subject = f"{otp_code} is your Properties & Autos Verification Code"
     
     html_content = f"""
     <!DOCTYPE html>
@@ -91,11 +91,11 @@ async def send_verification_otp_email(to_email: str, otp_code: str) -> dict:
     <body>
       <div class="container">
         <div class="logo">
-          Property<span>Hub</span>
+          Properties <span>&amp; Autos</span>
         </div>
         <div class="title">Verify Your Registration</div>
         <div class="desc">
-          Thank you for initiating signup on PropertyHub — the Premier Real Estate & Automotive Marketplace. 
+          Thank you for initiating signup on Properties &amp; Autos — the Premier Real Estate &amp; Automotive Marketplace. 
           Please use the 6-digit verification code below to verify your email and continue your onboarding.
         </div>
         <div class="otp-box">
@@ -105,8 +105,8 @@ async def send_verification_otp_email(to_email: str, otp_code: str) -> dict:
           This verification code expires in <strong>10 minutes</strong>. If you did not initiate this request, please safely disregard this email.
         </div>
         <div class="footer">
-          &copy; 2026 PropertyHub Technologies. All rights reserved.<br>
-          AI-Powered Property & Automobile Marketplace • Verified Platform
+          &copy; 2026 Properties &amp; Autos Technologies. All rights reserved.<br>
+          AI-Powered Property &amp; Automobile Marketplace • Verified Platform
         </div>
       </div>
     </body>

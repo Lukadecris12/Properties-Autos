@@ -113,6 +113,8 @@ jobs:
           EC2_APP_DIR: ${{ secrets.EC2_APP_DIR || 'propertyhub' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL || 'gemini-3.5-flash-lite' }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL || 'Properties & Autos <auth@propertiesandautos.online>' }}
         run: |
           if [ -z "$EC2_HOST" ] || [ -z "$EC2_SSH_KEY" ]; then
             echo "EC2_HOST or EC2_SSH_KEY GitHub secret is not configured. Skipping EC2 deployment."
@@ -125,10 +127,14 @@ jobs:
             set -e
             cd ~/$EC2_APP_DIR
             git pull origin main
+            touch .env
             if [ -n \"$GEMINI_API_KEY\" ]; then
-              touch .env
               grep -q '^GEMINI_API_KEY=' .env && sed -i \"s|^GEMINI_API_KEY=.*|GEMINI_API_KEY=$GEMINI_API_KEY|\" .env || echo \"GEMINI_API_KEY=$GEMINI_API_KEY\" >> .env
               grep -q '^GEMINI_MODEL=' .env && sed -i \"s|^GEMINI_MODEL=.*|GEMINI_MODEL=$GEMINI_MODEL|\" .env || echo \"GEMINI_MODEL=$GEMINI_MODEL\" >> .env
+            fi
+            if [ -n \"$RESEND_API_KEY\" ]; then
+              grep -q '^RESEND_API_KEY=' .env && sed -i \"s|^RESEND_API_KEY=.*|RESEND_API_KEY=$RESEND_API_KEY|\" .env || echo \"RESEND_API_KEY=$RESEND_API_KEY\" >> .env
+              grep -q '^RESEND_FROM_EMAIL=' .env && sed -i \"s|^RESEND_FROM_EMAIL=.*|RESEND_FROM_EMAIL=$RESEND_FROM_EMAIL|\" .env || echo \"RESEND_FROM_EMAIL=$RESEND_FROM_EMAIL\" >> .env
             fi
             docker compose up -d --build --force-recreate --renew-anon-volumes
             docker image prune -f
