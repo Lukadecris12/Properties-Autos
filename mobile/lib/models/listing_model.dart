@@ -9,6 +9,7 @@ class ListingModel {
   final String assetCategory;   // LAND, RESIDENTIAL, COMMERCIAL, VEHICLE
   final double price;
   final String currency;
+  final String status;
   final String? rentalPeriod;   // per_night, per_day, per_month, per_year
   final String state;
   final String city;
@@ -33,6 +34,7 @@ class ListingModel {
     required this.assetCategory,
     required this.price,
     required this.currency,
+    this.status = 'PUBLISHED',
     this.rentalPeriod,
     required this.state,
     required this.city,
@@ -91,6 +93,7 @@ class ListingModel {
       assetCategory: json['asset_category'] ?? 'RESIDENTIAL',
       price: (json['price'] != null) ? double.parse(json['price'].toString()) : 0.0,
       currency: json['currency'] ?? 'NGN',
+      status: json['status']?.toString() ?? 'PUBLISHED',
       rentalPeriod: json['rental_period'],
       state: json['state'] ?? '',
       city: json['city'] ?? '',
