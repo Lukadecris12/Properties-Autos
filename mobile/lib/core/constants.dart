@@ -1,6 +1,6 @@
 class ApiConstants {
   // Live AWS production API URL
-  static String baseUrl = 'https://propertiesandautos.online/api/v1';
+  static String baseUrl = 'http://13.61.219.191/api/v1';
 
   static String get listingsEndpoint => '$baseUrl/listings';
   static String get requirementsEndpoint => '$baseUrl/requirements';
@@ -36,7 +36,7 @@ class ApiConstants {
     if (clean.startsWith('http://') || clean.startsWith('https://')) {
       return clean;
     }
-    // Remove /api/v1 from baseUrl to get origin host (e.g. https://propertiesandautos.online)
+    // Remove /api/v1 from baseUrl to get origin host (e.g. http://13.61.219.191)
     final origin = baseUrl.replaceAll(RegExp(r'/api/v1/?$'), '');
     final path = clean.startsWith('/') ? clean : '/$clean';
     return '$origin$path';
