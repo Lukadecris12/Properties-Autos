@@ -129,12 +129,16 @@ jobs:
             git pull origin main
             touch .env
             if [ -n \"$GEMINI_API_KEY\" ]; then
-              grep -q '^GEMINI_API_KEY=' .env && sed -i \"s|^GEMINI_API_KEY=.*|GEMINI_API_KEY=$GEMINI_API_KEY|\" .env || echo \"GEMINI_API_KEY=$GEMINI_API_KEY\" >> .env
-              grep -q '^GEMINI_MODEL=' .env && sed -i \"s|^GEMINI_MODEL=.*|GEMINI_MODEL=$GEMINI_MODEL|\" .env || echo \"GEMINI_MODEL=$GEMINI_MODEL\" >> .env
+              grep -v -E '^(GEMINI_API_KEY|GEMINI_MODEL)=' .env > .env.tmp || true
+              mv .env.tmp .env
+              printf 'GEMINI_API_KEY=%s\n' \"$GEMINI_API_KEY\" >> .env
+              printf 'GEMINI_MODEL=%s\n' \"$GEMINI_MODEL\" >> .env
             fi
             if [ -n \"$RESEND_API_KEY\" ]; then
-              grep -q '^RESEND_API_KEY=' .env && sed -i \"s|^RESEND_API_KEY=.*|RESEND_API_KEY=$RESEND_API_KEY|\" .env || echo \"RESEND_API_KEY=$RESEND_API_KEY\" >> .env
-              grep -q '^RESEND_FROM_EMAIL=' .env && sed -i \"s|^RESEND_FROM_EMAIL=.*|RESEND_FROM_EMAIL=$RESEND_FROM_EMAIL|\" .env || echo \"RESEND_FROM_EMAIL=$RESEND_FROM_EMAIL\" >> .env
+              grep -v -E '^(RESEND_API_KEY|RESEND_FROM_EMAIL)=' .env > .env.tmp || true
+              mv .env.tmp .env
+              printf 'RESEND_API_KEY=%s\n' \"$RESEND_API_KEY\" >> .env
+              printf 'RESEND_FROM_EMAIL=%s\n' \"$RESEND_FROM_EMAIL\" >> .env
             fi
             docker compose up -d --build --force-recreate --renew-anon-volumes
             docker image prune -f
