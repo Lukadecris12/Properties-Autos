@@ -27,6 +27,53 @@ class _AdminScreenState extends State<AdminScreen> {
     });
   }
 
+  Future<void> _confirmDeleteUser(Map<String, dynamic> user) async {
+    final int? userId = user['id'] is int ? user['id'] : int.tryParse(user['id']?.toString() ?? '');
+    if (userId == null) return;
+    final label = user['email']?.toString() ?? 'User #$userId';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1F2937),
+        title: const Text('Delete User Account', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Text(
+          'Permanently delete "$label" and all their listings? This cannot be undone.',
+          style: const TextStyle(color: Color(0xFFD1D5DB), fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _apiService.deleteAdminUser(userId);
+        _loadStats();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(backgroundColor: const Color(0xFF065F46), content: Text('Deleted $label')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(backgroundColor: Colors.redAccent, content: Text(e.toString().replaceFirst('Exception: ', ''))),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isAdmin = ApiService.isLoggedIn && ApiService.currentUser?['is_superuser'] == true;
@@ -211,17 +258,33 @@ class _AdminScreenState extends State<AdminScreen> {
           Text(locationLabel.isNotEmpty ? locationLabel : 'Nigeria', style: const TextStyle(fontSize: 11, color: Colors.grey)),
           const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                isVerified ? 'Verified' : 'Unverified',
-                style: TextStyle(fontSize: 11, color: isVerified ? const Color(0xFF10B981) : Colors.grey),
+              Row(
+                children: [
+                  Text(
+                    isVerified ? 'Verified' : 'Unverified',
+                    style: TextStyle(fontSize: 11, color: isVerified ? const Color(0xFF10B981) : Colors.grey),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    isActive ? 'Active' : 'Suspended',
+                    style: TextStyle(fontSize: 11, color: isActive ? const Color(0xFF10B981) : Colors.redAccent),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Text(
-                isActive ? 'Active' : 'Suspended',
-                style: TextStyle(fontSize: 11, color: isActive ? const Color(0xFF10B981) : Colors.redAccent),
-              ),
+              if (user['is_superuser'] != true)
+                TextButton.icon(
+                  onPressed: () => _confirmDeleteUser(user),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.redAccent,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  icon: const Icon(Icons.delete_outline, size: 16),
+                  label: const Text('Delete', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
             ],
           ),
         ],

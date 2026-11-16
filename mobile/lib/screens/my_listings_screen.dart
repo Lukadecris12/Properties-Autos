@@ -65,6 +65,119 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
     }
   }
 
+  Future<void> _showEditDialog(ListingModel listing) async {
+    final titleCtrl = TextEditingController(text: listing.title);
+    final priceCtrl = TextEditingController(text: listing.price.toStringAsFixed(0));
+    final descCtrl = TextEditingController(text: listing.description);
+    String status = listing.status.isNotEmpty ? listing.status : 'PUBLISHED';
+    bool saving = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => AlertDialog(
+          backgroundColor: const Color(0xFF1F2937),
+          title: const Text('Edit Listing', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    labelStyle: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: priceCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    labelText: 'Price (${listing.currency})',
+                    labelStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: const ['PUBLISHED', 'PAUSED', 'SOLD', 'RENTED', 'LEASED', 'UNAVAILABLE'].contains(status) ? status : 'PUBLISHED',
+                  dropdownColor: const Color(0xFF111827),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: const InputDecoration(
+                    labelText: 'Status',
+                    labelStyle: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'PUBLISHED', child: Text('Published')),
+                    DropdownMenuItem(value: 'PAUSED', child: Text('Paused')),
+                    DropdownMenuItem(value: 'SOLD', child: Text('Sold')),
+                    DropdownMenuItem(value: 'RENTED', child: Text('Rented')),
+                    DropdownMenuItem(value: 'LEASED', child: Text('Leased')),
+                    DropdownMenuItem(value: 'UNAVAILABLE', child: Text('Unavailable')),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) setModalState(() => status = v);
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: descCtrl,
+                  maxLines: 3,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    labelStyle: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: saving ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
+              onPressed: saving
+                  ? null
+                  : () async {
+                      final parsedPrice = double.tryParse(priceCtrl.text.trim());
+                      if (titleCtrl.text.trim().isEmpty || parsedPrice == null) return;
+                      setModalState(() => saving = true);
+                      try {
+                        await _apiService.updateListing(listing.id, {
+                          'title': titleCtrl.text.trim(),
+                          'price': parsedPrice,
+                          'description': descCtrl.text.trim(),
+                          'status': status,
+                        });
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        _load();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(backgroundColor: Color(0xFF065F46), content: Text('Listing updated')),
+                          );
+                        }
+                      } catch (e) {
+                        setModalState(() => saving = false);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(backgroundColor: Colors.redAccent, content: Text(e.toString().replaceFirst('Exception: ', ''))),
+                          );
+                        }
+                      }
+                    },
+              child: Text(saving ? 'Saving...' : 'Save', style: const TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AutoHideAppBarScaffold(
@@ -174,9 +287,18 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                         Text('${item.currency} ${item.price.toStringAsFixed(0)}', style: const TextStyle(color: Color(0xFF10B981), fontSize: 13, fontWeight: FontWeight.bold)),
                       ],
                     ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                      onPressed: () => _confirmDelete(item),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, color: Color(0xFFFBBF24), size: 20),
+                          onPressed: () => _showEditDialog(item),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                          onPressed: () => _confirmDelete(item),
+                        ),
+                      ],
                     ),
                   ),
                 );

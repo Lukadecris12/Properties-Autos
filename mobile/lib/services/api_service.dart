@@ -403,6 +403,41 @@ class ApiService {
     }
   }
 
+  Future<void> updateListing(int listingId, Map<String, dynamic> data) async {
+    if (_authToken == null || _authToken!.isEmpty) {
+      throw Exception('Please sign in first');
+    }
+    final uri = Uri.parse('${ApiConstants.listingsEndpoint}/$listingId');
+    final response = await client.put(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_authToken',
+      },
+      body: json.encode(data),
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw Exception(_extractError(response, 'Failed to update listing'));
+    }
+  }
+
+  Future<void> deleteAdminUser(int userId) async {
+    if (_authToken == null || _authToken!.isEmpty) {
+      throw Exception('Please sign in first');
+    }
+    final uri = Uri.parse('${ApiConstants.adminEndpoint}/users/$userId');
+    final response = await client.delete(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_authToken',
+      },
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception(_extractError(response, 'Failed to delete user account'));
+    }
+  }
+
   Future<Map<String, dynamic>> onboardingComplete(
     Map<String, dynamic> payload, {
     String? password,

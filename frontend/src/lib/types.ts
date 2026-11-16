@@ -45,6 +45,7 @@ export interface Listing {
   user_id: number;
   title: string;
   slug?: string;
+  status?: string;
   description: string;
   transaction_type: TransactionType;
   asset_category: AssetCategory;

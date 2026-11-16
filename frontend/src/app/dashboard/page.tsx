@@ -25,7 +25,9 @@ import {
   Crown,
   Flame,
   Rocket,
-  Zap
+  Zap,
+  Pencil,
+  X
 } from 'lucide-react';
 
 import { Navbar } from '@/components/Navbar';
@@ -63,6 +65,15 @@ function DashboardPageContent() {
   const [myInspections, setMyInspections] = useState<any[]>([]);
   const [userSubscription, setUserSubscription] = useState<any>(null);
   const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Edit listing modal state
+  const [editingListing, setEditingListing] = useState<Listing | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editStatus, setEditStatus] = useState('PUBLISHED');
+  const [editNeighbourhood, setEditNeighbourhood] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
 
   // Verification document upload
   const [docType, setDocType] = useState('NATIONAL_ID');
@@ -168,6 +179,50 @@ function DashboardPageContent() {
       await loadDashboardData();
     } catch (err: any) {
       setActionFeedback({ type: 'error', text: err.message || 'Failed to boost listing.' });
+    }
+  };
+
+  const openEditListing = (listing: Listing) => {
+    setEditingListing(listing);
+    setEditTitle(listing.title || '');
+    setEditPrice(String(listing.price ?? ''));
+    setEditDescription(listing.description || '');
+    setEditStatus(listing.status || 'PUBLISHED');
+    setEditNeighbourhood(listing.neighbourhood || '');
+  };
+
+  const handleSaveListingEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingListing) return;
+    setEditSaving(true);
+    setActionFeedback(null);
+    try {
+      await api.updateListing(editingListing.id, {
+        title: editTitle.trim(),
+        price: Number(editPrice),
+        description: editDescription.trim(),
+        status: editStatus,
+        neighbourhood: editNeighbourhood.trim() || undefined,
+      });
+      setEditingListing(null);
+      setActionFeedback({ type: 'success', text: 'Listing updated successfully!' });
+      await loadDashboardData();
+    } catch (err: any) {
+      setActionFeedback({ type: 'error', text: err.message || 'Failed to update listing.' });
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDeleteListing = async (listingId: number, title: string) => {
+    if (!confirm(`Are you sure you want to permanently delete "${title}"?`)) return;
+    setActionFeedback(null);
+    try {
+      await api.deleteListing(listingId);
+      setActionFeedback({ type: 'success', text: 'Listing deleted successfully.' });
+      await loadDashboardData();
+    } catch (err: any) {
+      setActionFeedback({ type: 'error', text: err.message || 'Failed to delete listing.' });
     }
   };
 
@@ -657,11 +712,29 @@ function DashboardPageContent() {
                       </div>
 
                       <div className="flex items-center justify-between text-xs text-gray-400 pt-1">
-                        <span>{l.city}, {l.state}</span>
-                        <Link href={`/listings/${l.id}`} className="text-brand-400 font-semibold hover:underline flex items-center gap-1">
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Preview</span>
-                        </Link>
+                        <span className="truncate">{l.city}, {l.state}</span>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => openEditListing(l)}
+                            className="text-amber-400 font-semibold hover:underline flex items-center gap-1"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteListing(l.id, l.title)}
+                            className="text-red-400 font-semibold hover:underline flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
+                          </button>
+                          <Link href={`/listings/${l.id}`} className="text-brand-400 font-semibold hover:underline flex items-center gap-1">
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Preview</span>
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1014,6 +1087,98 @@ function DashboardPageContent() {
         )}
 
       </main>
+
+      {editingListing && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-[#111827] border border-gray-800 p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-white">Edit Listing</h3>
+              <button
+                type="button"
+                onClick={() => setEditingListing(null)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveListingEdit} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] text-gray-400 mb-1">Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] text-gray-400 mb-1">Price ({editingListing.currency || 'NGN'}) *</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-400 mb-1">Status</label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                  >
+                    <option value="PUBLISHED">Published</option>
+                    <option value="PAUSED">Paused</option>
+                    <option value="SOLD">Sold</option>
+                    <option value="RENTED">Rented</option>
+                    <option value="LEASED">Leased</option>
+                    <option value="UNAVAILABLE">Unavailable</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] text-gray-400 mb-1">Neighbourhood / Area</label>
+                <input
+                  type="text"
+                  value={editNeighbourhood}
+                  onChange={(e) => setEditNeighbourhood(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] text-gray-400 mb-1">Description *</label>
+                <textarea
+                  rows={4}
+                  required
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingListing(null)}
+                  className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSaving}
+                  className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-xs font-bold"
+                >
+                  {editSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <AIAssistantModal
         isOpen={aiModalOpen}

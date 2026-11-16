@@ -93,6 +93,31 @@ class ApiClient {
     return res.json();
   }
 
+  async updateListing(listingId: number, data: any) {
+    const res = await fetch(`${API_BASE_URL}/listings/${listingId}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to update listing');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
+  async deleteListing(listingId: number) {
+    const res = await fetch(`${API_BASE_URL}/listings/${listingId}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) {
+      const errMsg = await this.parseErrorResponse(res, 'Failed to delete listing');
+      throw new Error(errMsg);
+    }
+    return res.json();
+  }
+
   async naturalLanguageSearch(query: string) {
     const res = await fetch(`${API_BASE_URL}/search/natural-language`, {
       method: 'POST',
