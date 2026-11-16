@@ -57,6 +57,9 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL:-Properties & Autos <auth@propertiesandautos.online>}
+      - DEBUG=${DEBUG:-false}
       - UPLOAD_DIR=/app/uploads
     volumes:
       - ./backend:/app

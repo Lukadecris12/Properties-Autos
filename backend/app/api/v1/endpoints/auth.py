@@ -43,6 +43,18 @@ from app.schemas.common import ResponseModel
 
 router = APIRouter()
 
+
+def _otp_debug_or_fail(email_result: dict, otp_code: str) -> Optional[str]:
+    """Never expose OTP codes in production. If the email failed to send, raise an error instead."""
+    if settings.DEBUG:
+        return otp_code
+    if email_result.get("status") != "sent":
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="We could not send the verification email right now. Please try again in a few minutes."
+        )
+    return None
+
 # -------------------------------------------------------------
 # Robust Multi-Step Onboarding with 6-Digit Resend OTP
 # -------------------------------------------------------------
@@ -81,7 +93,7 @@ async def signup_initiate(req: SignupInitiateRequest, db: AsyncSession = Depends
         status="success",
         message="A 6-digit verification code has been sent to your email address.",
         email=req.email,
-        otp_debug=otp_code if (settings.DEBUG or email_result.get("status") != "sent") else None
+        otp_debug=_otp_debug_or_fail(email_result, otp_code)
     )
 
 @router.post("/signup-verify-otp", response_model=VerifyOtpResponse)
@@ -157,7 +169,7 @@ async def resend_otp(req: ResendOtpRequest, db: AsyncSession = Depends(get_db)):
         status="success",
         message=f"A fresh verification code has been sent to {req.email}.",
         email=req.email,
-        otp_debug=otp_code if (settings.DEBUG or email_result.get("status") != "sent") else None
+        otp_debug=_otp_debug_or_fail(email_result, otp_code)
     )
 
 @router.post("/onboarding-complete", response_model=Token)
@@ -569,12 +581,12 @@ async def forgot_password(
     db.add(otp_record)
     await db.commit()
 
-    email_sent = await send_verification_otp_email(req.email, otp_code)
+    email_sent = await send_verification_otp_email(req.email, otp_code, purpose="reset")
     return ResponseModel(
         message="A 6-digit password reset code has been sent to your email.",
         data={
             "email": req.email,
-            "otp_debug": otp_code if (email_sent.get("status") != "sent" or settings.DEBUG) else None,
+            "otp_debug": _otp_debug_or_fail(email_sent, otp_code),
         }
     )
 

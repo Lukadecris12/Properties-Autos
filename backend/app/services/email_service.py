@@ -11,12 +11,21 @@ def generate_otp_code() -> str:
     """Generate a random 6-digit numeric verification code."""
     return f"{random.randint(100000, 999999)}"
 
-async def send_verification_otp_email(to_email: str, otp_code: str) -> dict:
+async def send_verification_otp_email(to_email: str, otp_code: str, purpose: str = "signup") -> dict:
     """
     Sends a 6-digit OTP verification email via Resend HTTP API.
     Gracefully falls back to local simulation if no RESEND_API_KEY is configured.
     """
-    subject = f"{otp_code} is your Properties & Autos Verification Code"
+    if purpose == "reset":
+        subject = f"{otp_code} is your Properties & Autos Password Reset Code"
+        email_title = "Reset Your Password"
+        email_intro = ("We received a request to reset the password on your Properties &amp; Autos account. "
+                       "Use the 6-digit code below to set a new password.")
+    else:
+        subject = f"{otp_code} is your Properties & Autos Verification Code"
+        email_title = "Verify Your Registration"
+        email_intro = ("Thank you for initiating signup on Properties &amp; Autos — the Premier Real Estate &amp; Automotive Marketplace. "
+                       "Please use the 6-digit verification code below to verify your email and continue your onboarding.")
     
     html_content = f"""
     <!DOCTYPE html>
@@ -93,16 +102,15 @@ async def send_verification_otp_email(to_email: str, otp_code: str) -> dict:
         <div class="logo">
           Properties <span>&amp; Autos</span>
         </div>
-        <div class="title">Verify Your Registration</div>
+        <div class="title">{email_title}</div>
         <div class="desc">
-          Thank you for initiating signup on Properties &amp; Autos — the Premier Real Estate &amp; Automotive Marketplace. 
-          Please use the 6-digit verification code below to verify your email and continue your onboarding.
+          {email_intro}
         </div>
         <div class="otp-box">
           <div class="otp-code">{otp_code}</div>
         </div>
         <div class="desc">
-          This verification code expires in <strong>10 minutes</strong>. If you did not initiate this request, please safely disregard this email.
+          This verification code expires in <strong>15 minutes</strong>. If you did not initiate this request, please safely disregard this email.
         </div>
         <div class="footer">
           &copy; 2026 Properties &amp; Autos Technologies. All rights reserved.<br>
