@@ -69,7 +69,7 @@ export default function AntiFraudSafetyPage() {
               How to Report Suspicious Behavior
             </h2>
             <p>
-              If an agent or dealer requests suspicious payments, exhibits aggressive behavior, or posts inaccurate photos, tap the <strong>&quot;Report Listing&quot;</strong> button on the listing page or email our safety team immediately at <a href="mailto:safety@propertiesandautos.com" className="text-brand-400 underline">safety@propertiesandautos.com</a>.
+              If an agent or dealer requests suspicious payments, exhibits aggressive behavior, or posts inaccurate photos, tap the <strong>&quot;Report Listing&quot;</strong> button on the listing page or email our safety team immediately at <a href="mailto:safety@propertiesandautos.online" className="text-brand-400 underline">safety@propertiesandautos.online</a>.
             </p>
           </section>
 

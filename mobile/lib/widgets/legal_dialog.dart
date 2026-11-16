@@ -54,7 +54,7 @@ class LegalDialog {
                   style: TextStyle(color: Color(0xFF34D399), fontSize: 11, fontWeight: FontWeight.bold, height: 1.4),
                 ),
                 Text(
-                  'Contact: privacy@propertiesandautos.com',
+                  'Contact: privacy@propertiesandautos.online',
                   style: TextStyle(color: Colors.white54, fontSize: 10),
                 ),
               ],

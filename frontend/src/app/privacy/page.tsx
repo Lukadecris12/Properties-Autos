@@ -96,7 +96,7 @@ export default function PrivacyPolicyPage() {
             </p>
             <ul className="list-disc pl-5 mt-2 space-y-1 text-gray-300">
               <li><strong className="text-white">Inside the Mobile App:</strong> Go to Profile &gt; Account Settings &gt; Tap &quot;Delete Account&quot;. Your account, active listings, and personal credentials will be permanently erased.</li>
-              <li><strong className="text-white">Online / Support Request:</strong> Email our Data Protection Officer at <a href="mailto:privacy@propertiesandautos.com" className="text-brand-400 underline">privacy@propertiesandautos.com</a> with subject &quot;Account Deletion Request&quot;. Deletion requests are processed within 24 to 48 hours.</li>
+              <li><strong className="text-white">Online / Support Request:</strong> Email our Data Protection Officer at <a href="mailto:privacy@propertiesandautos.online" className="text-brand-400 underline">privacy@propertiesandautos.online</a> with subject &quot;Account Deletion Request&quot;. Deletion requests are processed within 24 to 48 hours.</li>
             </ul>
           </section>
 
@@ -110,8 +110,8 @@ export default function PrivacyPolicyPage() {
             </p>
             <p className="mt-2 text-gray-400">
               Properties &amp; Autos Technologies Ltd<br />
-              Email: <a href="mailto:privacy@propertiesandautos.com" className="text-brand-400">privacy@propertiesandautos.com</a><br />
-              Support Desk: <a href="mailto:support@propertiesandautos.com" className="text-brand-400">support@propertiesandautos.com</a>
+              Email: <a href="mailto:privacy@propertiesandautos.online" className="text-brand-400">privacy@propertiesandautos.online</a><br />
+              Support Desk: <a href="mailto:support@propertiesandautos.online" className="text-brand-400">support@propertiesandautos.online</a>
             </p>
           </section>
 

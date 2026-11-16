@@ -113,7 +113,7 @@ export default function PricingSubscriptionPage() {
     try {
       const opened = await openPaystackPopup({
         key: invoiceData.paystack_public_key || process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
-        email: currentUser.email || 'customer@propertyhub.ng',
+        email: currentUser.email || 'customer@propertiesandautos.online',
         amount: Number(selectedPlan.price_ngn),
         ref: invoiceData.reference,
         metadata: {

@@ -130,7 +130,7 @@ export default function SecurityDisclosuresPage() {
               We welcome security researchers and ethical hackers to report suspected security vulnerabilities. If you believe you have discovered a vulnerability in our web or mobile application, please contact our security team:
             </p>
             <div className="mt-3 p-4 rounded-xl bg-gray-900 border border-gray-800 text-xs text-gray-300">
-              <p><strong className="text-white">Security Contact:</strong> <a href="mailto:security@propertiesandautos.com" className="text-brand-400 underline">security@propertiesandautos.com</a></p>
+              <p><strong className="text-white">Security Contact:</strong> <a href="mailto:security@propertiesandautos.online" className="text-brand-400 underline">security@propertiesandautos.online</a></p>
               <p className="mt-1 text-gray-400">Please include detailed steps to reproduce, HTTP requests/responses, and allow our team reasonable time to remediate before public disclosure.</p>
             </div>
           </section>

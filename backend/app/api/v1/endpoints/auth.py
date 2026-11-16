@@ -488,7 +488,7 @@ async def delete_account(
 
     # 2. Deactivate & anonymize user data
     current_user.is_active = False
-    current_user.email = f"deleted_user_{current_user.id}_{int(datetime.now(timezone.utc).timestamp())}@deleted.propertyhub.com"
+    current_user.email = f"deleted_user_{current_user.id}_{int(datetime.now(timezone.utc).timestamp())}@deleted.propertiesandautos.online"
     current_user.phone_number = None
     current_user.first_name = "Deleted"
     current_user.last_name = "User"
