@@ -80,6 +80,7 @@ jobs:
           # 2. Configure compileSdk 35, targetSdk 35, minSdk 24, and release signing
           gradle_path = pathlib.Path("android/app/build.gradle")
           gradle = gradle_path.read_text()
+          gradle = re.sub(r'applicationId\s*=?\s*"[^"]+"', 'applicationId = "com.propertyhub.luxury.app"', gradle)
           gradle = re.sub(r"compileSdk\s*=?\s*flutter\.compileSdkVersion", "compileSdk = 35", gradle)
           gradle = re.sub(r"targetSdk\s*=?\s*flutter\.targetSdkVersion", "targetSdk = 35", gradle)
           gradle = re.sub(r"minSdk\s*=?\s*flutter\.minSdkVersion", "minSdk = 24", gradle)
