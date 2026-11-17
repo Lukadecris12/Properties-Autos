@@ -26,7 +26,9 @@ import {
   SlidersHorizontal,
   Headphones,
   Crown,
-  HelpCircle
+  HelpCircle,
+  Bell,
+  Flame
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AssetCategory } from '@/lib/types';
@@ -50,6 +52,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [buyDropdownOpen, setBuyDropdownOpen] = useState(false);
   const [rentDropdownOpen, setRentDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
@@ -63,6 +67,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         const res = await api.getMe();
         if (res?.data) {
           setCurrentUser(res.data);
+          api.getSubscriptionNotifications().then((nRes) => {
+            if (Array.isArray(nRes?.data)) setNotifications(nRes.data);
+          }).catch(() => {});
         }
       } catch (_) {
         // Token expired or invalid
@@ -311,6 +318,67 @@ export const Navbar: React.FC<NavbarProps> = ({
               <PlusCircle className="w-3.5 h-3.5 shrink-0" />
               <span>Publish Listing</span>
             </Link>
+
+            {/* Live Notification Bell (Subscriptions, Featured & Boosts) */}
+            {currentUser && (
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNotifDropdownOpen(!notifDropdownOpen);
+                    setProfileDropdownOpen(false);
+                  }}
+                  aria-label="Notifications"
+                  className="relative p-2 rounded-xl bg-gray-900 border border-gray-800 text-gray-300 hover:text-white hover:border-gray-700 transition-all"
+                >
+                  <Bell className="w-4 h-4" />
+                  {notifications.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] font-bold flex items-center justify-center">
+                      {notifications.length > 9 ? '9+' : notifications.length}
+                    </span>
+                  )}
+                </button>
+
+                {notifDropdownOpen && (
+                  <div className="absolute right-0 top-full pt-2 w-80 z-50">
+                    <div className="bg-gray-900/95 border border-gray-800 rounded-2xl p-3 shadow-2xl backdrop-blur-2xl space-y-2 max-h-96 overflow-y-auto">
+                      <div className="flex items-center justify-between px-1 pb-2 border-b border-gray-800">
+                        <span className="text-xs font-bold text-white">Plan, Featured &amp; Boost Alerts</span>
+                        <Link
+                          href="/pricing"
+                          onClick={() => setNotifDropdownOpen(false)}
+                          className="text-[11px] font-semibold text-brand-400 hover:underline"
+                        >
+                          Upgrade Plan
+                        </Link>
+                      </div>
+                      {notifications.length === 0 ? (
+                        <p className="text-xs text-gray-400 py-4 text-center">No active alerts.</p>
+                      ) : (
+                        notifications.map((n) => (
+                          <Link
+                            key={n.id}
+                            href={n.action_url || '/dashboard?tab=subscription'}
+                            onClick={() => setNotifDropdownOpen(false)}
+                            className="block p-2.5 rounded-xl bg-gray-950/70 hover:bg-gray-800/80 border border-gray-800/80 space-y-1 transition-colors"
+                          >
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+                              {n.type === 'BOOST' ? (
+                                <Flame className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                              ) : (
+                                <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                              )}
+                              <span className="truncate">{n.title}</span>
+                            </div>
+                            <p className="text-[11px] text-gray-400 leading-snug">{n.message}</p>
+                          </Link>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Unified Profile Menu Dropdown */}
             <div className="relative border-l border-gray-800 pl-2 sm:pl-2.5 shrink-0">

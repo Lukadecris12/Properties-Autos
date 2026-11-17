@@ -11,7 +11,8 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
-from app.models.subscription import SubscriptionPlan, SubscriptionPayment, ListingBoost
+from app.models.listing import Listing
+from app.models.subscription import SubscriptionPlan, SubscriptionPayment, ListingBoost, SubscriptionAuditLog
 from app.schemas.subscription import (
     SubscriptionPlanResponse,
     UserSubscriptionUsageResponse,
@@ -25,6 +26,7 @@ from app.schemas.common import ResponseModel
 from app.services.subscription_service import SubscriptionService
 from app.services.paystack_service import PaystackService
 from app.services.flutterwave_service import FlutterwaveService
+from app.services.email_service import send_platform_notification_email
 
 router = APIRouter()
 
@@ -234,6 +236,22 @@ async def verify_subscription_payment(
         )
 
     usage = await SubscriptionService.get_subscription_usage(db, current_user.id)
+    try:
+        await send_platform_notification_email(
+            to_email=current_user.email,
+            subject=f"Subscription Active: {plan.name} Plan — Properties & Autos",
+            title=f"Your {plan.name} Plan is Now Active!",
+            message_html=(
+                f"Thank you for upgrading to the <strong>{plan.name}</strong> plan on Properties &amp; Autos.<br><br>"
+                f"• <strong>Listing Capacity:</strong> {plan.listing_allowance} active listings<br>"
+                f"• <strong>Featured Ad Slots:</strong> {plan.featured_allowance} slots<br>"
+                f"• <strong>72-Hour Boost Credits:</strong> {plan.boost_allowance} monthly credits"
+            ),
+            cta_label="Manage Subscription & Boosts",
+            cta_url="https://propertiesandautos.online/dashboard?tab=subscription",
+        )
+    except Exception:
+        pass
     return ResponseModel(
         message=msg,
         data=usage
@@ -343,6 +361,21 @@ async def toggle_listing_featured(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=msg
         )
+    if listing.is_featured:
+        try:
+            await send_platform_notification_email(
+                to_email=current_user.email,
+                subject=f"Listing Featured: {listing.title} — Properties & Autos",
+                title="Your Listing is Now Featured!",
+                message_html=(
+                    f"Your listing <strong>{listing.title}</strong> is now marked as a <strong>Featured Advertisement</strong> "
+                    f"and receives priority placement across Properties &amp; Autos."
+                ),
+                cta_label="View My Listings",
+                cta_url="https://propertiesandautos.online/dashboard?tab=my_listings",
+            )
+        except Exception:
+            pass
     return ResponseModel(
         message=msg,
         data={
@@ -372,6 +405,22 @@ async def boost_listing(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=msg
         )
+    try:
+        listing_obj = await db.get(Listing, listing_id)
+        listing_title = listing_obj.title if listing_obj else f"Listing #{listing_id}"
+        await send_platform_notification_email(
+            to_email=current_user.email,
+            subject=f"72-Hour Boost Activated: {listing_title}",
+            title="72-Hour Search Boost Activated!",
+            message_html=(
+                f"Your listing <strong>{listing_title}</strong> has been boosted to the top of search results "
+                f"for the next <strong>{boost.duration_hours} hours</strong>."
+            ),
+            cta_label="Track Active Boosts",
+            cta_url="https://propertiesandautos.online/dashboard?tab=subscription",
+        )
+    except Exception:
+        pass
     return ResponseModel(
         message=msg,
         data={
@@ -444,4 +493,79 @@ async def get_payment_history(
     return ResponseModel(
         message="Subscription payment history retrieved.",
         data=data
+    )
+
+
+@router.get("/notifications")
+async def get_subscription_notifications(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Live in-app notification feed for subscription status, upgrade prompts, featured ads, and 72h boosts."""
+    usage = await SubscriptionService.get_subscription_usage(db, current_user.id)
+    notifications: List[Dict[str, Any]] = []
+
+    plan_slug = usage.get("plan_slug", "free")
+    plan_name = usage.get("plan_name", "Free Plan")
+    used_listings = usage.get("active_listings_count", 0)
+    max_listings = usage.get("listing_allowance", 3)
+    rem_boosts = usage.get("remaining_boost_credits", 0)
+    active_boosts = usage.get("active_boosts", []) or []
+
+    # 1. Upgrade / Quota Alert
+    if plan_slug == "free" or used_listings >= max_listings or rem_boosts == 0:
+        notifications.append({
+            "id": "upgrade-prompt",
+            "type": "UPGRADE",
+            "title": f"Upgrade from {plan_name} for More Reach",
+            "message": f"You are using {used_listings}/{max_listings} listings with {rem_boosts} boost credits left. Upgrade to unlock Featured Ads and 72-hour Search Boosts.",
+            "action_url": "/pricing",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+    # 2. Active 72-Hour Boost Alerts
+    for b in active_boosts:
+        notifications.append({
+            "id": f"boost-{b.get('id')}",
+            "type": "BOOST",
+            "title": f"Active 72h Boost: {b.get('listing_title', 'Listing')}",
+            "message": f"Boost is elevating your search placement until {str(b.get('expires_at', ''))[:16].replace('T', ' ')}.",
+            "action_url": "/dashboard?tab=subscription",
+            "created_at": str(b.get("started_at") or datetime.now(timezone.utc).isoformat()),
+        })
+
+    # 3. Featured Listings Alert
+    feat_stmt = select(Listing).where(Listing.user_id == current_user.id, Listing.is_featured == True)
+    feat_listings = (await db.execute(feat_stmt)).scalars().all()
+    for fl in feat_listings:
+        notifications.append({
+            "id": f"featured-{fl.id}",
+            "type": "FEATURED",
+            "title": f"Featured Ad Active: {fl.title}",
+            "message": "Your listing is highlighted in Featured marketplace slots.",
+            "action_url": "/dashboard?tab=my_listings",
+            "created_at": (fl.featured_at or fl.created_at or datetime.now(timezone.utc)).isoformat(),
+        })
+
+    # 4. Recent Subscription Audit Events
+    audit_stmt = (
+        select(SubscriptionAuditLog)
+        .where(SubscriptionAuditLog.user_id == current_user.id)
+        .order_by(desc(SubscriptionAuditLog.created_at))
+        .limit(5)
+    )
+    audits = (await db.execute(audit_stmt)).scalars().all()
+    for a in audits:
+        notifications.append({
+            "id": f"audit-{a.id}",
+            "type": "SUBSCRIPTION",
+            "title": a.action.replace("_", " ").title(),
+            "message": f"Plan activity recorded on your account ({a.details.get('plan_slug', plan_name) if isinstance(a.details, dict) else plan_name}).",
+            "action_url": "/dashboard?tab=subscription",
+            "created_at": (a.created_at or datetime.now(timezone.utc)).isoformat(),
+        })
+
+    return ResponseModel(
+        message="Notifications retrieved.",
+        data=notifications
     )

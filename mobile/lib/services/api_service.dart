@@ -438,6 +438,28 @@ class ApiService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> fetchSubscriptionNotifications() async {
+    if (_authToken == null || _authToken!.isEmpty) return [];
+    try {
+      final uri = Uri.parse('${ApiConstants.subscriptionsEndpoint}/notifications');
+      final response = await client.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_authToken',
+        },
+      ).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        final list = decoded['data'];
+        if (list is List) {
+          return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
     if (_authToken == null || _authToken!.isEmpty) {
       throw Exception('Please sign in first');

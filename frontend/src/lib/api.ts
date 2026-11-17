@@ -610,6 +610,14 @@ class ApiClient {
     return res.json();
   }
 
+  async getSubscriptionNotifications() {
+    const res = await fetch(`${API_BASE_URL}/subscriptions/notifications`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!res.ok) return { data: [] };
+    return res.json();
+  }
+
   async subscribeToPlan(data: { plan_slug: string; payment_method?: string; currency?: string; auto_renew?: boolean }) {
     const res = await fetch(`${API_BASE_URL}/subscriptions/subscribe`, {
       method: 'POST',
