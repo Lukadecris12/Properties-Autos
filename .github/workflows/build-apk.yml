@@ -36,11 +36,11 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-android-sdk35-${{ hashFiles('mobile/pubspec.yaml') }}
+          key: ${{ runner.os }}-gradle-android-sdk36-${{ hashFiles('mobile/pubspec.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-android-sdk35-
+            ${{ runner.os }}-gradle-android-sdk36-
 
-      - name: Generate Android Platform Wrapper, SDK 35 Config & Custom Icon
+      - name: Generate Android Platform Wrapper, SDK 36 Config & Custom Icon
         run: |
           cp -r mobile/lib /tmp/lib_backup
           cp -r mobile/assets /tmp/assets_backup
@@ -77,12 +77,30 @@ jobs:
               )
           manifest_path.write_text(manifest)
 
-          # 2. Configure compileSdk 35, targetSdk 35, minSdk 24, and release signing
+          # 2. Force Play Billing Library 8.0.0 across all subprojects in root build.gradle
+          root_gradle_path = pathlib.Path("android/build.gradle")
+          if root_gradle_path.exists():
+              root_gradle = root_gradle_path.read_text()
+              billing_force_block = """
+          allprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force 'com.android.billingclient:billing:8.0.0'
+                      force 'com.android.billingclient:billing-ktx:8.0.0'
+                  }
+              }
+          }
+          """
+              if "com.android.billingclient:billing:8.0.0" not in root_gradle:
+                  root_gradle = root_gradle + "\n" + billing_force_block
+                  root_gradle_path.write_text(root_gradle)
+
+          # 3. Configure compileSdk 36, targetSdk 36, minSdk 24, Play Billing 8.0.0, and release signing
           gradle_path = pathlib.Path("android/app/build.gradle")
           gradle = gradle_path.read_text()
           gradle = re.sub(r'applicationId\s*=?\s*"[^"]+"', 'applicationId = "com.propertyhub.luxury.app"', gradle)
-          gradle = re.sub(r"compileSdk\s*=?\s*flutter\.compileSdkVersion", "compileSdk = 35", gradle)
-          gradle = re.sub(r"targetSdk\s*=?\s*flutter\.targetSdkVersion", "targetSdk = 35", gradle)
+          gradle = re.sub(r"compileSdk\s*=?\s*flutter\.compileSdkVersion", "compileSdk = 36", gradle)
+          gradle = re.sub(r"targetSdk\s*=?\s*flutter\.targetSdkVersion", "targetSdk = 36", gradle)
           gradle = re.sub(r"minSdk\s*=?\s*flutter\.minSdkVersion", "minSdk = 24", gradle)
 
           signing_block = """def keystorePropertiesFile = rootProject.file("key.properties")
@@ -112,6 +130,23 @@ jobs:
               "signingConfig = keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug",
               gradle,
           )
+
+          app_billing_block = """
+          configurations.all {
+              resolutionStrategy {
+                  force 'com.android.billingclient:billing:8.0.0'
+                  force 'com.android.billingclient:billing-ktx:8.0.0'
+              }
+          }
+
+          dependencies {
+              implementation 'com.android.billingclient:billing:8.0.0'
+              implementation 'com.android.billingclient:billing-ktx:8.0.0'
+          }
+          """
+          if "com.android.billingclient:billing:8.0.0" not in gradle:
+              gradle = gradle + "\n" + app_billing_block
+
           gradle_path.write_text(gradle)
           EOF
 
