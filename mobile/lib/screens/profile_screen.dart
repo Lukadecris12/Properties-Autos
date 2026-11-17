@@ -11,6 +11,7 @@ import 'contact_support_screen.dart';
 import 'subscription_screen.dart';
 import 'faq_screen.dart';
 import '../core/constants.dart';
+import '../core/geo_data.dart';
 import '../widgets/legal_dialog.dart';
 import '../services/api_service.dart';
 
@@ -945,8 +946,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildMenuItem(
                     icon: Icons.person_add_alt_1,
                     iconColor: const Color(0xFF10B981),
-                    title: 'New Account Onboarding (OTP)',
-                    subtitle: 'Multi-role onboarding with 6-digit Resend OTP',
+                    title: 'New User Signup',
+                    subtitle: 'Multi-role registration with 6-digit email verification',
                     onTap: () {
                       Navigator.push(
                         context,
@@ -969,6 +970,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   _buildDivider(),
                   if (_isLoggedIn) ...[
+                    _buildMenuItem(
+                      icon: Icons.edit_note,
+                      iconColor: const Color(0xFFFBBF24),
+                      title: 'Edit Profile & Account Role',
+                      subtitle: 'Update name, phone, location, role, or categories (Properties & Autos)',
+                      onTap: _showEditProfileDialog,
+                    ),
+                    _buildDivider(),
                     _buildMenuItem(
                       icon: Icons.lock_reset,
                       iconColor: const Color(0xFF10B981),
@@ -1162,6 +1171,206 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 4),
           Text(desc, style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.4)),
         ],
+      ),
+    );
+  }
+
+  void _showEditProfileDialog() {
+    final user = ApiService.currentUser ?? {};
+    final firstCtrl = TextEditingController(text: user['first_name']?.toString() ?? '');
+    final lastCtrl = TextEditingController(text: user['last_name']?.toString() ?? '');
+    final companyCtrl = TextEditingController(text: user['company_name']?.toString() ?? '');
+    final phoneCtrl = TextEditingController(text: user['phone_number']?.toString() ?? '');
+    final cityCtrl = TextEditingController(text: user['city']?.toString() ?? '');
+
+    String selectedCountry = user['country']?.toString() ?? 'Nigeria';
+    if (!allCountries.any((c) => c.name == selectedCountry)) {
+      selectedCountry = 'Nigeria';
+    }
+    CountryGeoData countryObj = allCountries.firstWhere((c) => c.name == selectedCountry);
+    String selectedState = user['state']?.toString() ?? countryObj.states.first;
+    if (!countryObj.states.contains(selectedState)) {
+      selectedState = countryObj.states.first;
+    }
+
+    String entityType = (user['entity_type']?.toString() ?? user['active_mode']?.toString() ?? 'seeker').toLowerCase();
+    const validEntities = ['seeker', 'owner', 'agent', 'developer', 'dealer', 'company'];
+    if (!validEntities.contains(entityType)) entityType = 'seeker';
+
+    List<String> selectedAssets = [];
+    if (user['asset_interests'] is List) {
+      selectedAssets = (user['asset_interests'] as List).map((e) => e.toString()).toList();
+    }
+    if (selectedAssets.isEmpty) selectedAssets = ['residential'];
+
+    bool saving = false;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => AlertDialog(
+          backgroundColor: const Color(0xFF1F2937),
+          title: const Text('Edit Profile & Role', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: firstCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: const InputDecoration(labelText: 'First Name', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: lastCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: const InputDecoration(labelText: 'Last Name', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: phoneCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: const InputDecoration(labelText: 'Phone Number', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: companyCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: const InputDecoration(labelText: 'Company / Agency Name (Optional)', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: selectedCountry,
+                  isExpanded: true,
+                  dropdownColor: const Color(0xFF111827),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: const InputDecoration(labelText: 'Country', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
+                  items: allCountries.map((c) => DropdownMenuItem(value: c.name, child: Text('${c.flag} ${c.name}'))).toList(),
+                  onChanged: (v) {
+                    if (v == null) return;
+                    setModalState(() {
+                      selectedCountry = v;
+                      countryObj = allCountries.firstWhere((c) => c.name == v);
+                      selectedState = countryObj.states.first;
+                    });
+                  },
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: selectedState,
+                  isExpanded: true,
+                  dropdownColor: const Color(0xFF111827),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: const InputDecoration(labelText: 'State / Region', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
+                  items: countryObj.states.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                  onChanged: (v) {
+                    if (v != null) setModalState(() => selectedState = v);
+                  },
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: cityCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: const InputDecoration(labelText: 'City', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: entityType,
+                  isExpanded: true,
+                  dropdownColor: const Color(0xFF111827),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: const InputDecoration(labelText: 'Account Role', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
+                  items: const [
+                    DropdownMenuItem(value: 'seeker', child: Text('Seeker (Buyer / Renter)')),
+                    DropdownMenuItem(value: 'owner', child: Text('Owner / Private Seller')),
+                    DropdownMenuItem(value: 'agent', child: Text('Real Estate Agent')),
+                    DropdownMenuItem(value: 'developer', child: Text('Property Developer')),
+                    DropdownMenuItem(value: 'dealer', child: Text('Auto / Car Dealer')),
+                    DropdownMenuItem(value: 'company', child: Text('Company (Properties & Autos)')),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) setModalState(() => entityType = v);
+                  },
+                ),
+                const SizedBox(height: 12),
+                const Text('Categories (Properties, Autos, or Both):', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    {'id': 'residential', 'label': 'Houses & Apts'},
+                    {'id': 'land', 'label': 'Land'},
+                    {'id': 'vehicle', 'label': 'Vehicles / Autos'},
+                  ].map((cat) {
+                    final id = cat['id']!;
+                    final isSelected = selectedAssets.contains(id);
+                    return FilterChip(
+                      selected: isSelected,
+                      selectedColor: const Color(0xFF065F46),
+                      checkmarkColor: Colors.white,
+                      backgroundColor: const Color(0xFF111827),
+                      label: Text(cat['label']!, style: const TextStyle(color: Colors.white, fontSize: 11)),
+                      onSelected: (val) {
+                        setModalState(() {
+                          if (val) {
+                            selectedAssets.add(id);
+                          } else if (selectedAssets.length > 1) {
+                            selectedAssets.remove(id);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: saving ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
+              onPressed: saving
+                  ? null
+                  : () async {
+                      if (firstCtrl.text.trim().isEmpty || lastCtrl.text.trim().isEmpty) return;
+                      setModalState(() => saving = true);
+                      try {
+                        await _apiService.updateProfile({
+                          'first_name': firstCtrl.text.trim(),
+                          'last_name': lastCtrl.text.trim(),
+                          'company_name': companyCtrl.text.trim().isEmpty ? null : companyCtrl.text.trim(),
+                          'phone_number': phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim(),
+                          'country': selectedCountry,
+                          'state': selectedState,
+                          'city': cityCtrl.text.trim(),
+                          'entity_type': entityType,
+                          'asset_interests': selectedAssets,
+                        });
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        if (mounted) {
+                          setState(() {});
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(backgroundColor: Color(0xFF065F46), content: Text('Profile updated successfully!')),
+                          );
+                        }
+                      } catch (e) {
+                        setModalState(() => saving = false);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(backgroundColor: Colors.redAccent, content: Text(e.toString().replaceFirst('Exception: ', ''))),
+                          );
+                        }
+                      }
+                    },
+              child: Text(saving ? 'Saving...' : 'Save', style: const TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
       ),
     );
   }

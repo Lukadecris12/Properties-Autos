@@ -36,6 +36,7 @@ import { AIAssistantModal } from '@/components/AIAssistantModal';
 import { Listing, Booking, AIMatch, User } from '@/lib/types';
 import { api } from '@/lib/api';
 import { detectCurrencyFromCountry, formatSubscriptionPrice } from '@/lib/currency';
+import { COUNTRIES } from '@/lib/geoData';
 import { getCoverImageUrl, getFallbackImage } from '@/lib/media';
 
 function DashboardPageContent() {
@@ -75,6 +76,19 @@ function DashboardPageContent() {
   const [editStatus, setEditStatus] = useState('PUBLISHED');
   const [editNeighbourhood, setEditNeighbourhood] = useState('');
   const [editSaving, setEditSaving] = useState(false);
+
+  // Edit profile modal state
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profFirstName, setProfFirstName] = useState('');
+  const [profLastName, setProfLastName] = useState('');
+  const [profCompany, setProfCompany] = useState('');
+  const [profPhone, setProfPhone] = useState('');
+  const [profCountry, setProfCountry] = useState('Nigeria');
+  const [profState, setProfState] = useState('Lagos');
+  const [profCity, setProfCity] = useState('');
+  const [profEntityType, setProfEntityType] = useState('seeker');
+  const [profAssets, setProfAssets] = useState<string[]>(['residential']);
+  const [profSaving, setProfSaving] = useState(false);
 
   // Verification document upload
   const [docType, setDocType] = useState('NATIONAL_ID');
@@ -215,6 +229,63 @@ function DashboardPageContent() {
     }
   };
 
+  const openEditProfile = () => {
+    if (!currentUser) return;
+    setProfFirstName(currentUser.first_name || '');
+    setProfLastName(currentUser.last_name || '');
+    setProfCompany(currentUser.company_name || '');
+    setProfPhone(currentUser.phone_number || '');
+    const cName = currentUser.country || 'Nigeria';
+    setProfCountry(cName);
+    const matchedCountry = COUNTRIES.find((c) => c.name.toLowerCase() === cName.toLowerCase()) || COUNTRIES[0];
+    setProfState(currentUser.state || matchedCountry.states[0] || '');
+    setProfCity(currentUser.city || '');
+    setProfEntityType(currentUser.entity_type || (currentUser.active_mode === 'buyer' ? 'seeker' : currentUser.active_mode) || 'seeker');
+    setProfAssets(
+      Array.isArray(currentUser.asset_interests) && currentUser.asset_interests.length > 0
+        ? currentUser.asset_interests
+        : ['residential']
+    );
+    setProfileModalOpen(true);
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profFirstName.trim() || !profLastName.trim()) {
+      setActionFeedback({ type: 'error', text: 'First and last name are required.' });
+      return;
+    }
+    if (profAssets.length === 0) {
+      setActionFeedback({ type: 'error', text: 'Please select at least one category (Properties or Vehicles).' });
+      return;
+    }
+    setProfSaving(true);
+    setActionFeedback(null);
+    try {
+      const res = await api.updateProfile({
+        first_name: profFirstName.trim(),
+        last_name: profLastName.trim(),
+        company_name: profCompany.trim() || null,
+        phone_number: profPhone.trim() || undefined,
+        country: profCountry,
+        state: profState,
+        city: profCity.trim() || undefined,
+        entity_type: profEntityType,
+        asset_interests: profAssets,
+      });
+      if (res?.data && typeof window !== 'undefined') {
+        localStorage.setItem('propertyhub_user', JSON.stringify(res.data));
+      }
+      setProfileModalOpen(false);
+      setActionFeedback({ type: 'success', text: 'Profile updated successfully!' });
+      await loadDashboardData();
+    } catch (err: any) {
+      setActionFeedback({ type: 'error', text: err.message || 'Failed to update profile.' });
+    } finally {
+      setProfSaving(false);
+    }
+  };
+
   const handleDeleteListing = async (listingId: number, title: string) => {
     if (!confirm(`Are you sure you want to permanently delete "${title}"?`)) return;
     setActionFeedback(null);
@@ -330,6 +401,16 @@ function DashboardPageContent() {
                   <ShieldCheck className="w-3.5 h-3.5 text-brand-400" />
                   {currentUser?.verification_badge || 'Identity Verified'}
                 </span>
+                {currentUser && (
+                  <button
+                    type="button"
+                    onClick={openEditProfile}
+                    className="flex items-center gap-1 text-[11px] font-semibold bg-gray-800 hover:bg-gray-700 text-amber-300 border border-gray-700 px-2.5 py-0.5 rounded-full transition-colors"
+                  >
+                    <Pencil className="w-3 h-3" />
+                    <span>Edit Profile</span>
+                  </button>
+                )}
               </div>
               <p className="text-xs font-semibold text-brand-400 mt-1">
                 {getRegistrationRoleLabel(currentUser)}
@@ -1174,6 +1255,175 @@ function DashboardPageContent() {
                   className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-xs font-bold"
                 >
                   {editSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {profileModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-lg rounded-3xl bg-[#111827] border border-gray-800 p-6 space-y-4 shadow-2xl my-8">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-white">Edit Profile &amp; Account Role</h3>
+              <button
+                type="button"
+                onClick={() => setProfileModalOpen(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveProfile} className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] text-gray-400 mb-1">First Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={profFirstName}
+                    onChange={(e) => setProfFirstName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-400 mb-1">Last Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={profLastName}
+                    onChange={(e) => setProfLastName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] text-gray-400 mb-1">Phone Number</label>
+                  <input
+                    type="text"
+                    value={profPhone}
+                    onChange={(e) => setProfPhone(e.target.value)}
+                    placeholder="+234..."
+                    className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-400 mb-1">Company / Agency Name</label>
+                  <input
+                    type="text"
+                    value={profCompany}
+                    onChange={(e) => setProfCompany(e.target.value)}
+                    placeholder="Optional"
+                    className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5">
+                <div>
+                  <label className="block text-[11px] text-gray-400 mb-1">Country</label>
+                  <select
+                    value={profCountry}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setProfCountry(next);
+                      const found = COUNTRIES.find((c) => c.name === next);
+                      if (found && found.states.length > 0) setProfState(found.states[0]);
+                    }}
+                    className="w-full px-2.5 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                  >
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-400 mb-1">State / Region</label>
+                  <select
+                    value={profState}
+                    onChange={(e) => setProfState(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                  >
+                    {(COUNTRIES.find((c) => c.name === profCountry)?.states || [profState]).map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-400 mb-1">City</label>
+                  <input
+                    type="text"
+                    value={profCity}
+                    onChange={(e) => setProfCity(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-gray-400 mb-1">Account Role</label>
+                <select
+                  value={profEntityType}
+                  onChange={(e) => setProfEntityType(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                >
+                  <option value="seeker">Seeker (Buyer / Renter)</option>
+                  <option value="owner">Owner / Private Seller</option>
+                  <option value="agent">Real Estate Agent</option>
+                  <option value="developer">Property Developer</option>
+                  <option value="dealer">Auto / Car Dealer</option>
+                  <option value="company">Company (Properties &amp; Autos)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-gray-400 mb-1.5">Categories (Select one or more to deal in Properties, Autos, or Both)</label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: 'residential', label: 'Houses & Apartments' },
+                    { id: 'land', label: 'Land' },
+                    { id: 'vehicle', label: 'Vehicles / Autos' },
+                  ].map((cat) => {
+                    const checked = profAssets.includes(cat.id);
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() =>
+                          setProfAssets((prev) =>
+                            checked ? prev.filter((x) => x !== cat.id) : [...prev, cat.id]
+                          )
+                        }
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                          checked
+                            ? 'bg-brand-600/20 border-brand-500 text-brand-300'
+                            : 'bg-gray-950 border-gray-800 text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setProfileModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={profSaving}
+                  className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-xs font-bold"
+                >
+                  {profSaving ? 'Saving...' : 'Save Profile'}
                 </button>
               </div>
             </form>

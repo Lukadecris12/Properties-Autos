@@ -7,6 +7,7 @@ import '../models/listing_model.dart';
 import '../services/api_service.dart';
 import '../services/revenuecat_service.dart';
 import '../core/constants.dart';
+import '../core/currency_helper.dart';
 import '../widgets/legal_dialog.dart';
 
 class SubscriptionScreen extends StatefulWidget {
@@ -23,6 +24,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
   bool _isAnnual = false;
   bool _isLoading = true;
   String _selectedTier = 'STANDARD'; // STANDARD, BUSINESS, ENTERPRISE
+  CurrencyConfig _selectedCurrency = detectMobileCurrency(ApiService.currentUser?['country']?.toString());
 
   List<SubscriptionPlanModel> _plans = [];
   UserSubscriptionUsageModel? _userUsage;
@@ -247,7 +249,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
 
   void _purchaseViaRevenueCat(SubscriptionPlanModel plan) async {
     final price = _isAnnual ? plan.priceNgn * 10 : plan.priceNgn;
-    final formattedPrice = '₦${price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
+    final formattedPrice = formatMobilePlanPrice(price, _selectedCurrency).display;
 
     Package? packageToBuy;
     if (_revenueCatOfferings != null) {
@@ -724,15 +726,44 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                       ],
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF111827),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF1F2937)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Currency:', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedCurrency.code,
+                            dropdownColor: const Color(0xFF1F2937),
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                            items: supportedCurrencies.map((c) {
+                              return DropdownMenuItem(value: c.code, child: Text(c.label));
+                            }).toList(),
+                            onChanged: (code) {
+                              if (code == null) return;
+                              final match = supportedCurrencies.firstWhere((c) => c.code == code);
+                              setState(() => _selectedCurrency = match);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 16),
 
                   // Plans Catalogue Cards
                   ..._filteredPlans.map((plan) {
                     final isCurrent = _userUsage?.planSlug == plan.slug;
                     final price = _isAnnual ? plan.priceNgn * 10 : plan.priceNgn;
-                    final formattedPrice = plan.priceNgn == 0
-                        ? 'Free'
-                        : '₦${price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
+                    final priceInfo = formatMobilePlanPrice(price, _selectedCurrency);
+                    final formattedPrice = priceInfo.display;
 
                     final isBestValue = plan.slug == 'growth' || plan.slug == 'business-500' || plan.slug == 'enterprise-2750';
 
@@ -797,6 +828,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
                                 Text(' / ${_isAnnual ? 'year' : 'month'}', style: const TextStyle(color: Colors.grey, fontSize: 11)),
                             ],
                           ),
+                          if (!priceInfo.isNigeria && _selectedCurrency.code != 'USD' && plan.priceNgn > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                'Billed as \$${priceInfo.usdAmount} USD',
+                                style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 11),
+                              ),
+                            ),
                           const Divider(color: Color(0xFF1F2937), height: 22),
 
                           // Feature highlights & Quotas

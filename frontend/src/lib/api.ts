@@ -339,6 +339,19 @@ class ApiClient {
     return res.json();
   }
 
+  async updateProfile(data: any) {
+    const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const msg = await this.parseErrorResponse(res, 'Failed to update profile.');
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+
   // --- Property Investments ---
   async getInvestments(category?: string, search?: string) {
     const params = new URLSearchParams();

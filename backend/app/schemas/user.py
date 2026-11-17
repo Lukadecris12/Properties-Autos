@@ -64,12 +64,18 @@ class ModeSwitch(BaseModel):
 class UserUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    company_name: Optional[str] = None
+    country_code: Optional[str] = None
     phone_number: Optional[str] = None
+    country: Optional[str] = None
     state: Optional[str] = None
     city: Optional[str] = None
     address: Optional[str] = None
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
+    user_type: Optional[str] = None
+    entity_type: Optional[str] = None
+    asset_interests: Optional[List[str]] = None
 
 class VerificationDocumentCreate(BaseModel):
     document_type: str

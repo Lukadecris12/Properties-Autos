@@ -438,6 +438,35 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
+    if (_authToken == null || _authToken!.isEmpty) {
+      throw Exception('Please sign in first');
+    }
+    final uri = Uri.parse('${ApiConstants.authEndpoint}/profile');
+    final response = await client.put(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_authToken',
+      },
+      body: json.encode(data),
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode == 200) {
+      final decoded = json.decode(response.body);
+      final updatedUser = decoded['data'];
+      if (updatedUser is Map<String, dynamic>) {
+        _currentUser = updatedUser;
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_userStorageKey, json.encode(_currentUser));
+        } catch (_) {}
+        return updatedUser;
+      }
+      return decoded;
+    }
+    throw Exception(_extractError(response, 'Failed to update profile'));
+  }
+
   Future<Map<String, dynamic>> onboardingComplete(
     Map<String, dynamic> payload, {
     String? password,

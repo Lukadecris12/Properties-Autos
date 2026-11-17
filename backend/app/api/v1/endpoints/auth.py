@@ -431,9 +431,46 @@ async def update_profile(
     db: AsyncSession = Depends(get_db)
 ):
     update_data = user_in.model_dump(exclude_unset=True)
+
+    # Check phone uniqueness if phone_number is changing
+    new_phone = update_data.get("phone_number")
+    if new_phone and new_phone != current_user.phone_number:
+        dup_stmt = select(User).where(User.phone_number == new_phone, User.id != current_user.id)
+        if (await db.execute(dup_stmt)).scalars().first():
+            raise HTTPException(status_code=400, detail="This phone number is already linked to another account.")
+
+    # Sync roles, active_mode, and user_type when entity_type changes
+    entity = update_data.get("entity_type")
+    if entity:
+        e = entity.lower().strip()
+        if e in ("seeker", "buyer"):
+            update_data["roles"] = ["buyer", "tenant", "renter"]
+            update_data["active_mode"] = "buyer"
+            update_data["user_type"] = "buyer"
+        elif e in ("owner", "individual"):
+            update_data["roles"] = ["seller", "landlord"]
+            update_data["active_mode"] = "seller"
+            update_data["user_type"] = "seller"
+        elif e == "agent":
+            update_data["roles"] = ["seller", "agent", "buyer"]
+            update_data["active_mode"] = "agent"
+            update_data["user_type"] = "seller"
+        elif e == "developer":
+            update_data["roles"] = ["seller", "developer", "agent"]
+            update_data["active_mode"] = "developer"
+            update_data["user_type"] = "seller"
+        elif e == "dealer":
+            update_data["roles"] = ["seller", "dealer", "rental_company"]
+            update_data["active_mode"] = "dealer"
+            update_data["user_type"] = "seller"
+        elif e == "company":
+            update_data["roles"] = ["seller", "agent", "dealer"]
+            update_data["active_mode"] = "seller"
+            update_data["user_type"] = "seller"
+
     for field, value in update_data.items():
         setattr(current_user, field, value)
-        
+
     await db.commit()
     await db.refresh(current_user)
     return ResponseModel(message="Profile updated successfully", data=current_user)
