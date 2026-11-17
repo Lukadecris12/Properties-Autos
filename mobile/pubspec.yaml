@@ -1,7 +1,7 @@
 name: propertyhub_mobile
 description: "PropertyHub - Premium AI-Powered Property & Automobile Marketplace for Android & iOS"
 publish_to: "none"
-version: 1.0.1+2
+version: 1.0.1+3
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
