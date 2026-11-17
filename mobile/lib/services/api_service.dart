@@ -458,7 +458,7 @@ class ApiService {
         _currentUser = updatedUser;
         try {
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString(_userStorageKey, json.encode(_currentUser));
+          await prefs.setString('current_user', json.encode(_currentUser));
         } catch (_) {}
         return updatedUser;
       }

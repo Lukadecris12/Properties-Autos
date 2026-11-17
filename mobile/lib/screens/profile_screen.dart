@@ -1341,7 +1341,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       if (firstCtrl.text.trim().isEmpty || lastCtrl.text.trim().isEmpty) return;
                       setModalState(() => saving = true);
                       try {
-                        await _apiService.updateProfile({
+                        await ApiService().updateProfile({
                           'first_name': firstCtrl.text.trim(),
                           'last_name': lastCtrl.text.trim(),
                           'company_name': companyCtrl.text.trim().isEmpty ? null : companyCtrl.text.trim(),
