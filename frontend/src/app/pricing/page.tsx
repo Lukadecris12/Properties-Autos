@@ -30,6 +30,7 @@ import {
   CurrencyConfig,
   detectCurrencyFromCountry,
   formatSubscriptionPrice,
+  saveSelectedCurrency,
 } from '@/lib/currency';
 
 export default function PricingSubscriptionPage() {
@@ -95,6 +96,16 @@ export default function PricingSubscriptionPage() {
         // Not logged in
       }
       setSelectedCurrency(detectCurrencyFromCountry(detectedCountry));
+      if (!detectedCountry && typeof window !== 'undefined' && !localStorage.getItem('propertyhub_selected_currency')) {
+        fetch('https://ipwho.is/')
+          .then((r) => r.json())
+          .then((geo) => {
+            if (geo?.success && (geo.country || geo.country_code)) {
+              setSelectedCurrency(detectCurrencyFromCountry(geo.country_code || geo.country, true));
+            }
+          })
+          .catch(() => {});
+      }
     } catch (err: any) {
       console.error('Error loading plans:', err);
     } finally {
@@ -299,7 +310,10 @@ export default function PricingSubscriptionPage() {
             value={selectedCurrency.code}
             onChange={(e) => {
               const found = SUPPORTED_CURRENCIES.find((c) => c.code === e.target.value);
-              if (found) setSelectedCurrency(found);
+              if (found) {
+                setSelectedCurrency(found);
+                saveSelectedCurrency(found.code);
+              }
             }}
             className="px-3 py-2 rounded-xl bg-gray-900 border border-gray-700 text-white text-xs font-semibold cursor-pointer"
           >
