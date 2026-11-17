@@ -1,4 +1,5 @@
 import json
+import math
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -23,8 +24,14 @@ from app.schemas.subscription import (
 from app.schemas.common import ResponseModel
 from app.services.subscription_service import SubscriptionService
 from app.services.paystack_service import PaystackService
+from app.services.flutterwave_service import FlutterwaveService
 
 router = APIRouter()
+
+
+def _round_half_up(value: float) -> int:
+    """Round >= 0.5 up to next whole integer, < 0.5 down to previous whole integer."""
+    return int(math.floor(value + 0.5))
 
 @router.get("/plans", response_model=ResponseModel[List[SubscriptionPlanResponse]])
 async def get_subscription_plans(
@@ -99,8 +106,14 @@ async def initiate_subscription(
 
     # Generate unique transaction reference
     tx_ref = f"SUB-{req.plan_slug.upper()}-{current_user.id}-{int(datetime.now(timezone.utc).timestamp())}"
-    
+    usd_amount = _round_half_up(float(plan.price_ngn) / settings.NGN_PER_USD)
+    charge_currency = (req.currency or "NGN").upper()
+    if charge_currency not in ("NGN", "USD"):
+        charge_currency = "USD"
+
     paystack_init_data = {}
+    flw_init_data = {}
+
     if req.payment_method.upper() == "PAYSTACK" and settings.PAYSTACK_SECRET_KEY:
         ok, p_msg, p_data = await PaystackService.initialize_payment(
             email=current_user.email,
@@ -114,6 +127,24 @@ async def initiate_subscription(
         )
         if ok:
             paystack_init_data = p_data
+    elif req.payment_method.upper() == "FLUTTERWAVE" and settings.FLUTTERWAVE_SECRET_KEY:
+        charge_amount = float(usd_amount) if charge_currency == "USD" else float(plan.price_ngn)
+        customer_name = f"{current_user.first_name or ''} {current_user.last_name or ''}".strip() or current_user.email
+        ok, f_msg, f_data = await FlutterwaveService.initialize_payment(
+            email=current_user.email,
+            amount=charge_amount,
+            currency=charge_currency,
+            tx_ref=tx_ref,
+            redirect_url=f"https://propertiesandautos.online/pricing?flw_ref={tx_ref}&plan={plan.slug}",
+            customer_name=customer_name,
+            meta={
+                "user_id": current_user.id,
+                "plan_slug": plan.slug,
+                "plan_name": plan.name,
+            },
+        )
+        if ok:
+            flw_init_data = f_data
 
     return ResponseModel(
         message="Subscription invoice generated successfully. Proceed with payment verification.",
@@ -123,11 +154,16 @@ async def initiate_subscription(
             "plan_slug": plan.slug,
             "plan_name": plan.name,
             "amount_ngn": float(plan.price_ngn),
+            "amount_usd": usd_amount,
+            "currency": charge_currency,
+            "charge_amount": float(usd_amount) if charge_currency == "USD" else float(plan.price_ngn),
             "payment_required": True,
             "provider": req.payment_method,
             "paystack_authorization_url": paystack_init_data.get("authorization_url"),
             "paystack_access_code": paystack_init_data.get("access_code"),
             "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
+            "flutterwave_payment_link": flw_init_data.get("payment_link"),
+            "flutterwave_public_key": settings.FLUTTERWAVE_PUBLIC_KEY,
             "designated_bank": {
                 "bank_name": "Zenith Bank PLC",
                 "account_name": "Properties & Autos Technologies Ltd - Subscription Clearing",
@@ -166,6 +202,21 @@ async def verify_subscription_payment(
                 detail=f"Paystack verification failed: {v_msg}"
             )
         verified_amount = v_data.get("amount_ngn", verified_amount)
+    elif req.provider.upper() == "FLUTTERWAVE" and settings.FLUTTERWAVE_SECRET_KEY:
+        verified, v_msg, v_data = await FlutterwaveService.verify_payment(
+            req.reference,
+            transaction_id=req.transaction_id,
+        )
+        if not verified:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Flutterwave verification failed: {v_msg}"
+            )
+        # Keep internal ledger in NGN equivalent if settled in USD
+        if str(v_data.get("currency", "USD")).upper() == "USD":
+            verified_amount = float(plan.price_ngn)
+        else:
+            verified_amount = v_data.get("amount", verified_amount)
 
     success, msg, sub = await SubscriptionService.activate_subscription(
         db=db,

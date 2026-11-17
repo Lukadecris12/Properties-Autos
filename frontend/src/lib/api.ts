@@ -597,7 +597,7 @@ class ApiClient {
     return res.json();
   }
 
-  async subscribeToPlan(data: { plan_slug: string; payment_method?: string; auto_renew?: boolean }) {
+  async subscribeToPlan(data: { plan_slug: string; payment_method?: string; currency?: string; auto_renew?: boolean }) {
     const res = await fetch(`${API_BASE_URL}/subscriptions/subscribe`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
@@ -610,7 +610,7 @@ class ApiClient {
     return res.json();
   }
 
-  async verifySubscriptionPayment(data: { reference: string; plan_slug: string; provider?: string; gateway_response?: any }) {
+  async verifySubscriptionPayment(data: { reference: string; plan_slug: string; provider?: string; transaction_id?: string; gateway_response?: any }) {
     const res = await fetch(`${API_BASE_URL}/subscriptions/verify-payment`, {
       method: 'POST',
       headers: this.getAuthHeaders(),

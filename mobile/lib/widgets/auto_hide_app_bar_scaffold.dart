@@ -107,38 +107,43 @@ class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
           onNotification: _onScrollNotification,
           child: AutoHideHeaderScope(
             isHeaderVisible: _headerVisible,
-            child: Column(
+            child: Stack(
               children: [
+                // Keep body at a fixed full-viewport size so scrolling never stutters or jumps.
+                Positioned.fill(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: bar != null ? (topPadding + barHeight) : 0.0),
+                    child: MediaQuery.removePadding(
+                      context: context,
+                      removeTop: bar != null,
+                      child: RepaintBoundary(child: widget.body),
+                    ),
+                  ),
+                ),
                 if (bar != null)
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 240),
-                    curve: Curves.easeInOutCubic,
-                    height: _headerVisible ? (topPadding + barHeight) : topPadding,
-                    color: barBg,
-                    child: ClipRect(
-                      child: OverflowBox(
-                        alignment: Alignment.topCenter,
-                        minHeight: topPadding + barHeight,
-                        maxHeight: topPadding + barHeight,
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: topPadding + barHeight,
+                    child: IgnorePointer(
+                      ignoring: !_headerVisible,
+                      child: AnimatedSlide(
+                        offset: _headerVisible ? Offset.zero : const Offset(0, -1.0),
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
                         child: AnimatedOpacity(
                           opacity: _headerVisible ? 1.0 : 0.0,
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeInOutCubic,
-                          child: SizedBox(
-                            height: topPadding + barHeight,
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOutCubic,
+                          child: Container(
+                            color: barBg,
                             child: bar,
                           ),
                         ),
                       ),
                     ),
                   ),
-                Expanded(
-                  child: MediaQuery.removePadding(
-                    context: context,
-                    removeTop: bar != null,
-                    child: widget.body,
-                  ),
-                ),
               ],
             ),
           ),

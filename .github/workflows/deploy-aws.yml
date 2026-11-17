@@ -115,6 +115,11 @@ jobs:
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL || 'gemini-3.5-flash-lite' }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL || 'Properties & Autos <auth@propertiesandautos.online>' }}
+          PAYSTACK_SECRET_KEY: ${{ secrets.PAYSTACK_SECRET_KEY }}
+          PAYSTACK_PUBLIC_KEY: ${{ secrets.PAYSTACK_PUBLIC_KEY }}
+          FLUTTERWAVE_PUBLIC_KEY: ${{ secrets.FLUTTERWAVE_PUBLIC_KEY }}
+          FLUTTERWAVE_SECRET_KEY: ${{ secrets.FLUTTERWAVE_SECRET_KEY }}
+          FLUTTERWAVE_ENCRYPTION_KEY: ${{ secrets.FLUTTERWAVE_ENCRYPTION_KEY }}
         run: |
           if [ -z "$EC2_HOST" ] || [ -z "$EC2_SSH_KEY" ]; then
             echo "EC2_HOST or EC2_SSH_KEY GitHub secret is not configured. Skipping EC2 deployment."
@@ -139,6 +144,19 @@ jobs:
               mv .env.tmp .env
               printf 'RESEND_API_KEY=%s\n' \"$RESEND_API_KEY\" >> .env
               printf 'RESEND_FROM_EMAIL=%s\n' \"$RESEND_FROM_EMAIL\" >> .env
+            fi
+            if [ -n \"$PAYSTACK_SECRET_KEY\" ]; then
+              grep -v -E '^(PAYSTACK_SECRET_KEY|PAYSTACK_PUBLIC_KEY)=' .env > .env.tmp || true
+              mv .env.tmp .env
+              printf 'PAYSTACK_SECRET_KEY=%s\n' \"$PAYSTACK_SECRET_KEY\" >> .env
+              printf 'PAYSTACK_PUBLIC_KEY=%s\n' \"$PAYSTACK_PUBLIC_KEY\" >> .env
+            fi
+            if [ -n \"$FLUTTERWAVE_SECRET_KEY\" ]; then
+              grep -v -E '^(FLUTTERWAVE_PUBLIC_KEY|FLUTTERWAVE_SECRET_KEY|FLUTTERWAVE_ENCRYPTION_KEY)=' .env > .env.tmp || true
+              mv .env.tmp .env
+              printf 'FLUTTERWAVE_PUBLIC_KEY=%s\n' \"$FLUTTERWAVE_PUBLIC_KEY\" >> .env
+              printf 'FLUTTERWAVE_SECRET_KEY=%s\n' \"$FLUTTERWAVE_SECRET_KEY\" >> .env
+              printf 'FLUTTERWAVE_ENCRYPTION_KEY=%s\n' \"$FLUTTERWAVE_ENCRYPTION_KEY\" >> .env
             fi
             docker compose up -d --build --force-recreate --renew-anon-volumes
             docker image prune -f

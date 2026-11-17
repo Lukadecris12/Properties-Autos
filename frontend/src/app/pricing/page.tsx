@@ -25,6 +25,12 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { api } from '@/lib/api';
 import { openPaystackPopup } from '@/lib/paystack';
+import {
+  SUPPORTED_CURRENCIES,
+  CurrencyConfig,
+  detectCurrencyFromCountry,
+  formatSubscriptionPrice,
+} from '@/lib/currency';
 
 export default function PricingSubscriptionPage() {
   const [activeTab, setActiveTab] = useState<'STANDARD' | 'BUSINESS' | 'ENTERPRISE'>('STANDARD');
@@ -32,6 +38,7 @@ export default function PricingSubscriptionPage() {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userSubscription, setUserSubscription] = useState<any>(null);
+  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyConfig>(SUPPORTED_CURRENCIES[0]);
 
   // Selected plan for checkout modal
   const [selectedPlan, setSelectedPlan] = useState<any | null>(null);
@@ -42,10 +49,30 @@ export default function PricingSubscriptionPage() {
 
   useEffect(() => {
     loadData();
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const flwRef = params.get('tx_ref') || params.get('flw_ref');
+      const txId = params.get('transaction_id');
+      const flwPlan = params.get('plan');
+      const flwStatus = params.get('status');
+      if (flwRef && flwPlan && flwStatus !== 'cancelled') {
+        api.verifySubscriptionPayment({
+          reference: flwRef,
+          plan_slug: flwPlan,
+          provider: 'FLUTTERWAVE',
+          transaction_id: txId || undefined,
+        }).then(() => {
+          loadData();
+        }).catch((e) => {
+          setErrorMsg(e?.message || 'Could not verify Flutterwave payment.');
+        });
+      }
+    }
   }, []);
 
   const loadData = async () => {
     setLoading(true);
+    let detectedCountry: string | null = null;
     try {
       // 1. Load plans from backend
       const plansRes = await api.getSubscriptionPlans();
@@ -58,6 +85,7 @@ export default function PricingSubscriptionPage() {
         const meRes = await api.getMe();
         if (meRes && meRes.data) {
           setCurrentUser(meRes.data);
+          detectedCountry = meRes.data.country || null;
           const subRes = await api.getMySubscription();
           if (subRes && subRes.data) {
             setUserSubscription(subRes.data);
@@ -66,6 +94,7 @@ export default function PricingSubscriptionPage() {
       } catch (_) {
         // Not logged in
       }
+      setSelectedCurrency(detectCurrencyFromCountry(detectedCountry));
     } catch (err: any) {
       console.error('Error loading plans:', err);
     } finally {
@@ -88,18 +117,48 @@ export default function PricingSubscriptionPage() {
     setErrorMsg('');
     setCheckoutStep('DETAILS');
 
-    // Initiate invoice & Paystack payment from backend
+    // Initiate invoice & gateway payment from backend
+    const isNigeria = selectedCurrency.code === 'NGN';
     try {
       setProcessing(true);
-      const res = await api.subscribeToPlan({ 
+      const res = await api.subscribeToPlan({
         plan_slug: plan.slug,
-        payment_method: 'PAYSTACK'
+        payment_method: isNigeria ? 'PAYSTACK' : 'FLUTTERWAVE',
+        currency: isNigeria ? 'NGN' : 'USD',
       });
       setInvoiceData(res.data);
       setCheckoutStep('PAYMENT');
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to initiate plan checkout');
     } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handlePayWithFlutterwave = async () => {
+    if (!selectedPlan || !currentUser) return;
+    setErrorMsg('');
+    setProcessing(true);
+    try {
+      const targetCurrency = selectedCurrency.code === 'NGN' ? 'NGN' : 'USD';
+      let flwLink = invoiceData?.flutterwave_payment_link;
+      if (!flwLink || invoiceData?.provider !== 'FLUTTERWAVE') {
+        const res = await api.subscribeToPlan({
+          plan_slug: selectedPlan.slug,
+          payment_method: 'FLUTTERWAVE',
+          currency: targetCurrency,
+        });
+        setInvoiceData(res.data);
+        flwLink = res.data?.flutterwave_payment_link;
+      }
+      if (flwLink) {
+        window.location.href = flwLink;
+      } else {
+        setErrorMsg('Flutterwave checkout is not configured yet. Please check your Flutterwave keys.');
+        setProcessing(false);
+      }
+    } catch (e: any) {
+      setErrorMsg(e.message || 'Flutterwave initialization error.');
       setProcessing(false);
     }
   };
@@ -233,6 +292,30 @@ export default function PricingSubscriptionPage() {
           </div>
         </div>
 
+        {/* Country / Currency Selector */}
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-8 text-xs">
+          <span className="text-gray-400">Display currency:</span>
+          <select
+            value={selectedCurrency.code}
+            onChange={(e) => {
+              const found = SUPPORTED_CURRENCIES.find((c) => c.code === e.target.value);
+              if (found) setSelectedCurrency(found);
+            }}
+            className="px-3 py-2 rounded-xl bg-gray-900 border border-gray-700 text-white text-xs font-semibold cursor-pointer"
+          >
+            {SUPPORTED_CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+          {selectedCurrency.code !== 'NGN' && (
+            <span className="text-[11px] text-emerald-400">
+              International checkout settles in USD via Flutterwave
+            </span>
+          )}
+        </div>
+
         {/* Tab 1: Standard Plans (Free, Explorer, Starter, Growth) */}
         {activeTab === 'STANDARD' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
@@ -275,12 +358,22 @@ export default function PricingSubscriptionPage() {
 
                     {/* Pricing */}
                     <div className="my-6 pb-6 border-b border-gray-800">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-extrabold text-white tracking-tight">
-                          ₦{Number(plan.price_ngn).toLocaleString()}
-                        </span>
-                        <span className="text-xs text-gray-500 font-medium">/ month</span>
-                      </div>
+                      {(() => {
+                        const p = formatSubscriptionPrice(Number(plan.price_ngn), selectedCurrency);
+                        return (
+                          <>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-3xl font-extrabold text-white tracking-tight">
+                                {p.display}
+                              </span>
+                              <span className="text-xs text-gray-500 font-medium">/ month</span>
+                            </div>
+                            {!p.isNigeria && p.usdAmount > 0 && selectedCurrency.code !== 'USD' && (
+                              <p className="text-[11px] text-gray-400 mt-1">Billed as ${p.usdAmount} USD</p>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
 
                     {/* Allowance Metrics */}
@@ -355,7 +448,7 @@ export default function PricingSubscriptionPage() {
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-extrabold text-base text-white">{plan.name}</span>
                         <span className="text-sm font-bold text-brand-400">
-                          ₦{Number(plan.price_ngn).toLocaleString()}<span className="text-[10px] text-gray-500 font-normal">/mo</span>
+                          {formatSubscriptionPrice(Number(plan.price_ngn), selectedCurrency).display}<span className="text-[10px] text-gray-500 font-normal">/mo</span>
                         </span>
                       </div>
 
@@ -427,7 +520,7 @@ export default function PricingSubscriptionPage() {
 
                       <h3 className="text-lg font-bold text-white">{plan.name}</h3>
                       <div className="text-2xl font-extrabold text-white my-3">
-                        ₦{Number(plan.price_ngn).toLocaleString()}<span className="text-xs text-gray-500 font-normal"> / month</span>
+                        {formatSubscriptionPrice(Number(plan.price_ngn), selectedCurrency).display}<span className="text-xs text-gray-500 font-normal"> / month</span>
                       </div>
 
                       <div className="space-y-2 text-xs bg-gray-900/60 p-3 rounded-xl border border-gray-800 my-4">
@@ -540,7 +633,14 @@ export default function PricingSubscriptionPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Monthly Total:</span>
-                    <span className="font-extrabold text-brand-400 text-sm">₦{Number(selectedPlan.price_ngn).toLocaleString()}</span>
+                    {(() => {
+                      const p = formatSubscriptionPrice(Number(selectedPlan.price_ngn), selectedCurrency);
+                      return (
+                        <span className="font-extrabold text-brand-400 text-sm">
+                          {p.display}{!p.isNigeria && p.usdAmount > 0 ? ` ($${p.usdAmount} USD)` : ''}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Listings Capacity:</span>
@@ -558,25 +658,59 @@ export default function PricingSubscriptionPage() {
 
                 {/* Payment Action Options */}
                 <div className="space-y-3 pt-2">
-                  {/* Primary Paystack Button */}
-                  <button
-                    type="button"
-                    disabled={processing}
-                    onClick={handlePayWithPaystack}
-                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-brand-600 hover:from-emerald-500 hover:to-brand-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-xl shadow-brand-600/30 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.01]"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    <span>
-                      {processing ? 'Connecting to Paystack...' : `Pay ₦${Number(selectedPlan.price_ngn).toLocaleString()} with Paystack`}
-                    </span>
-                  </button>
+                  {selectedCurrency.code === 'NGN' ? (
+                    <>
+                      {/* Nigeria: Primary Paystack + Flutterwave NGN */}
+                      <button
+                        type="button"
+                        disabled={processing}
+                        onClick={handlePayWithPaystack}
+                        className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-brand-600 hover:from-emerald-500 hover:to-brand-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-xl shadow-brand-600/30 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.01]"
+                      >
+                        <CreditCard className="w-4 h-4" />
+                        <span>
+                          {processing ? 'Connecting to Paystack...' : `Pay ₦${Number(selectedPlan.price_ngn).toLocaleString()} with Paystack`}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={processing}
+                        onClick={handlePayWithFlutterwave}
+                        className="w-full py-3 rounded-2xl bg-gray-800 hover:bg-gray-700 border border-amber-500/40 disabled:opacity-50 text-amber-300 font-bold text-xs flex items-center justify-center gap-2 transition-all"
+                      >
+                        <CreditCard className="w-4 h-4" />
+                        <span>Pay ₦{Number(selectedPlan.price_ngn).toLocaleString()} with Flutterwave</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* International: Flutterwave USD Settlement */}
+                      {(() => {
+                        const p = formatSubscriptionPrice(Number(selectedPlan.price_ngn), selectedCurrency);
+                        return (
+                          <button
+                            type="button"
+                            disabled={processing}
+                            onClick={handlePayWithFlutterwave}
+                            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.01]"
+                          >
+                            <CreditCard className="w-4 h-4" />
+                            <span>
+                              {processing ? 'Connecting to Flutterwave...' : `Pay $${p.usdAmount} USD with Flutterwave`}
+                            </span>
+                          </button>
+                        );
+                      })()}
+                    </>
+                  )}
 
                   <div className="flex items-center justify-between text-[11px] text-gray-400 px-1">
                     <span className="flex items-center gap-1 text-emerald-400">
                       <ShieldCheck className="w-3.5 h-3.5" />
-                      Secured by Paystack 256-bit SSL
+                      {selectedCurrency.code === 'NGN' ? 'Secured by Paystack & Flutterwave SSL' : 'Secured by Flutterwave (USD Settlement)'}
                     </span>
-                    {invoiceData?.paystack_authorization_url && (
+                    {invoiceData?.paystack_authorization_url && selectedCurrency.code === 'NGN' && (
                       <a
                         href={invoiceData.paystack_authorization_url}
                         target="_blank"

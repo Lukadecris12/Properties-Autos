@@ -87,12 +87,14 @@ class UserSubscriptionUsageResponse(BaseModel):
 class SubscribeRequest(BaseModel):
     plan_slug: str
     payment_method: str = "PAYSTACK"  # PAYSTACK, FLUTTERWAVE, BANK_TRANSFER
+    currency: str = "NGN"             # NGN (Nigeria) or USD (International settlement)
     auto_renew: bool = False
 
 class PaymentVerifyRequest(BaseModel):
     reference: str
     plan_slug: str
     provider: str = "PAYSTACK"
+    transaction_id: Optional[str] = None
     gateway_response: Optional[Dict[str, Any]] = None
 
 class FeatureListingRequest(BaseModel):

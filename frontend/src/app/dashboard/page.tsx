@@ -35,6 +35,7 @@ import { Footer } from '@/components/Footer';
 import { AIAssistantModal } from '@/components/AIAssistantModal';
 import { Listing, Booking, AIMatch, User } from '@/lib/types';
 import { api } from '@/lib/api';
+import { detectCurrencyFromCountry, formatSubscriptionPrice } from '@/lib/currency';
 import { getCoverImageUrl, getFallbackImage } from '@/lib/media';
 
 function DashboardPageContent() {
@@ -424,7 +425,7 @@ function DashboardPageContent() {
                 <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
                   <span>{userSubscription.plan_name}</span>
                   <span className="text-sm font-semibold text-gray-400">
-                    (₦{Number(userSubscription.price_ngn).toLocaleString()}/mo)
+                    ({formatSubscriptionPrice(Number(userSubscription.price_ngn), detectCurrencyFromCountry(currentUser?.country)).display}/mo)
                   </span>
                 </h3>
               </div>
@@ -791,7 +792,7 @@ function DashboardPageContent() {
                   <div className="p-4 rounded-2xl bg-gray-950 border border-gray-800 space-y-1">
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Plan Name</span>
                     <div className="text-xl font-extrabold text-white">{userSubscription.plan_name}</div>
-                    <span className="text-[11px] text-brand-400 font-semibold">₦{Number(userSubscription.price_ngn).toLocaleString()} / month</span>
+                    <span className="text-[11px] text-brand-400 font-semibold">{formatSubscriptionPrice(Number(userSubscription.price_ngn), detectCurrencyFromCountry(currentUser?.country)).display} / month</span>
                   </div>
 
                   <div className="p-4 rounded-2xl bg-gray-950 border border-gray-800 space-y-1">

@@ -41,9 +41,13 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.5-flash-lite"
 
-    # Payment Gateways (Paystack)
+    # Payment Gateways (Paystack & Flutterwave)
     PAYSTACK_SECRET_KEY: str = ""
     PAYSTACK_PUBLIC_KEY: str = ""
+    FLUTTERWAVE_PUBLIC_KEY: str = ""
+    FLUTTERWAVE_SECRET_KEY: str = ""
+    FLUTTERWAVE_ENCRYPTION_KEY: str = ""
+    NGN_PER_USD: float = 1355.0
 
     # Google Maps
     GOOGLE_MAPS_API_KEY: str = ""
