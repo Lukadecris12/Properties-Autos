@@ -77,7 +77,18 @@ jobs:
               )
           manifest_path.write_text(manifest)
 
-          # 2. Force Play Billing Library 8.0.0 across all subprojects in root build.gradle
+          # 2. Upgrade Kotlin Gradle plugin to 2.1.0 in settings.gradle (required by Play Billing 8.0.0)
+          settings_path = pathlib.Path("android/settings.gradle")
+          if settings_path.exists():
+              settings = settings_path.read_text()
+              settings = re.sub(
+                  r'id\s+"org\.jetbrains\.kotlin\.android"\s+version\s+"[^"]+"',
+                  'id "org.jetbrains.kotlin.android" version "2.1.0"',
+                  settings,
+              )
+              settings_path.write_text(settings)
+
+          # 3. Force Play Billing Library 8.0.0 across all subprojects in root build.gradle
           root_gradle_path = pathlib.Path("android/build.gradle")
           if root_gradle_path.exists():
               root_gradle = root_gradle_path.read_text()
