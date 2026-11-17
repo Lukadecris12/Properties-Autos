@@ -288,8 +288,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }
 
+              final topOffset = AutoHideHeaderScope.topOffsetOf(context);
               return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 176, 16, 16),
+                padding: EdgeInsets.fromLTRB(16, topOffset + 176, 16, 16),
                 itemCount: listings.length,
                 itemBuilder: (context, index) {
                   final item = listings[index];
@@ -302,7 +303,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // Floating Collapsible Search, Buy/Rent & Category Header
         Positioned(
-          top: 0,
+          top: AutoHideHeaderScope.topOffsetOf(context),
           left: 0,
           right: 0,
           child: AutoHideCollapsibleSection(

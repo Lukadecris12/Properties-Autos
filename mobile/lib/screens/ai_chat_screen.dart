@@ -148,18 +148,20 @@ class _AIChatScreenState extends State<AIChatScreen> with WidgetsBindingObserver
       body: Column(
         children: [
           // Quick suggestion chips
-          Container(
-            height: 46,
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: [
-                _buildQuickChip("Explain C of O vs Governor's Consent"),
-                _buildQuickChip("Find 3-bed short-let in Lekki"),
-                _buildQuickChip("Toyota Land Cruiser rental rate"),
-                _buildQuickChip("How AI Matching works"),
-              ],
+          AutoHideTopBar(
+            child: Container(
+              height: 46,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                children: [
+                  _buildQuickChip("Explain C of O vs Governor's Consent"),
+                  _buildQuickChip("Find 3-bed short-let in Lekki"),
+                  _buildQuickChip("Toyota Land Cruiser rental rate"),
+                  _buildQuickChip("How AI Matching works"),
+                ],
+              ),
             ),
           ),
 

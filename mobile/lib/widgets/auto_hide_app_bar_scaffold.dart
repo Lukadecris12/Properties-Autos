@@ -1,10 +1,11 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-/// A drop-in replacement for [Scaffold] whose top [appBar] smoothly fades out
-/// and collapses while the user touches and scrolls vertically, then fades
-/// back in when scrolling stops and the user lifts their finger.
-/// [bottomNavigationBar] remains completely static at all times.
+/// A drop-in replacement for [Scaffold] whose top [appBar] and any
+/// [AutoHideCollapsibleSection] smoothly slide and fade completely off the top
+/// of the screen while scrolling, leaving 0px of header behind and never
+/// resizing the underlying scroll viewport (keeping scrolling at 60/120fps).
 class AutoHideAppBarScaffold extends StatefulWidget {
   final Color? backgroundColor;
   final PreferredSizeWidget? appBar;
@@ -28,7 +29,7 @@ class AutoHideAppBarScaffold extends StatefulWidget {
 }
 
 class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
-  bool _headerVisible = true;
+  final ValueNotifier<bool> _visibleNotifier = ValueNotifier<bool>(true);
   bool _pointerDown = false;
   bool _isScrolling = false;
   Timer? _restoreTimer;
@@ -36,22 +37,23 @@ class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
   @override
   void dispose() {
     _restoreTimer?.cancel();
+    _visibleNotifier.dispose();
     super.dispose();
   }
 
   void _hideHeader() {
     _restoreTimer?.cancel();
-    if (_headerVisible && mounted) {
-      setState(() => _headerVisible = false);
+    if (_visibleNotifier.value) {
+      _visibleNotifier.value = false;
     }
   }
 
   void _scheduleRestore() {
     _restoreTimer?.cancel();
     if (_pointerDown || _isScrolling) return;
-    _restoreTimer = Timer(const Duration(milliseconds: 200), () {
-      if (!_pointerDown && !_isScrolling && !_headerVisible && mounted) {
-        setState(() => _headerVisible = true);
+    _restoreTimer = Timer(const Duration(milliseconds: 220), () {
+      if (!_pointerDown && !_isScrolling && !_visibleNotifier.value && mounted) {
+        _visibleNotifier.value = true;
       }
     });
   }
@@ -65,7 +67,8 @@ class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
         _hideHeader();
       }
     } else if (notification is ScrollUpdateNotification) {
-      if (notification.dragDetails != null) {
+      final delta = notification.scrollDelta ?? 0.0;
+      if (notification.dragDetails != null || delta.abs() > 1.5) {
         _hideHeader();
       }
     } else if (notification is ScrollEndNotification) {
@@ -77,10 +80,22 @@ class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top;
+    // If nested inside an outer AutoHideAppBarScaffold without its own appBar,
+    // avoid creating a second competing scroll listener / scaffold.
+    final parentScope = AutoHideHeaderScope.maybeOf(context);
+    if (parentScope != null && widget.appBar == null && widget.bottomNavigationBar == null) {
+      return ColoredBox(
+        color: widget.backgroundColor ?? const Color(0xFF0B0F19),
+        child: widget.body,
+      );
+    }
+
+    final mq = MediaQuery.of(context);
+    final topPadding = mq.padding.top;
     final bar = widget.appBar;
     final barHeight = bar?.preferredSize.height ?? 0.0;
-    final barBg = (bar is AppBar && bar.backgroundColor != null)
+    final topOffset = bar != null ? (topPadding + barHeight) : topPadding;
+    final barBg = (bar is AppBar && bar.backgroundColor != null && bar.backgroundColor != Colors.transparent)
         ? bar.backgroundColor!
         : (widget.backgroundColor ?? const Color(0xFF111827));
 
@@ -106,18 +121,18 @@ class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
         child: NotificationListener<ScrollNotification>(
           onNotification: _onScrollNotification,
           child: AutoHideHeaderScope(
-            isHeaderVisible: _headerVisible,
+            visibleListenable: _visibleNotifier,
+            topOffset: topOffset,
             child: Stack(
               children: [
-                // Keep body at a fixed full-viewport size so scrolling never stutters or jumps.
+                // Full-screen body from y=0 so content scrolls into the entire top area
+                // with zero dark bar left behind and zero viewport height changes.
                 Positioned.fill(
-                  child: Padding(
-                    padding: EdgeInsets.only(top: bar != null ? (topPadding + barHeight) : 0.0),
-                    child: MediaQuery.removePadding(
-                      context: context,
-                      removeTop: bar != null,
-                      child: RepaintBoundary(child: widget.body),
+                  child: MediaQuery(
+                    data: mq.copyWith(
+                      padding: mq.padding.copyWith(top: topOffset),
                     ),
+                    child: RepaintBoundary(child: widget.body),
                   ),
                 ),
                 if (bar != null)
@@ -125,22 +140,28 @@ class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
                     top: 0,
                     left: 0,
                     right: 0,
-                    height: topPadding + barHeight,
-                    child: IgnorePointer(
-                      ignoring: !_headerVisible,
-                      child: AnimatedSlide(
-                        offset: _headerVisible ? Offset.zero : const Offset(0, -1.0),
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutCubic,
-                        child: AnimatedOpacity(
-                          opacity: _headerVisible ? 1.0 : 0.0,
-                          duration: const Duration(milliseconds: 180),
-                          curve: Curves.easeOutCubic,
-                          child: Container(
-                            color: barBg,
-                            child: bar,
+                    height: topOffset,
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: _visibleNotifier,
+                      builder: (context, visible, child) {
+                        return IgnorePointer(
+                          ignoring: !visible,
+                          child: AnimatedSlide(
+                            offset: visible ? Offset.zero : const Offset(0, -1.1),
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutCubic,
+                            child: AnimatedOpacity(
+                              opacity: visible ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 170),
+                              curve: Curves.easeOutCubic,
+                              child: child,
+                            ),
                           ),
-                        ),
+                        );
+                      },
+                      child: Container(
+                        color: barBg,
+                        child: bar,
                       ),
                     ),
                   ),
@@ -153,30 +174,40 @@ class _AutoHideAppBarScaffoldState extends State<AutoHideAppBarScaffold> {
   }
 }
 
-/// Provides the current header visibility state from [AutoHideAppBarScaffold]
-/// to descendant widgets such as [AutoHideCollapsibleSection].
+/// Provides the header visibility listenable and static top offset to descendants
+/// without rebuilding the scaffold body when visibility changes.
 class AutoHideHeaderScope extends InheritedWidget {
-  final bool isHeaderVisible;
+  final ValueListenable<bool> visibleListenable;
+  final double topOffset;
 
   const AutoHideHeaderScope({
     super.key,
-    required this.isHeaderVisible,
+    required this.visibleListenable,
+    required this.topOffset,
     required super.child,
   });
 
-  static bool isVisibleOf(BuildContext context) {
-    final scope = context.dependOnInheritedWidgetOfExactType<AutoHideHeaderScope>();
-    return scope?.isHeaderVisible ?? true;
+  static AutoHideHeaderScope? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<AutoHideHeaderScope>();
+  }
+
+  static ValueListenable<bool>? listenableOf(BuildContext context) {
+    return maybeOf(context)?.visibleListenable;
+  }
+
+  static double topOffsetOf(BuildContext context) {
+    return maybeOf(context)?.topOffset ?? MediaQuery.of(context).padding.top;
   }
 
   @override
   bool updateShouldNotify(AutoHideHeaderScope oldWidget) {
-    return oldWidget.isHeaderVisible != isHeaderVisible;
+    return oldWidget.visibleListenable != visibleListenable ||
+        oldWidget.topOffset != topOffset;
   }
 }
 
-/// Smoothly fades and slides out its [child] in sync with [AutoHideAppBarScaffold]
-/// without resizing the underlying scrollable viewport, keeping scrolling smooth.
+/// Smoothly slides and fades its [child] completely off the top of the screen
+/// in sync with [AutoHideAppBarScaffold], leaving no dark header strip behind.
 class AutoHideCollapsibleSection extends StatelessWidget {
   final Widget child;
 
@@ -187,20 +218,74 @@ class AutoHideCollapsibleSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visible = AutoHideHeaderScope.isVisibleOf(context);
-    return IgnorePointer(
-      ignoring: !visible,
-      child: AnimatedSlide(
-        offset: visible ? Offset.zero : const Offset(0, -0.2),
-        duration: const Duration(milliseconds: 240),
-        curve: Curves.easeInOutCubic,
-        child: AnimatedOpacity(
-          opacity: visible ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeInOutCubic,
-          child: child,
-        ),
-      ),
+    final listenable = AutoHideHeaderScope.listenableOf(context);
+    if (listenable == null) return child;
+
+    return ValueListenableBuilder<bool>(
+      valueListenable: listenable,
+      builder: (context, visible, staticChild) {
+        return IgnorePointer(
+          ignoring: !visible,
+          child: AnimatedSlide(
+            offset: visible ? Offset.zero : const Offset(0, -2.0),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            child: AnimatedOpacity(
+              opacity: visible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 170),
+              curve: Curves.easeOutCubic,
+              child: staticChild,
+            ),
+          ),
+        );
+      },
+      child: RepaintBoundary(child: child),
+    );
+  }
+}
+
+/// For Column-based screens: adds the initial AppBar top offset and collapses
+/// both the offset and [child] to 0px height when scrolling.
+class AutoHideTopBar extends StatelessWidget {
+  final Widget child;
+
+  const AutoHideTopBar({
+    super.key,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final listenable = AutoHideHeaderScope.listenableOf(context);
+    final topOffset = AutoHideHeaderScope.topOffsetOf(context);
+    final content = Padding(
+      padding: EdgeInsets.only(top: topOffset),
+      child: child,
+    );
+    if (listenable == null) return content;
+
+    return ValueListenableBuilder<bool>(
+      valueListenable: listenable,
+      builder: (context, visible, staticChild) {
+        return IgnorePointer(
+          ignoring: !visible,
+          child: ClipRect(
+            child: AnimatedAlign(
+              alignment: Alignment.topCenter,
+              heightFactor: visible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              child: AnimatedOpacity(
+                opacity: visible ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 160),
+                curve: Curves.easeOutCubic,
+                child: staticChild,
+              ),
+            ),
+          ),
+        );
+      },
+      child: RepaintBoundary(child: content),
     );
   }
 }

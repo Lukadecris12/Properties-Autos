@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
+import '../widgets/auto_hide_app_bar_scaffold.dart';
 import 'subscription_screen.dart';
 
 class PostListingScreen extends StatefulWidget {
@@ -200,7 +201,7 @@ class _PostListingScreenState extends State<PostListingScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(16, AutoHideHeaderScope.topOffsetOf(context) + 16, 16, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

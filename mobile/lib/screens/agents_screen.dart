@@ -121,7 +121,7 @@ class _AgentsScreenState extends State<AgentsScreen> {
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 128, 16, 16),
+                        padding: EdgeInsets.fromLTRB(16, AutoHideHeaderScope.topOffsetOf(context) + 128, 16, 16),
                         itemCount: filteredAgents.length,
                         itemBuilder: (context, index) {
                           final ag = filteredAgents[index];
@@ -132,7 +132,7 @@ class _AgentsScreenState extends State<AgentsScreen> {
 
           // Floating Collapsible Search & Filter Header
           Positioned(
-            top: 0,
+            top: AutoHideHeaderScope.topOffsetOf(context),
             left: 0,
             right: 0,
             child: AutoHideCollapsibleSection(

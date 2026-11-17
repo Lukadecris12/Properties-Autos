@@ -496,7 +496,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.fromLTRB(20, AutoHideHeaderScope.topOffsetOf(context) + 20, 20, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

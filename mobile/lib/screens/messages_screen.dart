@@ -267,22 +267,24 @@ class _MessagesScreenState extends State<MessagesScreen> {
       body: Column(
         children: [
           // Search Input
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: const Color(0xFF111827),
-            child: TextField(
-              onChanged: (val) => setState(() => _searchQuery = val),
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-              decoration: InputDecoration(
-                hintText: 'Search chats & property inquiries...',
-                hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
-                prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 18),
-                filled: true,
-                fillColor: const Color(0xFF0B0F19),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+          AutoHideTopBar(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: const Color(0xFF111827),
+              child: TextField(
+                onChanged: (val) => setState(() => _searchQuery = val),
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+                decoration: InputDecoration(
+                  hintText: 'Search chats & property inquiries...',
+                  hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                  prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 18),
+                  filled: true,
+                  fillColor: const Color(0xFF0B0F19),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
             ),

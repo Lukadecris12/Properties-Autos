@@ -261,7 +261,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 168, 16, 16),
+                        padding: EdgeInsets.fromLTRB(16, AutoHideHeaderScope.topOffsetOf(context) + 168, 16, 16),
                         itemCount: filtered.length,
                         itemBuilder: (context, index) {
                           final req = filtered[index];
@@ -272,7 +272,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
 
           // Floating Collapsible Post Request Banner & Category Chips
           Positioned(
-            top: 0,
+            top: AutoHideHeaderScope.topOffsetOf(context),
             left: 0,
             right: 0,
             child: AutoHideCollapsibleSection(

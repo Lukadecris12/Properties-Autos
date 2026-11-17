@@ -251,7 +251,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
             }
 
             return ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(16, AutoHideHeaderScope.topOffsetOf(context) + 16, 16, 16),
               itemCount: items.length,
               itemBuilder: (context, index) {
                 final item = items[index];

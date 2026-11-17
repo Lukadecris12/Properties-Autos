@@ -96,16 +96,18 @@ class _SavedListingsScreenState extends State<SavedListingsScreen> {
       body: Column(
         children: [
           // Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
-                _buildFilterChip('ALL', 'All Saved'),
-                _buildFilterChip('RESIDENTIAL', 'Houses & Flats'),
-                _buildFilterChip('LAND', 'Land & Plots'),
-                _buildFilterChip('VEHICLE', 'Autos & Vehicles'),
-              ],
+          AutoHideTopBar(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: [
+                  _buildFilterChip('ALL', 'All Saved'),
+                  _buildFilterChip('RESIDENTIAL', 'Houses & Flats'),
+                  _buildFilterChip('LAND', 'Land & Plots'),
+                  _buildFilterChip('VEHICLE', 'Autos & Vehicles'),
+                ],
+              ),
             ),
           ),
 

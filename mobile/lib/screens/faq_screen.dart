@@ -110,26 +110,28 @@ class _FaqScreenState extends State<FaqScreen> {
       body: Column(
         children: [
           // Search Bar
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: const Color(0xFF111827),
-            child: TextField(
-              onChanged: (val) => setState(() => _searchQuery = val.trim()),
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              decoration: InputDecoration(
-                hintText: 'Search FAQ (e.g. "verification", "offline")...',
-                hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
-                prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
-                filled: true,
-                fillColor: const Color(0xFF0B0F19),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF1F2937)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF1F2937)),
+          AutoHideTopBar(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              color: const Color(0xFF111827),
+              child: TextField(
+                onChanged: (val) => setState(() => _searchQuery = val.trim()),
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'Search FAQ (e.g. "verification", "offline")...',
+                  hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                  prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+                  filled: true,
+                  fillColor: const Color(0xFF0B0F19),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF1F2937)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF1F2937)),
+                  ),
                 ),
               ),
             ),

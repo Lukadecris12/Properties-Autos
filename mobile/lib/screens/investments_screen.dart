@@ -261,7 +261,7 @@ class _InvestmentsScreenState extends State<InvestmentsScreen> {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(16, AutoHideHeaderScope.topOffsetOf(context) + 16, 16, 16),
             itemCount: items.length,
             itemBuilder: (context, index) {
               final inv = items[index];

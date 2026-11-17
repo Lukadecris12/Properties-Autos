@@ -122,7 +122,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(16, AutoHideHeaderScope.topOffsetOf(context) + 16, 16, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

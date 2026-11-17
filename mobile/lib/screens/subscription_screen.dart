@@ -520,7 +520,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF059669)))
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(16, AutoHideHeaderScope.topOffsetOf(context) + 16, 16, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

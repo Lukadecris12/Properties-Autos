@@ -12,6 +12,7 @@ import 'subscription_screen.dart';
 import 'faq_screen.dart';
 import '../core/constants.dart';
 import '../core/geo_data.dart';
+import '../widgets/auto_hide_app_bar_scaffold.dart';
 import '../widgets/legal_dialog.dart';
 import '../services/api_service.dart';
 
@@ -629,7 +630,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F19),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(16, AutoHideHeaderScope.topOffsetOf(context) + 16, 16, 16),
         child: Column(
           children: [
             // User Card
