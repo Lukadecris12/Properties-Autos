@@ -251,10 +251,6 @@ function DashboardPageContent() {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profFirstName.trim() || !profLastName.trim()) {
-      setActionFeedback({ type: 'error', text: 'First and last name are required.' });
-      return;
-    }
     if (profAssets.length === 0) {
       setActionFeedback({ type: 'error', text: 'Please select at least one category (Properties or Vehicles).' });
       return;
@@ -263,9 +259,6 @@ function DashboardPageContent() {
     setActionFeedback(null);
     try {
       const res = await api.updateProfile({
-        first_name: profFirstName.trim(),
-        last_name: profLastName.trim(),
-        company_name: profCompany.trim() || null,
         phone_number: profPhone.trim() || undefined,
         country: profCountry,
         state: profState,
@@ -1276,50 +1269,25 @@ function DashboardPageContent() {
               </button>
             </div>
             <form onSubmit={handleSaveProfile} className="space-y-3.5">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] text-gray-400 mb-1">First Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={profFirstName}
-                    onChange={(e) => setProfFirstName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] text-gray-400 mb-1">Last Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={profLastName}
-                    onChange={(e) => setProfLastName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
-                  />
-                </div>
+              <div>
+                <label className="block text-[11px] text-gray-400 mb-1">Account Holder Name (Locked)</label>
+                <input
+                  type="text"
+                  disabled
+                  value={`${profFirstName} ${profLastName}`.trim()}
+                  className="w-full px-3 py-2 rounded-xl bg-gray-900/60 border border-gray-800 text-gray-400 text-xs cursor-not-allowed"
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] text-gray-400 mb-1">Phone Number</label>
-                  <input
-                    type="text"
-                    value={profPhone}
-                    onChange={(e) => setProfPhone(e.target.value)}
-                    placeholder="+234..."
-                    className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] text-gray-400 mb-1">Company / Agency Name</label>
-                  <input
-                    type="text"
-                    value={profCompany}
-                    onChange={(e) => setProfCompany(e.target.value)}
-                    placeholder="Optional"
-                    className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
-                  />
-                </div>
+              <div>
+                <label className="block text-[11px] text-gray-400 mb-1">Phone Number</label>
+                <input
+                  type="text"
+                  value={profPhone}
+                  onChange={(e) => setProfPhone(e.target.value)}
+                  placeholder="+234..."
+                  className="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-800 text-white text-xs"
+                />
               </div>
 
               <div className="grid grid-cols-3 gap-2.5">
@@ -1341,7 +1309,7 @@ function DashboardPageContent() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] text-gray-400 mb-1">State / Region</label>
+                  <label className="block text-[11px] text-gray-400 mb-1">State / Province / Region</label>
                   <select
                     value={profState}
                     onChange={(e) => setProfState(e.target.value)}
@@ -1353,7 +1321,7 @@ function DashboardPageContent() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] text-gray-400 mb-1">City</label>
+                  <label className="block text-[11px] text-gray-400 mb-1">City / Town</label>
                   <input
                     type="text"
                     value={profCity}

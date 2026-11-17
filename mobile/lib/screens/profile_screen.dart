@@ -1178,9 +1178,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showEditProfileDialog() {
     final user = ApiService.currentUser ?? {};
-    final firstCtrl = TextEditingController(text: user['first_name']?.toString() ?? '');
-    final lastCtrl = TextEditingController(text: user['last_name']?.toString() ?? '');
-    final companyCtrl = TextEditingController(text: user['company_name']?.toString() ?? '');
+    final fullName = '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim();
     final phoneCtrl = TextEditingController(text: user['phone_number']?.toString() ?? '');
     final cityCtrl = TextEditingController(text: user['city']?.toString() ?? '');
 
@@ -1217,28 +1215,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  controller: firstCtrl,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                  decoration: const InputDecoration(labelText: 'First Name', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: lastCtrl,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                  decoration: const InputDecoration(labelText: 'Last Name', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
-                ),
-                const SizedBox(height: 8),
+                if (fullName.isNotEmpty) ...[
+                  const Text('Account Holder Name (Locked)', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                  const SizedBox(height: 4),
+                  Text(fullName, style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                ],
                 TextField(
                   controller: phoneCtrl,
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                   decoration: const InputDecoration(labelText: 'Phone Number', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: companyCtrl,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                  decoration: const InputDecoration(labelText: 'Company / Agency Name (Optional)', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
@@ -1263,7 +1249,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   isExpanded: true,
                   dropdownColor: const Color(0xFF111827),
                   style: const TextStyle(color: Colors.white, fontSize: 13),
-                  decoration: const InputDecoration(labelText: 'State / Region', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
+                  decoration: const InputDecoration(labelText: 'State / Province / Region', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
                   items: countryObj.states.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                   onChanged: (v) {
                     if (v != null) setModalState(() => selectedState = v);
@@ -1273,7 +1259,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 TextField(
                   controller: cityCtrl,
                   style: const TextStyle(color: Colors.white, fontSize: 13),
-                  decoration: const InputDecoration(labelText: 'City', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
+                  decoration: const InputDecoration(labelText: 'City / Town', labelStyle: TextStyle(color: Colors.grey, fontSize: 12)),
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
@@ -1295,7 +1281,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                const Text('Categories (Properties, Autos, or Both):', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                const Text('Account Categories (Properties, Autos, or Both):', style: TextStyle(color: Colors.grey, fontSize: 11)),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
@@ -1338,13 +1324,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: saving
                   ? null
                   : () async {
-                      if (firstCtrl.text.trim().isEmpty || lastCtrl.text.trim().isEmpty) return;
                       setModalState(() => saving = true);
                       try {
                         await ApiService().updateProfile({
-                          'first_name': firstCtrl.text.trim(),
-                          'last_name': lastCtrl.text.trim(),
-                          'company_name': companyCtrl.text.trim().isEmpty ? null : companyCtrl.text.trim(),
                           'phone_number': phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim(),
                           'country': selectedCountry,
                           'state': selectedState,

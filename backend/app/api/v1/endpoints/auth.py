@@ -431,6 +431,9 @@ async def update_profile(
     db: AsyncSession = Depends(get_db)
 ):
     update_data = user_in.model_dump(exclude_unset=True)
+    # Registered user names are locked and cannot be modified via profile edit
+    update_data.pop("first_name", None)
+    update_data.pop("last_name", None)
 
     # Check phone uniqueness if phone_number is changing
     new_phone = update_data.get("phone_number")
