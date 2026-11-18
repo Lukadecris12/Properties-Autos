@@ -50,7 +50,7 @@ enum AssetCategory { land, residential, commercial, vehicle }
 /// Replace the placeholder keys with your live API keys from https://app.revenuecat.com
 class RevenueCatConstants {
   // Public API Keys from RevenueCat Dashboard -> Project -> API Keys
-  static const String apiKeyAndroid = 'goog_YOUR_REVENUECAT_ANDROID_API_KEY';
+  static const String apiKeyAndroid = 'goog_BUPGJfAzkgNouxuWdsBHxzkLqno';
   static const String apiKeyIOS = 'appl_YOUR_REVENUECAT_IOS_API_KEY';
 
   // Entitlement Identifiers configured in RevenueCat Dashboard -> Entitlements

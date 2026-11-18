@@ -262,12 +262,24 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> with SingleTick
       }
 
       final slug = plan.slug.toLowerCase().replaceAll('-', '_');
+      final desiredSuffix = _isAnnual ? '_annual' : '_monthly';
+      final exactPkgId = '$slug$desiredSuffix';
+
       for (var pkg in candidates) {
         final pkgId = pkg.identifier.toLowerCase();
-        final prodId = pkg.storeProduct.identifier.toLowerCase();
-        if (pkgId == slug || prodId == slug || pkgId.contains(slug) || prodId.contains(slug)) {
+        if (pkgId == exactPkgId) {
           packageToBuy = pkg;
           break;
+        }
+      }
+      if (packageToBuy == null) {
+        for (var pkg in candidates) {
+          final pkgId = pkg.identifier.toLowerCase();
+          final prodId = pkg.storeProduct.identifier.toLowerCase();
+          if (pkgId == '${slug}_monthly' || prodId.startsWith('propertyhub_$slug:')) {
+            packageToBuy = pkg;
+            break;
+          }
         }
       }
     }
